@@ -22,10 +22,17 @@ godot --headless --path . --import
 ### 2. Headless validation and automated tests
 
 ```
-godot --headless --path . res://tests/test_runner.tscn
+tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 75 checks, 533 assertions, exit code 0.**
+**Result: PASS — 77 checks, 550 assertions, exit code 0, no engine errors.**
+
+The wrapper matters. GDScript cannot hook the engine's error stream, so a
+`SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
+still reports PASS. `tools/run_validation.sh` greps the run log for engine-level
+errors and fails on them. That gate was verified by removing the fix for defect
+17 below and confirming the gate returns exit code 1 — a gate that has never
+fired is not a gate.
 
 ```
 [1/3] Compiling scripts...     46 scripts, 0 failed
@@ -37,11 +44,13 @@ godot --headless --path . res://tests/test_runner.tscn
       PASS  test_state_machine        (66 assertions)
       INTEGRATION tests...
       PASS  test_combat_and_revive    (51 assertions)
+      PASS  test_concurrency          (17 assertions)
       PASS  test_level_reachability   (50 assertions)
       PASS  test_mission_flow         (60 assertions)
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (75 checks passed, 533 assertions)
+ RESULT: PASS   (77 checks passed, 550 assertions)
+RESULT: PASS - validation clean, no engine errors
 ```
 
 What that run genuinely covers:
@@ -59,13 +68,15 @@ What that run genuinely covers:
   drop, its recovery, and total-party failure.
 * Three full replays with an assertion after each that no mission fact, entity,
   duplicate player or stale registry entry survived.
+* Simultaneous requests: three players grabbing one crystal in the same frame,
+  two revivers racing on one downed player, and duplicate extraction requests.
 * Navigation-mesh path queries proving every objective is reachable in both
   directions and the playable area is enclosed.
 
 ### 3. Multi-process multiplayer check
 
 ```
-tools/run_multiplayer_check.sh <godot> 7800 3
+tools/run_multiplayer_check.sh <godot> 7840 3
 ```
 
 **Result: PASS — 73 assertions across 5 OS processes, exit code 0.**
@@ -168,6 +179,10 @@ are recorded because they are the reason the test suite looks the way it does.
 | 14 | The host never validated fire cadence | Adversarial review | Only a rate limiter existed; an explicit host-side interval check was added |
 | 15 | Revive progress cost ~60 reliable packets/second | Adversarial review | Moved onto the player's `StateSync` |
 | 16 | Navmesh precision warnings on every load | Import log | Agent dimensions made exact multiples of the voxel size; project defaults matched |
+| 17 | **Two revivers on one player crashed the revive tick, silently breaking revives for the rest of the mission** | `test_concurrency` | Completing a revive cancels every *other* revive on that target, so the next iteration of the key snapshot read an erased key and assigned null to a typed `Dictionary`. Guarded with a `has()` check |
+| 18 | **The suite reported PASS while the engine was erroring** | Defect 17 sat inside a green run | GDScript cannot see engine errors; `tools/run_validation.sh` now greps the log and fails |
+| 19 | A freed `scene_root` would have crashed rather than being detected | Adversarial review | A freed Node in Godot 4 is not `== null`; switched to `is_instance_valid()` |
+| 20 | Downed visuals were rebuilt 60x per second per player | Adversarial review | Refresh now runs on state change |
 
 ---
 

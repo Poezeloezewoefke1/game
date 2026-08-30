@@ -461,14 +461,14 @@ func host_evaluate_failure() -> void:
 ## Local entry point for "hold E on a downed teammate".
 func request_revive_start(target_peer: int) -> void:
 	if _is_host():
-		_host_revive_start(GameConfig.HOST_PEER_ID, target_peer, session_epoch)
+		host_handle_revive_start(GameConfig.HOST_PEER_ID, target_peer, session_epoch)
 	else:
 		_rpc_revive_start.rpc_id(GameConfig.HOST_PEER_ID, target_peer, session_epoch)
 
 
 func request_revive_stop() -> void:
 	if _is_host():
-		_host_revive_stop(GameConfig.HOST_PEER_ID)
+		host_handle_revive_stop(GameConfig.HOST_PEER_ID)
 	else:
 		_rpc_revive_stop.rpc_id(GameConfig.HOST_PEER_ID)
 
@@ -485,7 +485,7 @@ func _rpc_revive_start(target_peer: int, epoch: int) -> void:
 		if _revive_limiter.is_abusive(sender):
 			NetworkManager.host_kick_peer(sender, "Too many revive requests.")
 		return
-	_host_revive_start(sender, target_peer, epoch)
+	host_handle_revive_start(sender, target_peer, epoch)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -495,10 +495,12 @@ func _rpc_revive_stop() -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if sender <= 0:
 		return
-	_host_revive_stop(sender)
+	host_handle_revive_stop(sender)
 
 
-func _host_revive_start(reviver: int, target_peer: int, epoch: int) -> void:
+## THE single validation path for starting a revive, whoever asked. The local
+## host path, the client RPC path and the tests all funnel through here.
+func host_handle_revive_start(reviver: int, target_peer: int, epoch: int) -> void:
 	if epoch != session_epoch:
 		Logx.reject("revive", reviver, "stale_epoch")
 		return
@@ -515,7 +517,7 @@ func _host_revive_start(reviver: int, target_peer: int, epoch: int) -> void:
 	_host_set_revive_progress(target_peer, 0.0, true)
 
 
-func _host_revive_stop(reviver: int) -> void:
+func host_handle_revive_stop(reviver: int) -> void:
 	var entry: Variant = _revives.get(reviver)
 	if entry == null:
 		return
@@ -523,6 +525,12 @@ func _host_revive_stop(reviver: int) -> void:
 	_revives.erase(reviver)
 	if not _any_reviver_for(target):
 		_host_set_revive_progress(target, 0.0, false)
+
+
+## Read-only: how many revives are currently in flight. Used by tests to assert
+## the table actually drains rather than merely appearing to.
+func debug_active_revives() -> int:
+	return _revives.size()
 
 
 func _any_reviver_for(target_peer: int) -> bool:
@@ -554,12 +562,20 @@ func _host_tick_revives(delta: float) -> void:
 	if _revives.is_empty():
 		return
 	for reviver in _revives.keys():
+		# The key list is snapshotted at the top of this loop, but the loop body
+		# can remove OTHER entries: completing a revive calls host_revive(),
+		# which cancels every other revive targeting the same player. Without
+		# this guard the next iteration reads an erased key and assigns null to
+		# a typed Dictionary, which aborts the whole tick - so a second reviver
+		# joining in silently broke revives for the rest of the mission.
+		if not _revives.has(reviver):
+			continue
 		var entry: Dictionary = _revives[reviver]
 		var target := int(entry["target"])
 		var check := _host_revive_pair_valid(reviver, target)
 		if not bool(check["ok"]):
 			Logx.debug("revive", "cancelled %d->%d: %s" % [reviver, target, check["reason"]])
-			_host_revive_stop(reviver)
+			host_handle_revive_stop(reviver)
 			continue
 		entry["elapsed"] = float(entry["elapsed"]) + delta
 		_revives[reviver] = entry

@@ -225,7 +225,9 @@ the Sentinel and `GameLevel` use it.
 | Scenes | phase 2 | Every scene loads *and instantiates* |
 | Unit | `tests/unit/` | Pure rules, name hygiene, rate limiting, the state machine |
 | Integration | `tests/integration/` | A real ENet host session driven through a whole mission, combat, revive, replay, and navmesh reachability |
+| Concurrency | `tests/integration/test_concurrency.gd` | Simultaneous requests for one crystal, racing revivers, duplicate extraction |
 | Multi-process | `tests/net_probe.gd` + `tools/run_multiplayer_check.sh` | The **client** half of the protocol, across real OS processes |
+| Engine errors | `tools/run_validation.sh` | Failures the runner is blind to - GDScript cannot hook the engine error stream, so a `SCRIPT ERROR` inside a test prints while the suite reports PASS |
 
 The multi-process check is the only thing that exercises client-side RPC
 declarations, the barrier as seen by a client, and the host's rejection of

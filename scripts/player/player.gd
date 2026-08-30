@@ -43,6 +43,9 @@ var _hovered: Node = null
 var _hovered_prompt: String = ""
 var _reviving_target: int = 0
 var _interact_held: bool = false
+## Last downed state the visuals were built for, so the refresh runs on change
+## rather than 60 times a second per player.
+var _visuals_downed: bool = not is_downed
 
 # --- Local prediction -----------------------------------------------------
 ## Only used to avoid sending requests the host would obviously reject. It is
@@ -676,6 +679,9 @@ func set_revive_progress(progress: float, active: bool) -> void:
 
 
 func _refresh_downed_visuals() -> void:
+	if _visuals_downed == is_downed:
+		return
+	_visuals_downed = is_downed
 	_downed_marker.visible = is_downed
 	if _body_mesh.material_override is StandardMaterial3D:
 		var mat := _body_mesh.material_override as StandardMaterial3D

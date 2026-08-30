@@ -84,6 +84,9 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | GAME-028 | Replay restores every mission fact | `_host_reset_facts` | `test_session_reset` (x3) | AUTO |
 | GAME-029 | Replay leaves no stale entity and no duplicate player | `host_clear_all` | `test_session_reset` | AUTO |
 | GAME-030 | Return to lobby clears players, entities and the registry | `host_return_to_lobby` | `test_session_reset` | AUTO |
+| GAME-031 | Two players grabbing one crystal: exactly one wins | `can_pick_up_crystal` applied atomically on the host | `test_concurrency` | AUTO |
+| GAME-032 | Duplicate extraction requests extract exactly once | `can_extract` + state | `test_concurrency` | AUTO |
+| GAME-033 | A non-carrier at the pod cannot extract | `can_extract` | `test_concurrency` | AUTO |
 
 ## Player (PLR)
 
@@ -97,7 +100,7 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | PLR-006 | A downed player cannot act | `MissionRules.actor_can_act` | `test_mission_rules` | AUTO |
 | PLR-007 | Revive takes an uninterrupted 3 s and restores 40 health | `_host_tick_revives`, `host_revive` | `test_combat_and_revive` | AUTO |
 | PLR-008 | Revive cancels on distance, line of sight, release, downed reviver or disconnect | `_host_revive_pair_valid` | `test_combat_and_revive` (distance, not-downed, self) | AUTO (partial) |
-| PLR-009 | Revive races resolve deterministically | first to finish wins; others cancelled | STATIC | STATIC |
+| PLR-009 | Revive races resolve deterministically, and the tick loop survives | first to finish wins; others cancelled; the key snapshot is re-checked | `test_concurrency` | AUTO |
 | PLR-010 | Display names are sanitised and never used as identity | `name_sanitizer.gd` | `test_name_sanitizer` | AUTO |
 | PLR-011 | Revive progress does not cost 60 reliable packets/second | replicated via `StateSync` | STATIC | STATIC |
 
@@ -158,3 +161,5 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | BUILD-006 | Test and tool code cannot ship to players | `export_presets.cfg` exclude filter | asserted in `build-windows.yml`; verified locally | AUTO |
 | BUILD-007 | Workflows use least-privilege permissions | `permissions: contents: read` | STATIC | STATIC |
 | BUILD-008 | A broken script fails the compile phase | `run_tests.gd:_script_problem` | proven by a real regression during development | AUTO |
+| BUILD-009 | An engine error inside a passing test fails the run | `tools/run_validation.sh` | proven by removing the defect-17 fix and confirming exit 1 | AUTO |
+| BUILD-010 | CI and a developer run byte-identical checks | both workflows call `tools/run_validation.sh` | STATIC | STATIC |

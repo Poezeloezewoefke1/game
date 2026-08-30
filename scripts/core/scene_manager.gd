@@ -76,7 +76,10 @@ func bind_roots(p_scene_root: Node, p_ui_layer: CanvasLayer) -> void:
 
 
 func current_stage() -> Node:
-	if scene_root == null:
+	# is_instance_valid, not `== null`: a freed Node reference in Godot 4 is a
+	# "previously freed" object that compares unequal to null and crashes on
+	# access. This matters during teardown and between test sessions.
+	if not is_instance_valid(scene_root):
 		return null
 	return scene_root.get_node_or_null(NodePath(STAGE_NODE_NAME))
 
@@ -243,8 +246,8 @@ func host_handle_peer_left(peer_id: int) -> void:
 # ==========================================================================
 
 func _mount(scene_key: String) -> void:
-	if scene_root == null:
-		Logx.error("scene", "bind_roots() was never called")
+	if not is_instance_valid(scene_root):
+		Logx.error("scene", "bind_roots() was never called, or the root was freed")
 		return
 
 	_load_generation += 1

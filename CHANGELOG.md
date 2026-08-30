@@ -84,6 +84,11 @@ they shaped the test suite; the full table is in `docs/QA_REPORT.md`.
 - The host never validated blaster cadence — only a rate limiter existed.
 - The navigation readiness check passed instantly on a second visit to a level,
   so the first path query silently returned nothing.
+- Two players reviving the same teammate crashed the host's revive tick,
+  silently breaking revives for the rest of the mission.
+- The test suite reported PASS while the engine was raising errors — GDScript
+  cannot see them, so `tools/run_validation.sh` now greps the run log and fails.
+  The gate was verified by reintroducing a real defect and confirming it fires.
 
 ### Known limitations
 

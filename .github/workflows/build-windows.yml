@@ -76,19 +76,10 @@ jobs:
       - name: Repository structure and hygiene
         run: tools/check_structure.sh
 
-      - name: Import project resources
-        run: |
-          set -euo pipefail
-          mkdir -p ci-logs
-          "${GODOT_BIN}" --headless --path . --import 2>&1 | tee ci-logs/import.log
-
       # Validation runs BEFORE the export on purpose: shipping an artifact
       # built from code that fails its own tests is worse than shipping nothing.
-      - name: Validate before exporting
-        run: |
-          set -euo pipefail
-          "${GODOT_BIN}" --headless --path . res://tests/test_runner.tscn 2>&1 | tee ci-logs/tests.log
-          exit "${PIPESTATUS[0]}"
+      - name: Import, validate and run automated tests
+        run: tools/run_validation.sh "${GODOT_BIN}"
 
       - name: Export Windows release build
         run: |

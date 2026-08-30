@@ -21,6 +21,7 @@ Concretely, and separating what has been *proven* from what has not:
 |---|---|---|
 | Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 46 scripts / 20 scenes |
 | Mission rules, state machine, name hygiene, rate limiting | Verified | 143 unit assertions |
+| Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
 | Full mission lobby -> victory | Verified | `tests/integration/test_mission_flow.gd` against a real ENet host |
 | Combat, downed, revive, Star Map drop, failure | Verified | `tests/integration/test_combat_and_revive.gd` |
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
@@ -53,8 +54,9 @@ Press **F5** to run. The first launch imports resources, which takes a moment.
 ### Running the checks yourself
 
 ```bash
-# Compile every script, instantiate every scene, run all automated tests
-godot --headless --path . res://tests/test_runner.tscn
+# Import, compile every script, instantiate every scene, run all automated
+# tests, and fail on engine errors the test runner itself cannot see
+tools/run_validation.sh /path/to/godot
 
 # Host + 3 clients + an over-capacity client, as real OS processes
 tools/run_multiplayer_check.sh /path/to/godot 7700 3

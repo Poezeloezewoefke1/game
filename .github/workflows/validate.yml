@@ -71,26 +71,12 @@ jobs:
       - name: Repository structure and hygiene
         run: tools/check_structure.sh
 
-      # The import pass registers global class names. Without it, a newly added
-      # `class_name` script is invisible to everything that follows and the test
-      # run fails with confusing "type not found" errors.
-      - name: Import project resources
-        run: |
-          set -euo pipefail
-          mkdir -p ci-logs
-          "${GODOT_BIN}" --headless --path . --import 2>&1 | tee ci-logs/import.log
-          if grep -qE "SCRIPT ERROR|Parse Error|Compile Error" ci-logs/import.log; then
-            echo "::error::Import reported script errors"
-            grep -E "SCRIPT ERROR|Parse Error|Compile Error" ci-logs/import.log | head -40
-            exit 1
-          fi
-
-      - name: Headless validation and automated tests
-        run: |
-          set -euo pipefail
-          "${GODOT_BIN}" --headless --path . res://tests/test_runner.tscn 2>&1 | tee ci-logs/tests.log
-          # The runner sets the exit code; tee would otherwise mask it.
-          exit "${PIPESTATUS[0]}"
+      # One script so CI and a developer's machine run byte-identical checks.
+      # It also fails on engine-level errors the test runner cannot see -
+      # GDScript has no hook on the engine error stream, so a SCRIPT ERROR
+      # inside a test is printed while the suite still reports PASS.
+      - name: Import, validate and run automated tests
+        run: tools/run_validation.sh "${GODOT_BIN}"
 
       - name: Multi-process multiplayer check
         run: tools/run_multiplayer_check.sh "${GODOT_BIN}" 7700 3

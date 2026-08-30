@@ -127,6 +127,17 @@ tools/check_structure.sh
 | 82 | A player cannot revive themselves | [A] |
 | 83 | Two revivers racing cannot double-revive | [M] (deterministic by construction) |
 
+## Simultaneous requests
+
+| # | Case | Cover |
+|---|---|---|
+| S1 | Three players request the same crystal in one frame; exactly one wins | [A] `test_concurrency` |
+| S2 | The contested crystal leaves the world exactly once | [A] |
+| S3 | Two revivers race on one downed player; the target is revived once | [A] |
+| S4 | The revive tick loop survives the race and later revives still work | [A] |
+| S5 | Three extraction requests in one frame extract once | [A] |
+| S6 | A non-carrier standing at the pod cannot extract | [A] |
+
 ## Extraction and end states
 
 | # | Case | Cover |
@@ -174,6 +185,7 @@ tools/check_structure.sh
 | 114 | Headless Godot validation | [A] |
 | 115 | Unit tests | [A] |
 | 116 | Integration tests | [A] |
+| 116b | An engine error inside a passing test fails the run | [A] `tools/run_validation.sh`, gate verified by reintroducing a real defect |
 | 117 | Logs are uploaded on failure | [M] (needs a real CI run) |
 | 118 | Debug export | [M] |
 | 119 | Release export | [A] verified locally, exit 0 + `PE32+` |
