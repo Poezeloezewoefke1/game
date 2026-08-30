@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/dropped_star_map.gd" id="1_dropped"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dropped"]
+size = Vector3(1.6, 1.8, 1.6)
+
+[sub_resource type="TorusMesh" id="TorusMesh_dropped"]
+inner_radius = 0.32
+outer_radius = 0.62
+rings = 10
+ring_segments = 8
+
+[node name="DroppedStarMap" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_dropped")
+object_id = "dropped_star_map"
+needs_line_of_sight = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("BoxShape3D_dropped")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("TorusMesh_dropped")
+
+[node name="Glow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_color = Color(1, 0.87, 0.42, 1)
+light_energy = 2.4
+omni_range = 10.0

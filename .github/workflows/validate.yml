@@ -1,0 +1,106 @@
+name: Validate
+
+# Static structure checks, a full headless Godot validation run, and a real
+# multi-process multiplayer check.
+#
+# What this workflow CAN prove: the project imports, every script compiles,
+# every scene instantiates, the automated tests pass, and a host plus three
+# clients complete a session over real ENet.
+# What it CANNOT prove: that the game looks or feels right, or that a Windows
+# build launches. Those stay manual - see docs/TEST_CHECKLIST.md.
+
+on:
+  push:
+    branches:
+      - claude/starbound-station-dev-62c8jv
+      - claude/development
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Least privilege: this workflow only ever reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The single source of truth for the engine version. tools/check_structure.sh
+  # asserts that build-windows.yml pins exactly the same value.
+  GODOT_VERSION: "4.5.1-stable"
+
+jobs:
+  validate:
+    name: Headless validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      # First-party GitHub action, pinned to a major version.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Cache the Godot binary
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: .godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot ${{ env.GODOT_VERSION }}
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .godot-bin
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
+          FILE="Godot_v${GODOT_VERSION}_linux.x86_64"
+          curl -fsSL -o "/tmp/${FILE}.zip" "${BASE}/${FILE}.zip"
+          unzip -q "/tmp/${FILE}.zip" -d .godot-bin
+          chmod +x ".godot-bin/${FILE}"
+
+      - name: Report the engine version actually in use
+        run: |
+          set -euo pipefail
+          GODOT=".godot-bin/Godot_v${GODOT_VERSION}_linux.x86_64"
+          echo "GODOT_BIN=${GODOT}" >> "$GITHUB_ENV"
+          "${GODOT}" --headless --version
+
+      - name: Repository structure and hygiene
+        run: tools/check_structure.sh
+
+      # The import pass registers global class names. Without it, a newly added
+      # `class_name` script is invisible to everything that follows and the test
+      # run fails with confusing "type not found" errors.
+      - name: Import project resources
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          "${GODOT_BIN}" --headless --path . --import 2>&1 | tee ci-logs/import.log
+          if grep -qE "SCRIPT ERROR|Parse Error|Compile Error" ci-logs/import.log; then
+            echo "::error::Import reported script errors"
+            grep -E "SCRIPT ERROR|Parse Error|Compile Error" ci-logs/import.log | head -40
+            exit 1
+          fi
+
+      - name: Headless validation and automated tests
+        run: |
+          set -euo pipefail
+          "${GODOT_BIN}" --headless --path . res://tests/test_runner.tscn 2>&1 | tee ci-logs/tests.log
+          # The runner sets the exit code; tee would otherwise mask it.
+          exit "${PIPESTATUS[0]}"
+
+      - name: Multi-process multiplayer check
+        run: tools/run_multiplayer_check.sh "${GODOT_BIN}" 7700 3
+
+      - name: Upload logs
+        # Logs are most valuable exactly when something failed.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-logs
+          path: ci-logs/
+          retention-days: 14
+          if-no-files-found: warn

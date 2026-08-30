@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/mission_terminal.gd" id="1_terminal"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_term"]
+size = Vector3(1.6, 2.0, 0.9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_case"]
+size = Vector3(1.5, 1.9, 0.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_screen"]
+size = Vector3(1.15, 0.8, 0.08)
+
+[node name="MissionTerminal" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_terminal")
+object_id = "hub_mission_terminal"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("BoxShape3D_term")
+
+[node name="Case" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+mesh = SubResource("BoxMesh_case")
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9659, 0.2588, 0, -0.2588, 0.9659, 0, 1.42, -0.42)
+mesh = SubResource("BoxMesh_screen")
+
+[node name="ScreenLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.9)
+light_color = Color(0.25, 0.95, 0.75, 1)
+light_energy = 1.4
+omni_range = 6.0

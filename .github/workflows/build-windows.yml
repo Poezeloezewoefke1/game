@@ -1,0 +1,130 @@
+name: Build Windows
+
+# Produces the Windows x86_64 release build and publishes it as a workflow
+# artifact. Nothing binary is ever committed to the repository.
+#
+# HONEST SCOPE: this workflow proves the project EXPORTS. It cannot prove the
+# resulting executable launches or plays correctly - no Windows runtime test
+# runs here. That verification is manual, and is tracked in
+# docs/TEST_CHECKLIST.md and docs/RELEASE_CHECKLIST.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_label:
+        description: "Optional label appended to the artifact name"
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.5.1-stable"
+  EXPORT_PRESET: "Windows Desktop"
+  OUTPUT_DIR: "build/windows"
+  OUTPUT_EXE: "StarboundStation.exe"
+
+jobs:
+  build:
+    name: Export Windows x86_64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Cache the Godot binary and export templates
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .godot-bin
+            ~/.local/share/godot/export_templates
+          key: godot-export-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot and matching export templates
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
+          FILE="Godot_v${GODOT_VERSION}_linux.x86_64"
+          mkdir -p .godot-bin
+          curl -fsSL -o "/tmp/${FILE}.zip" "${BASE}/${FILE}.zip"
+          unzip -q "/tmp/${FILE}.zip" -d .godot-bin
+          chmod +x ".godot-bin/${FILE}"
+
+          # The export templates MUST be the same version as the editor binary,
+          # or the export fails with a template-mismatch error.
+          TPL_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-stable/.stable}"
+          mkdir -p "${TPL_DIR}"
+          curl -fsSL -o /tmp/templates.tpz "${BASE}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          # Only the Windows templates are needed; extracting all of them costs
+          # about a gigabyte of runner disk for no benefit.
+          unzip -o -j -q /tmp/templates.tpz \
+            "templates/windows_*_x86_64*.exe" "templates/version.txt" -d "${TPL_DIR}"
+          rm -f /tmp/templates.tpz
+          ls -la "${TPL_DIR}"
+
+      - name: Resolve the Godot binary
+        run: echo "GODOT_BIN=.godot-bin/Godot_v${GODOT_VERSION}_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Repository structure and hygiene
+        run: tools/check_structure.sh
+
+      - name: Import project resources
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          "${GODOT_BIN}" --headless --path . --import 2>&1 | tee ci-logs/import.log
+
+      # Validation runs BEFORE the export on purpose: shipping an artifact
+      # built from code that fails its own tests is worse than shipping nothing.
+      - name: Validate before exporting
+        run: |
+          set -euo pipefail
+          "${GODOT_BIN}" --headless --path . res://tests/test_runner.tscn 2>&1 | tee ci-logs/tests.log
+          exit "${PIPESTATUS[0]}"
+
+      - name: Export Windows release build
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUTPUT_DIR}"
+          "${GODOT_BIN}" --headless --path . \
+            --export-release "${EXPORT_PRESET}" "${OUTPUT_DIR}/${OUTPUT_EXE}" 2>&1 | tee ci-logs/export.log
+          test -f "${OUTPUT_DIR}/${OUTPUT_EXE}"
+          test -f "${OUTPUT_DIR}/StarboundStation.pck"
+          ls -la "${OUTPUT_DIR}"
+
+      - name: Verify the export is a real Windows executable
+        run: |
+          set -euo pipefail
+          file "${OUTPUT_DIR}/${OUTPUT_EXE}" | tee ci-logs/export-file-type.log
+          file "${OUTPUT_DIR}/${OUTPUT_EXE}" | grep -q "PE32+ executable"
+          # Development-only code must never reach players.
+          if strings -a "${OUTPUT_DIR}/StarboundStation.pck" | grep -q "NETCHECK"; then
+            echo "::error::Test harness code leaked into the shipped pack"
+            exit 1
+          fi
+
+      - name: Upload the Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: starbound-station-windows-x86_64${{ inputs.build_label && format('-{0}', inputs.build_label) || '' }}
+          # The WHOLE folder: the .exe cannot run without its .pck alongside it.
+          path: ${{ env.OUTPUT_DIR }}/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-logs
+          path: ci-logs/
+          retention-days: 14
+          if-no-files-found: warn

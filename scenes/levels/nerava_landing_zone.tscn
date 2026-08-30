@@ -1,0 +1,403 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/utility/world_block.gd" id="2_block"]
+[ext_resource type="Script" path="res://scripts/interactables/temple_trigger.gd" id="3_trigger"]
+[ext_resource type="PackedScene" path="res://scenes/multiplayer/entity_root.tscn" id="4_entityroot"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/drop_pod.tscn" id="5_pod"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/power_crystal.tscn" id="6_crystal"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/crystal_pedestal.tscn" id="7_pedestal"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/star_map_altar.tscn" id="8_altar"]
+
+[sub_resource type="Environment" id="Environment_nerava"]
+background_mode = 1
+background_color = Color(0.0431373, 0.0705882, 0.101961, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.309804, 0.443137, 0.4, 1)
+ambient_light_energy = 0.6
+fog_enabled = true
+fog_light_color = Color(0.152941, 0.223529, 0.223529, 1)
+fog_density = 0.006
+tonemap_mode = 2
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_nerava"]
+vertices = PackedVector3Array()
+cell_size = 0.2
+cell_height = 0.2
+agent_height = 2.0
+agent_radius = 0.6
+agent_max_climb = 0.4
+agent_max_slope = 45.0
+region_min_size = 3.0
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_temple_trigger"]
+size = Vector3(30, 8, 6)
+
+[node name="NeravaLandingZone" type="Node3D"]
+script = ExtResource("1_level")
+level_key = "nerava"
+ambience = 4
+
+[node name="EntityRoot" parent="." instance=ExtResource("4_entityroot")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_nerava")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 40, 0)
+light_color = Color(0.803922, 0.741176, 0.658824, 1)
+light_energy = 0.7
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_nerava")
+
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+script = ExtResource("2_block")
+size = Vector3(140, 2, 140)
+palette = "sand"
+
+[node name="BoundNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, -69)
+script = ExtResource("2_block")
+size = Vector3(140, 16, 2)
+palette = "rock_dark"
+
+[node name="BoundSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, 69)
+script = ExtResource("2_block")
+size = Vector3(140, 16, 2)
+palette = "rock_dark"
+
+[node name="BoundEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69, 7, 0)
+script = ExtResource("2_block")
+size = Vector3(2, 16, 140)
+palette = "rock_dark"
+
+[node name="BoundWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -69, 7, 0)
+script = ExtResource("2_block")
+size = Vector3(2, 16, 140)
+palette = "rock_dark"
+
+[node name="CanyonWallWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5, 32)
+script = ExtResource("2_block")
+size = Vector3(8, 10, 40)
+palette = "rock"
+
+[node name="CanyonWallEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5, 32)
+script = ExtResource("2_block")
+size = Vector3(8, 10, 40)
+palette = "rock"
+
+[node name="MassSouthWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 6, 40)
+script = ExtResource("2_block")
+size = Vector3(36, 12, 60)
+palette = "rock_dark"
+
+[node name="MassSouthEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34, 6, 40)
+script = ExtResource("2_block")
+size = Vector3(36, 12, 60)
+palette = "rock_dark"
+
+[node name="CanyonEndCap" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 54)
+script = ExtResource("2_block")
+size = Vector3(18, 12, 4)
+palette = "rock"
+
+[node name="CanyonSpire1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 2.5, 38)
+script = ExtResource("2_block")
+size = Vector3(2, 5, 2)
+palette = "rock"
+
+[node name="CanyonSpire2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2, 27)
+script = ExtResource("2_block")
+size = Vector3(2.4, 4, 2.4)
+palette = "rock"
+
+[node name="RuinsWallNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33, 5, -10)
+script = ExtResource("2_block")
+size = Vector3(34, 10, 8)
+palette = "rock"
+
+[node name="RuinsWallSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33, 5, 10)
+script = ExtResource("2_block")
+size = Vector3(34, 10, 8)
+palette = "rock"
+
+[node name="MassNorthWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 6, -40)
+script = ExtResource("2_block")
+size = Vector3(56, 12, 52)
+palette = "rock_dark"
+
+[node name="RuinsEndCap" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 5, 0)
+script = ExtResource("2_block")
+size = Vector3(4, 10, 20)
+palette = "rock"
+
+[node name="RuinColumn1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26, 2, -3)
+script = ExtResource("2_block")
+size = Vector3(1.4, 4, 1.4)
+palette = "rock"
+
+[node name="RuinColumn2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 1.4, 3)
+script = ExtResource("2_block")
+size = Vector3(1.4, 2.8, 1.4)
+palette = "rock"
+
+[node name="RuinArch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 4.4, 0)
+script = ExtResource("2_block")
+size = Vector3(12, 0.8, 8)
+palette = "rock"
+
+[node name="CaveWallNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 5, -10)
+script = ExtResource("2_block")
+size = Vector3(34, 10, 8)
+palette = "rock_dark"
+
+[node name="CaveWallSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 5, 10)
+script = ExtResource("2_block")
+size = Vector3(34, 10, 8)
+palette = "rock_dark"
+
+[node name="CaveRoof" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 5.5, 0)
+script = ExtResource("2_block")
+size = Vector3(34, 1, 12)
+palette = "rock_dark"
+
+[node name="MassNorthEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 6, -40)
+script = ExtResource("2_block")
+size = Vector3(56, 12, 52)
+palette = "rock_dark"
+
+[node name="CaveEndCap" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52, 5, 0)
+script = ExtResource("2_block")
+size = Vector3(4, 10, 20)
+palette = "rock_dark"
+
+[node name="CaveStalagmite" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 1.2, 3)
+script = ExtResource("2_block")
+size = Vector3(1.6, 2.4, 1.6)
+palette = "rock_dark"
+
+[node name="GroveWallWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 5, -33)
+script = ExtResource("2_block")
+size = Vector3(10, 10, 34)
+palette = "foliage"
+
+[node name="GroveWallEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 5, -33)
+script = ExtResource("2_block")
+size = Vector3(10, 10, 34)
+palette = "foliage"
+
+[node name="GroveEndCap" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -52)
+script = ExtResource("2_block")
+size = Vector3(24, 10, 4)
+palette = "foliage"
+
+[node name="GroveTree1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 3, -26)
+script = ExtResource("2_block")
+size = Vector3(1.2, 6, 1.2)
+palette = "foliage"
+
+[node name="GroveTree2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 2.6, -36)
+script = ExtResource("2_block")
+size = Vector3(1.2, 5.2, 1.2)
+palette = "foliage"
+
+[node name="TempleFloor" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -2)
+script = ExtResource("2_block")
+size = Vector3(24, 0.06, 24)
+palette = "rock"
+solid = false
+
+[node name="TempleBackWallWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 4, -13.5)
+script = ExtResource("2_block")
+size = Vector3(12, 8, 1.2)
+palette = "rock_dark"
+
+[node name="TempleBackWallEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 4, -13.5)
+script = ExtResource("2_block")
+size = Vector3(12, 8, 1.2)
+palette = "rock_dark"
+
+[node name="TempleGroveArch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.8, -13.5)
+script = ExtResource("2_block")
+size = Vector3(16, 2.4, 1.2)
+palette = "rock_dark"
+
+[node name="TemplePillar1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 3.5, -11)
+script = ExtResource("2_block")
+size = Vector3(1.6, 7, 1.6)
+palette = "rock"
+
+[node name="TemplePillar2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.5, -11)
+script = ExtResource("2_block")
+size = Vector3(1.6, 7, 1.6)
+palette = "rock"
+
+[node name="TemplePillar3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 3.5, 7)
+script = ExtResource("2_block")
+size = Vector3(1.6, 7, 1.6)
+palette = "rock"
+
+[node name="TemplePillar4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.5, 7)
+script = ExtResource("2_block")
+size = Vector3(1.6, 7, 1.6)
+palette = "rock"
+
+[node name="TempleLintelNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4, -11)
+script = ExtResource("2_block")
+size = Vector3(20, 0.8, 1.6)
+palette = "rock"
+
+[node name="TempleLintelSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4, 7)
+script = ExtResource("2_block")
+size = Vector3(20, 0.8, 1.6)
+palette = "rock"
+
+[node name="LandingPad" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 46)
+script = ExtResource("2_block")
+size = Vector3(12, 0.08, 12)
+palette = "hull_dark"
+solid = false
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="DropPod" parent="Interactables" instance=ExtResource("5_pod")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 46)
+
+[node name="CrystalRuins" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 0, 0)
+object_id = "nerava_crystal_ruins"
+crystal_id = "crystal_ruins"
+
+[node name="CrystalCave" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 0, 0)
+object_id = "nerava_crystal_cave"
+crystal_id = "crystal_cave"
+
+[node name="CrystalGrove" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -44)
+object_id = "nerava_crystal_grove"
+crystal_id = "crystal_grove"
+
+[node name="PedestalA" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 3)
+object_id = "nerava_pedestal_a"
+pedestal_id = "pedestal_a"
+accepts_crystal_id = "crystal_ruins"
+
+[node name="PedestalB" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 3)
+object_id = "nerava_pedestal_b"
+pedestal_id = "pedestal_b"
+accepts_crystal_id = "crystal_cave"
+
+[node name="PedestalC" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+object_id = "nerava_pedestal_c"
+pedestal_id = "pedestal_c"
+accepts_crystal_id = "crystal_grove"
+
+[node name="StarMapAltar" parent="Interactables" instance=ExtResource("8_altar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+
+[node name="TempleTrigger" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 13)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("3_trigger")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TempleTrigger"]
+shape = SubResource("BoxShape3D_temple_trigger")
+
+[node name="TempleLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -2)
+light_color = Color(0.53, 0.71, 1, 1)
+light_energy = 2.0
+omni_range = 28.0
+
+[node name="CanyonLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 32)
+light_color = Color(0.85, 0.7, 0.55, 1)
+light_energy = 1.4
+omni_range = 30.0
+
+[node name="CaveLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 3.5, 0)
+light_color = Color(0.4, 0.68, 1, 1)
+light_energy = 1.8
+omni_range = 26.0
+
+[node name="GroveLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -36)
+light_color = Color(0.45, 0.95, 0.55, 1)
+light_energy = 1.5
+omni_range = 26.0
+
+[node name="RuinsLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 5, 0)
+light_color = Color(1, 0.72, 0.4, 1)
+light_energy = 1.6
+omni_range = 26.0
+
+[node name="GuardianAnchor" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -10)
+
+[node name="StarMapDropAnchor" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="PlayerSpawnPoints" type="Node3D" parent="."]
+
+[node name="Spawn1" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 42)
+
+[node name="Spawn2" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 42)
+
+[node name="Spawn3" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 48)
+
+[node name="Spawn4" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 48)

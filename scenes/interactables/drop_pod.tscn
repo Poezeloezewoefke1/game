@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/drop_pod.gd" id="1_pod"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pod"]
+size = Vector3(3.4, 3.0, 3.4)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hull"]
+top_radius = 1.0
+bottom_radius = 1.5
+height = 2.6
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 1.7
+outer_radius = 2.1
+rings = 14
+ring_segments = 8
+
+[node name="DropPod" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_pod")
+object_id = "nerava_drop_pod"
+needs_line_of_sight = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_pod")
+
+[node name="Hull" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+mesh = SubResource("CylinderMesh_hull")
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+mesh = SubResource("TorusMesh_ring")
+
+[node name="PodLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8, 0)
+light_color = Color(0.35, 1, 0.55, 1)
+light_energy = 1.8
+omni_range = 12.0

@@ -1,0 +1,56 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/sentinel.gd" id="1_sentinel"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_body"]
+radius = 1.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+radius = 0.85
+height = 1.7
+radial_segments = 16
+rings = 10
+
+[sub_resource type="TorusMesh" id="TorusMesh_shell"]
+inner_radius = 1.25
+outer_radius = 1.75
+rings = 12
+ring_segments = 8
+
+[sub_resource type="BoxMesh" id="BoxMesh_eye"]
+size = Vector3(0.5, 0.22, 0.22)
+
+[node name="Sentinel" type="CharacterBody3D"]
+collision_layer = 8
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_sentinel")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_body")
+
+[node name="Core" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_core")
+
+[node name="Shell" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.7071, 0.7071, 0, -0.7071, 0.7071, 0, 0, 0)
+mesh = SubResource("TorusMesh_shell")
+
+[node name="Eye" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.82)
+mesh = SubResource("BoxMesh_eye")
+
+[node name="CoreLight" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.4, 0.3, 1)
+light_energy = 2.4
+omni_range = 14.0
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -1.5)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 1.2
+target_desired_distance = 3.0
+avoidance_enabled = false
+
+[node name="StateSync" type="MultiplayerSynchronizer" parent="."]
