@@ -35,6 +35,7 @@ func run_async() -> void:
 	await _test_stagger()
 	await _test_retargets_when_the_carrier_goes_down()
 	await _test_projectile_damage()
+	await _test_stuck_recovery()
 	await _test_cleanup_on_mission_end()
 
 	_session.stop()
@@ -174,6 +175,35 @@ func _test_projectile_damage() -> void:
 
 	await wait_frames(3)
 	check_eq(_session.projectile_count(), 0, "the projectile despawned on impact")
+
+
+func _test_stuck_recovery() -> void:
+	set_current("stuck recovery")
+	# "The enemy stands still for the rest of the mission" is the classic
+	# navigation failure. The Sentinel is supposed to notice and return to its
+	# anchor rather than grind forever, so pin it in place while it is chasing
+	# and confirm it recovers.
+	var before := int(_guardian.debug_recovery_count())
+	var pinned: Vector3 = (_guardian as Node3D).global_position
+
+	# Give it a live target far enough away to stay in CHASE.
+	_place(_p1, Vector3(0, 0, 30))
+	await wait_frames(4)
+
+	var elapsed := 0.0
+	var limit: float = GameConfig.GUARDIAN_STUCK_RECOVER_TIME + 2.0
+	while elapsed < limit and int(_guardian.debug_recovery_count()) == before:
+		(_guardian as Node3D).global_position = pinned
+		await tree.physics_frame
+		elapsed += tree.root.get_physics_process_delta_time()
+
+	check(int(_guardian.debug_recovery_count()) > before,
+		"a Sentinel making no progress recovers instead of freezing (after %.1fs)" % elapsed)
+	check(elapsed >= GameConfig.GUARDIAN_STUCK_RECOVER_TIME - 0.5,
+		"it waits the configured time before recovering, rather than twitching")
+
+	await wait_frames(4)
+	check_ne(int(_guardian.debug_state()), 3, "the Sentinel is not left staggered by the recovery")
 
 
 func _test_cleanup_on_mission_end() -> void:

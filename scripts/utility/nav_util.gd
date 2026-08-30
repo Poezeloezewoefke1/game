@@ -27,10 +27,20 @@ static func is_map_usable(map: RID, near: Vector3) -> bool:
 
 ## Waits until the map is usable. Returns false if it never became usable within
 ## `max_physics_frames`, so the caller can fall back rather than hang.
+##
+## Pass `owner` whenever the caller is a node that can be freed while waiting -
+## the Sentinel can be despawned mid-wait when a mission ends, and a coroutine
+## that keeps polling for another four seconds while holding a reference to a
+## freed node is a leak with a crash attached. The loop abandons the wait as
+## soon as its owner is gone.
 static func await_map_usable(tree: SceneTree, map: RID, near: Vector3,
-		max_physics_frames: int = 240) -> bool:
+		max_physics_frames: int = 240, owner: Node = null) -> bool:
 	for i in max_physics_frames:
+		if owner != null and not is_instance_valid(owner):
+			return false
 		if is_map_usable(map, near):
 			return true
 		await tree.physics_frame
+		if owner != null and not is_instance_valid(owner):
+			return false
 	return is_map_usable(map, near)

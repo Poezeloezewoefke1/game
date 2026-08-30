@@ -42,8 +42,8 @@ var _expected: Array = []
 var _barrier_timer: float = 0.0
 
 var _ack_limiter: RateLimiter
-## Guards against re-entrant loads (a second transition arriving mid-load).
-var _loading: bool = false
+## Bumped on every mount. A mount that finds the generation has moved on while it
+## was awaiting knows a newer transition superseded it and bails out.
 var _load_generation: int = 0
 
 
@@ -252,13 +252,11 @@ func _mount(scene_key: String) -> void:
 
 	_load_generation += 1
 	var generation := _load_generation
-	_loading = true
 
 	var path := GameConfig.scene_path(scene_key)
 	var packed: PackedScene = load(path) as PackedScene
 	if packed == null:
 		Logx.error("scene", "Could not load '%s'" % path)
-		_loading = false
 		return
 
 	# Detach the previous stage BEFORE instantiating the new one so the fixed
@@ -288,7 +286,6 @@ func _mount(scene_key: String) -> void:
 	if generation != _load_generation:
 		return
 
-	_loading = false
 	Logx.info("scene", "Mounted '%s'" % scene_key)
 	scene_changed.emit(scene_key)
 

@@ -176,6 +176,31 @@ that failed to parse - checking only for `null` makes a compile phase blind, and
 CI would report green on a project that cannot run. The runner checks
 `can_instantiate()` and `get_instance_base_type()` instead.
 
+### BUILD-005 - Two suspended coroutines are reported at test-run exit
+
+Running the suite with `--verbose` ends with:
+
+```
+WARNING: ObjectDB instances leaked at exit
+Leaked instance: GDScriptFunctionState:...
+Leaked instance: GDScriptFunctionState:...
+```
+
+These are **coroutines belonging to the test runner itself**, suspended on
+`await` when `get_tree().quit()` fires. A suspended coroutine is never resumed
+during shutdown, so its function state is reported as leaked.
+
+The evidence that this is a shutdown artifact rather than a per-object leak: the
+count stays at exactly **two** across a run that mounts roughly ten levels,
+spawns several Sentinels and replays the mission three times. A genuine leak in
+level loading or guardian spawning would scale with those counts.
+
+Separately, and this one *was* a real risk worth fixing: `NavUtil.await_map_usable`
+now takes an optional `owner` and abandons the wait as soon as that node is
+freed. Without it, a Sentinel despawned at the end of a mission could leave a
+coroutine polling the navigation map for another four seconds while holding a
+reference to a freed node.
+
 ### BUILD-004 - Adding a `class_name` requires an import pass first
 
 A newly added global class is invisible until `godot --headless --path . --import`

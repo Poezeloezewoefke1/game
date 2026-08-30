@@ -120,7 +120,7 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | AI-003 | The Sentinel targets the carrier, else the nearest living player | `_host_select_target` | `test_sentinel` (the carrier is deliberately the *farther* player) | AUTO |
 | AI-004 | Navigation is not reset every frame | `GUARDIAN_REPATH_INTERVAL` + movement delta | STATIC | STATIC |
 | AI-005 | Navigation queries wait until the map can genuinely answer | `nav_util.gd` | `test_level_reachability`, `test_sentinel` | AUTO |
-| AI-006 | No path / stuck is recovered, not frozen | `_host_track_stuck` | STATIC | STATIC |
+| AI-006 | No path / stuck is recovered, not frozen | `_host_track_stuck` | `test_sentinel` (pinned in place, recovers after the configured time) | AUTO |
 | AI-007 | The Sentinel retargets when the carrier is downed or leaves | `_host_select_target` re-evaluated each tick | `test_sentinel` | AUTO |
 | AI-008 | Ten host-validated hits cause a 3 s stagger, and hits during it are ignored | `host_register_hit` | `test_sentinel` | AUTO |
 | AI-009 | Guardian projectiles damage a player once and despawn | `guardian_projectile.gd` (swept sphere test) | `test_sentinel` | AUTO |

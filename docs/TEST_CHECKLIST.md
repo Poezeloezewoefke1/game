@@ -101,7 +101,7 @@ tools/check_structure.sh
 | 61 | A repeated Star Map request cannot duplicate the Sentinel | [A] |
 | 62 | The Sentinel targets the Star Map carrier, even when another player is nearer | [A] `test_sentinel` |
 | 63 | The Sentinel retargets when the carrier goes down, and never targets a downed player | [A] |
-| 64 | The Sentinel recovers rather than freezing when it has no path | [M] |
+| 64 | The Sentinel recovers rather than freezing when it makes no progress | [A] `test_sentinel` |
 | 65 | A guardian projectile damages a player once, then despawns | [A] |
 | 66 | Ten validated hits stagger the Sentinel for three seconds | [A] |
 | 66b | A validated blaster shot registers exactly one hit | [A] |

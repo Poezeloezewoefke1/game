@@ -25,7 +25,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 79 checks, 586 assertions, exit code 0, no engine errors.**
+**Result: PASS — 79 checks, 589 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -48,9 +48,9 @@ fired is not a gate.
       PASS  test_level_reachability   (50 assertions)
       PASS  test_mission_flow         (60 assertions)
       PASS  test_scene_integrity      (137 assertions)
-      PASS  test_sentinel             (25 assertions)
+      PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (79 checks passed, 586 assertions)
+ RESULT: PASS   (79 checks passed, 589 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -74,7 +74,8 @@ What that run genuinely covers:
 * The Sentinel: navigation becoming usable, targeting the Star Map carrier over
   a nearer player, a validated blaster shot registering exactly one hit, the
   ten-hit stagger and its expiry, retargeting when the carrier goes down,
-  projectile damage landing exactly once, and cleanup on mission end.
+  projectile damage landing exactly once, recovery from being stuck rather than
+  freezing, and cleanup on mission end.
 * Friendly fire: a teammate standing in the line of a blaster shot takes no
   damage.
 * Navigation-mesh path queries proving every objective is reachable in both
@@ -191,6 +192,8 @@ are recorded because they are the reason the test suite looks the way it does.
 | 19 | A freed `scene_root` would have crashed rather than being detected | Adversarial review | A freed Node in Godot 4 is not `== null`; switched to `is_instance_valid()` |
 | 20 | Downed visuals were rebuilt 60x per second per player | Adversarial review | Refresh now runs on state change |
 | 21 | **A downed teammate's revive bar hung on screen forever** | `test_combat_and_revive` | Downing a reviver erased the revive entry directly, which removed it from the tick loop - the only thing that would have cleared the target's bar. All cancellation now routes through `host_handle_revive_stop` |
+| 22 | A navigation wait could outlive the node that started it | Leak investigation | A Sentinel despawned mid-wait left a coroutine polling for four seconds holding a freed reference; `NavUtil.await_map_usable` now takes an `owner` and abandons the wait |
+| 23 | Dead state in `SceneManager` (`_loading` written, never read) | Adversarial review | Removed |
 
 ---
 

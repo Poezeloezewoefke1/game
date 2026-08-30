@@ -101,7 +101,9 @@ func _await_navigation_usable() -> void:
 		var first := spawn_points_root.get_child(0) as Node3D
 		if first != null:
 			probe = first.global_position
-	var ok: bool = await NavUtil.await_map_usable(get_tree(), map, probe, 240)
+	var ok: bool = await NavUtil.await_map_usable(get_tree(), map, probe, 240, self)
+	if not is_instance_valid(self):
+		return
 	if not ok:
 		Logx.warn("level", "%s navigation never became queryable" % level_key)
 	_nav_done = true

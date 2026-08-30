@@ -33,6 +33,10 @@ var _shoot_timer: float = 0.0
 var _repath_timer: float = 0.0
 var _last_repath_target: Vector3 = Vector3.INF
 var _stuck_timer: float = 0.0
+## How many times this Sentinel has had to recover from being stuck. Exposed for
+## tests; a rising number in a real session means the level geometry is trapping
+## the guardian and the level needs fixing, not the AI.
+var _stuck_recoveries: int = 0
 var _last_progress_position: Vector3 = Vector3.ZERO
 var _nav_ready: bool = false
 var _target: Node3D = null
@@ -95,8 +99,8 @@ func _is_host() -> bool:
 ## that can be entered twice.
 func _prepare_navigation() -> void:
 	var map := _agent.get_navigation_map()
-	var usable: bool = await NavUtil.await_map_usable(get_tree(), map, spawn_position, 240)
-	if not is_inside_tree():
+	var usable: bool = await NavUtil.await_map_usable(get_tree(), map, spawn_position, 240, self)
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_nav_ready = usable
 	if usable:
@@ -273,6 +277,7 @@ func _host_track_stuck(delta: float) -> void:
 	if _stuck_timer >= GameConfig.GUARDIAN_STUCK_RECOVER_TIME:
 		Logx.warn("sentinel", "Stuck for %.1fs - returning to anchor" % _stuck_timer)
 		_stuck_timer = 0.0
+		_stuck_recoveries += 1
 		global_position = spawn_position
 		velocity = Vector3.ZERO
 		_last_progress_position = spawn_position
@@ -325,6 +330,14 @@ func debug_state() -> int:
 
 func debug_nav_ready() -> bool:
 	return _nav_ready
+
+
+func debug_recovery_count() -> int:
+	return _stuck_recoveries
+
+
+func debug_stuck_seconds() -> float:
+	return _stuck_timer
 
 
 @rpc("authority", "call_local", "unreliable")
