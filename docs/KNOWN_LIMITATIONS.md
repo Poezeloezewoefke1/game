@@ -96,6 +96,30 @@ unwinnable.
 
 LAN and direct IP only. Internet play requires the host to forward UDP 7000.
 
+Join codes do **not** change this. A code is an encoding of an address, not a
+name looked up on a server, so it reaches exactly the hosts a typed address
+would. Making chosen names work from anywhere needs either a registry service
+(which solves addressing but still leaves NAT) or a relay (which solves NAT but
+is not free at scale). Both were deliberately left out of this scope.
+
+### LIMIT-007 - Discovery is local-network only, and unauthenticated
+
+Broadcasts do not cross routers, so the session browser finds sessions on your
+own network and nothing else.
+
+Announcements are also unauthenticated: anyone on the network can advertise a
+session with any name, pointing at their own machine. The address is always
+taken from the UDP source rather than the packet body, so an announcement cannot
+impersonate a *different* host — but it can advertise itself attractively. On a
+home network this is no different from someone telling you the wrong IP. On an
+untrusted network, join by code.
+
+### LIMIT-008 - One session browser per machine
+
+The browser binds a fixed UDP port, so a second copy of the game on the same
+computer cannot browse. This is stated in the UI, and joining by code or address
+still works. It affects local testing more than real play.
+
 ### LIMIT-004 - No authentication or encryption
 
 Anyone who can reach the port can attempt to join, and traffic is readable and

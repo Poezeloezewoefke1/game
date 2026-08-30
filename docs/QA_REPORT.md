@@ -25,7 +25,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 79 checks, 589 assertions, exit code 0, no engine errors.**
+**Result: PASS — 85 checks, 720 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -43,14 +43,16 @@ fired is not a gate.
       PASS  test_rate_limiter         (13 assertions)
       PASS  test_state_machine        (66 assertions)
       INTEGRATION tests...
+      PASS  test_join_code            (108 assertions)
       PASS  test_combat_and_revive    (62 assertions)
       PASS  test_concurrency          (17 assertions)
+      PASS  test_lan_discovery        (23 assertions)
       PASS  test_level_reachability   (50 assertions)
       PASS  test_mission_flow         (60 assertions)
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (79 checks passed, 589 assertions)
+ RESULT: PASS   (85 checks passed, 720 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -78,16 +80,21 @@ What that run genuinely covers:
   freezing, and cleanup on mission end.
 * Friendly fire: a teammate standing in the line of a blaster shot takes no
   damage.
+* Join codes: exhaustive single-character-typo and transposition sweeps,
+  confusable-letter folding, and rejection of malformed input.
+* LAN discovery over a real socket: announce, discover, reject nine malformed
+  packet shapes, discard oversized packets, cap a 64-packet flood at 32
+  entries, resist field shifting, and expire a host that stops announcing.
 * Navigation-mesh path queries proving every objective is reachable in both
   directions and the playable area is enclosed.
 
 ### 3. Multi-process multiplayer check
 
 ```
-tools/run_multiplayer_check.sh <godot> 7870 3
+tools/run_multiplayer_check.sh <godot> 7910 3
 ```
 
-**Result: PASS — 73 assertions across 5 OS processes, exit code 0.**
+**Result: PASS — 78 assertions across 5 OS processes, exit code 0.**
 
 One host, three clients and one over-capacity client, all separate processes,
 over real ENet on loopback. Selected results, quoted from the run:
@@ -111,6 +118,10 @@ NETCHECK PASS [client] the host corrects an impossible 180m teleport
 NETCHECK PASS [client] sustained request flooding gets the peer disconnected
 NETCHECK PASS [reject] the extra client was turned away rather than silently dropped
                        <- The session is full (4/4 players).
+NETCHECK PASS [host]   the host is announcing itself on the network  <- Probe Session
+NETCHECK PASS [client] the host's session was discovered on the network  <- after 0.2s
+NETCHECK PASS [client] the discovered session is marked joinable
+NETCHECK PASS [client] a join code round-trips through the discovered address
 ```
 
 This is the only evidence that covers the **client** half of the protocol.

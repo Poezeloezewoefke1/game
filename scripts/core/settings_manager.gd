@@ -10,6 +10,8 @@ const SETTINGS_PATH: String = "user://settings.cfg"
 const SECTION: String = "player"
 
 var display_name: String = ""
+## The name this machine advertises when hosting on a LAN.
+var session_name: String = ""
 var last_host_address: String = "127.0.0.1"
 var last_port: int = GameConfig.DEFAULT_PORT
 var mouse_sensitivity_scale: float = 1.0
@@ -31,6 +33,7 @@ func load_settings() -> void:
 		_loaded = true
 		return
 	display_name = String(cfg.get_value(SECTION, "display_name", display_name))
+	session_name = String(cfg.get_value(SECTION, "session_name", session_name))
 	last_host_address = String(cfg.get_value(SECTION, "last_host_address", last_host_address))
 	last_port = int(cfg.get_value(SECTION, "last_port", last_port))
 	mouse_sensitivity_scale = clampf(float(cfg.get_value(SECTION, "mouse_sensitivity_scale", 1.0)), 0.1, 5.0)
@@ -42,6 +45,7 @@ func load_settings() -> void:
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value(SECTION, "display_name", display_name)
+	cfg.set_value(SECTION, "session_name", session_name)
 	cfg.set_value(SECTION, "last_host_address", last_host_address)
 	cfg.set_value(SECTION, "last_port", last_port)
 	cfg.set_value(SECTION, "mouse_sensitivity_scale", mouse_sensitivity_scale)

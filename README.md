@@ -22,6 +22,8 @@ Concretely, and separating what has been *proven* from what has not:
 | Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 46 scripts / 20 scenes |
 | Mission rules, state machine, name hygiene, rate limiting | Verified | 143 unit assertions |
 | Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
+| Join codes: round trip, typos, transpositions, confusable letters | Verified | 108 assertions in `tests/unit/test_join_code.gd` |
+| LAN discovery: announce, discover, reject malformed, flood cap, expiry | Verified | `tests/integration/test_lan_discovery.gd`, plus cross-process in the multiplayer check |
 | Full mission lobby -> victory | Verified | `tests/integration/test_mission_flow.gd` against a real ENet host |
 | Combat, downed, revive, Star Map drop, failure | Verified | `tests/integration/test_combat_and_revive.gd` |
 | Sentinel targeting, stagger, projectiles, cleanup | Verified | `tests/integration/test_sentinel.gd` |
@@ -93,18 +95,37 @@ three seconds.
 
 ### Hosting
 
-1. Enter a name (2-16 characters).
-2. Leave the port at **7000** unless you have a reason to change it.
-3. Press **Host Game**.
-4. Tell your crew your LAN IP: `ipconfig` on Windows, `ip addr` on Linux,
-   `ifconfig` on macOS. You want the `192.168.x.x` or `10.x.x.x` address.
-5. When everyone is in the lobby, press **Start Mission**.
+1. Enter a name (2-16 characters) and a **session name** — this is what your
+   crew sees in their list.
+2. Press **Host Game**.
+3. The lobby shows a **join code** like `NOVA-7K3M`. Anyone on your network can
+   also just pick your session out of the list without it.
+4. When everyone is in, press **Start Mission**.
 
 ### Joining
 
-1. Enter a name.
-2. Enter the host's IP address and the same port.
-3. Press **Join Game**.
+**On the same network — no typing at all.** Sessions on your network appear in
+the list on the right of the main menu a second after someone hosts. Click
+**Join**.
+
+**From somewhere else.** Paste the host's join code into *Code or address* and
+press **Join Game**. The field takes either a code or a plain IP address, so
+both still work.
+
+### About join codes
+
+A code is not a name registered on a server — it **is** the address, packed into
+eight characters. That is why it costs nothing to run: there is no lookup
+service anywhere.
+
+Which also means a code cannot make an unreachable host reachable. A code for a
+public IP still needs that host to forward UDP 7000, exactly as typing the IP
+would. Codes remove typos, not NAT. The lobby says which kind of code it just
+generated for you.
+
+Codes avoid the letters I, L, O and U, and typing one where a `1`, `0` or `V`
+belongs is forgiven — they are meant to survive being read aloud over voice
+chat.
 
 Up to **four players** including the host. The fifth is turned away with an
 explicit message rather than a silent failure.
@@ -114,6 +135,9 @@ explicit message rather than a silent failure.
 Run two copies of the game and have the second join `127.0.0.1`. From the
 editor, *Debug -> Run Multiple Instances* does the same thing. For a headless
 check, `tools/run_multiplayer_check.sh` runs a whole session this way.
+
+Note that only one copy per machine can use the session browser — it binds a
+fixed port. The second copy says so and joins by code or address instead.
 
 ### Direct IP over the internet — read this before trying
 

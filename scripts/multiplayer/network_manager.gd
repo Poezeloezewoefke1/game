@@ -41,6 +41,9 @@ var is_online: bool = false
 var is_joining: bool = false
 
 var local_display_name: String = ""
+## The name this host advertises on the local network. Presentation only - it
+## never takes part in identity or authority, exactly like a display name.
+var local_session_name: String = ""
 
 ## peer_id -> seconds remaining before an unregistered peer is dropped (host only).
 var _pending_handshake: Dictionary = {}
@@ -99,7 +102,10 @@ func _process(delta: float) -> void:
 # ==========================================================================
 
 ## Starts a listen server. Returns {ok: bool, error: String}.
-func host_game(port: int, display_name: String) -> Dictionary:
+##
+## `session_name` is what appears in other players' LAN browser. It is optional
+## so that tests and any caller that does not care can ignore it.
+func host_game(port: int, display_name: String, session_name: String = "") -> Dictionary:
 	if is_online:
 		return {"ok": false, "error": "Already in a session."}
 	var safe_port := SettingsManager.sanitize_port(port)
@@ -127,7 +133,14 @@ func host_game(port: int, display_name: String) -> Dictionary:
 	LobbyManager.host_add_player(GameConfig.HOST_PEER_ID, local_display_name)
 	GameManager.host_begin_lobby()
 
-	Logx.info("net", "Hosting on UDP %d as '%s'" % [safe_port, local_display_name])
+	# Announce AFTER the lobby exists, so the very first broadcast already
+	# carries a truthful player count rather than zero.
+	local_session_name = LanDiscovery.sanitize_session_name(
+		session_name if not session_name.is_empty() else local_display_name + "'s crew")
+	LanDiscovery.host_start_announcing(local_session_name, safe_port)
+
+	Logx.info("net", "Hosting '%s' on UDP %d as '%s'" % [
+		local_session_name, safe_port, local_display_name])
 	hosting_started.emit()
 	return {"ok": true, "error": ""}
 
@@ -167,6 +180,7 @@ func shutdown(reason: String = REASON_LOCAL_LEFT) -> void:
 	if not is_online and multiplayer.multiplayer_peer == null:
 		return
 	Logx.info("net", "Shutting down session: %s" % reason)
+	LanDiscovery.local_teardown()
 	var peer := multiplayer.multiplayer_peer
 	if peer != null:
 		peer.close()
@@ -233,7 +247,25 @@ func session_peer_ids() -> PackedInt32Array:
 	return ids
 
 
-## Accepts a dotted IPv4/IPv6 literal or a resolvable hostname.
+## This machine's LAN IPv4, or "" when it cannot be determined.
+##
+## Loopback and link-local addresses are skipped: a code built from 127.0.0.1
+## would work only for the person who generated it, which is the most confusing
+## possible failure.
+static func local_ipv4() -> String:
+	for interface in IP.get_local_interfaces():
+		var addresses: Array = interface.get("addresses", [])
+		for address in addresses:
+			var text := String(address)
+			if JoinCode.ipv4_to_int(text) < 0:
+				continue
+			if text.begins_with("127.") or text.begins_with("169.254."):
+				continue
+			return text
+	return ""
+
+
+## Accepts a dotted IPv4/IPv6 literal, a resolvable hostname, OR a join code.
 ## Returns "" when the input cannot be used.
 static func resolve_address(address: String) -> String:
 	var a := address.strip_edges()
@@ -442,6 +474,7 @@ func _fail_join(reason: String) -> void:
 		return
 	is_joining = false
 	_awaiting_handshake = false
+	LanDiscovery.local_teardown()
 	var peer := multiplayer.multiplayer_peer
 	if peer != null:
 		peer.close()

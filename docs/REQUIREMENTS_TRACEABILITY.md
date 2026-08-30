@@ -43,6 +43,32 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | NET-020 | Impossible movement is detected and corrected | `player.gd:_host_check_impossible_movement` | net probe: 180 m teleport corrected | NET |
 | NET-021 | Movement correction re-baselines on respawn | `player.gd:host_full_reset` | STATIC | STATIC |
 
+## LAN discovery and join codes (LAN / CODE)
+
+| ID | Requirement | Implementation | Verification | Status |
+|---|---|---|---|---|
+| LAN-001 | The host announces a named session on the local network | `lan_discovery.gd:host_start_announcing` | `test_lan_discovery`, net probe | AUTO + NET |
+| LAN-002 | A client discovers announced sessions and can join without typing an address | `lan_discovery.gd`, `main_menu.gd` | `test_lan_discovery`, net probe (cross-process) | AUTO + NET |
+| LAN-003 | The advertised address comes from the UDP source, never the packet body | `_absorb` uses `get_packet_ip()` | `test_lan_discovery` (injected packet attributed to its real sender) | AUTO |
+| LAN-004 | Malformed announcements are ignored | `_absorb` validates every field | `test_lan_discovery` (9 malformed shapes) | AUTO |
+| LAN-005 | Oversized packets are discarded unread | `DISCOVERY_MAX_PACKET_BYTES` | `test_lan_discovery` | AUTO |
+| LAN-006 | The browser cannot be flooded without bound | `DISCOVERY_MAX_SESSIONS` | `test_lan_discovery` (64 injected, capped at 32) | AUTO |
+| LAN-007 | A separator inside a display name cannot shift other fields | name sent last, split limit | `test_lan_discovery` | AUTO |
+| LAN-008 | A host that stops announcing leaves the browser | `_expire` | `test_lan_discovery` | AUTO |
+| LAN-009 | Session names are sanitised before display | `sanitize_session_name` | `test_join_code` | AUTO |
+| LAN-010 | A busy discovery port is reported, not silently empty | `listen_error`, `main_menu.gd` | STATIC + net probe SKIP path | STATIC |
+| LAN-011 | Discovery does not use the game's port | `DISCOVERY_PORT` 7001 vs 7000 | `test_lan_discovery` | AUTO |
+| CODE-001 | A code round-trips to the same address and port | `join_code.gd` | `test_join_code` | AUTO |
+| CODE-002 | Default-port codes are 8 characters, custom-port 11 | length disambiguates the two forms | `test_join_code` | AUTO |
+| CODE-003 | No single-character typo silently resolves to the original host | position-weighted checksum | `test_join_code` (exhaustive sweep) | AUTO |
+| CODE-004 | No transposition silently resolves to the original host | position weighting | `test_join_code` (exhaustive sweep) | AUTO |
+| CODE-005 | Confusable letters (I, L, O, U) are folded on decode | `_normalise` | `test_join_code` | AUTO |
+| CODE-006 | Case and separators are forgiven | `_normalise` | `test_join_code` | AUTO |
+| CODE-007 | Invalid input is rejected with a readable reason | `decode` returns `reason` | `test_join_code` | AUTO |
+| CODE-008 | The join field accepts either a code or an address | `looks_like_code`, `main_menu.gd` | `test_join_code`; UI path STATIC | AUTO (rule) |
+| CODE-009 | A code built from a private address is labelled local-only | `is_private_address`, `lobby.gd` | `test_join_code` (rule); label STATIC | AUTO (rule) |
+| CODE-010 | A code never claims to make an unreachable host reachable | lobby wording, README, NETWORK_RULES | STATIC | STATIC |
+
 ## Scene transitions (SCN)
 
 | ID | Requirement | Implementation | Verification | Status |

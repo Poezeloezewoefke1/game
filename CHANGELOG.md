@@ -4,6 +4,55 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-30
+
+Joining without typing an IP address.
+
+### Added
+
+- **LAN session browser.** The host picks a session name; everyone on the same
+  network sees it in a list on the main menu and clicks Join. No addresses, no
+  ports, no forwarding. Built on a UDP broadcast and a dictionary with a
+  timeout — there is no server anywhere.
+- **Join codes.** The lobby shows a short code like `NOVA-7K3M` that *is* the
+  address, packed into eight characters. The join field accepts either a code or
+  a plain IP, so nothing that worked before stopped working.
+  - The alphabet omits I, L, O and U, and decoding folds those back to 1, 1, 0
+    and V, so a code survives being read aloud over voice chat.
+  - The checksum is position-weighted, so a transposed pair is rejected rather
+    than silently resolving to a different host. Both the single-typo and
+    transposition cases are swept exhaustively in tests.
+  - The lobby labels each code with whether it is for the local network or for
+    the internet, because a code built from a private address cannot possibly
+    work for a friend elsewhere and finding that out mid-session is worse than
+    being told immediately.
+- Session names are persisted between launches alongside the display name.
+
+### Security
+
+Discovery announcements are an unauthenticated broadcast, so the parser is
+treated as an attack surface:
+
+- The payload is a plain delimited string, never a serialised Variant — a
+  broadcast anyone can send is the wrong place to have a deserialisation step.
+- The advertised address comes from the UDP source, never the packet body, so an
+  announcement cannot impersonate a different host.
+- The host's display name is sent last and parsed with a split limit, so a
+  player called `Bo|b` cannot shift the port and player-count fields.
+- Oversized packets are discarded unread and the browser is capped at 32
+  entries, so a flood cannot grow it without bound.
+
+### Notes
+
+`PROTOCOL_VERSION` is deliberately **not** bumped: no RPC, snapshot shape or
+replicated node path changed. Discovery carries its own independent format
+version, so a browser can still list — and grey out — a session running a game
+build it cannot join.
+
+Codes do not make an unreachable host reachable. A code for a public address
+still needs that host to forward the port, exactly as typing the address would.
+See `docs/KNOWN_LIMITATIONS.md` (LIMIT-003).
+
 ## [0.1.0] - 2026-08-30
 
 First playable vertical slice: the complete mission *The Lost Signal*, from
@@ -100,4 +149,5 @@ authentication or encryption. The Windows build has never been launched, nothing
 has been seen on a screen, and only loopback networking has been tested. See
 `docs/KNOWN_LIMITATIONS.md` for the full list with reasoning.
 
+[0.2.0]: https://github.com/Poezeloezewoefke1/game/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Poezeloezewoefke1/game/releases/tag/v0.1.0

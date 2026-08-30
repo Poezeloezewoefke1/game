@@ -33,6 +33,30 @@ tools/check_structure.sh
 | 13 | Settings panel persists sensitivity, volume and invert | [M] |
 | 14 | Quit exits | [M] |
 
+## LAN discovery and join codes
+
+| # | Case | Cover |
+|---|---|---|
+| D1 | The host announces a named session | [A] `test_lan_discovery` / [N] |
+| D2 | Another process discovers it and can join without typing an address | [N] (cross-process) |
+| D3 | The advertised address comes from the UDP source, not the packet body | [A] |
+| D4 | Malformed announcements are ignored (9 shapes) | [A] |
+| D5 | An oversized packet is discarded unread | [A] |
+| D6 | The browser is capped and cannot be flooded | [A] |
+| D7 | A `\|` in a display name cannot shift other fields | [A] |
+| D8 | A host that stops announcing drops out of the list | [A] |
+| D9 | A second copy on one machine reports the busy port instead of an empty list | [M] |
+| D10 | Session names are sanitised before display | [A] |
+| C1 | A code round-trips to the same address and port | [A] `test_join_code` |
+| C2 | Every single-character typo is caught | [A] (exhaustive) |
+| C3 | Every transposition is caught | [A] (exhaustive) |
+| C4 | I/L/O/U are folded to 1/1/0/V | [A] |
+| C5 | Lowercase, spaces and underscores are forgiven | [A] |
+| C6 | Garbage is rejected with a readable reason | [A] |
+| C7 | The join field accepts a code or an address | [M] (UI) |
+| C8 | A private-address code is labelled local-only in the lobby | [M] (UI) |
+| C9 | A public-address code warns about port forwarding | [M] (UI) |
+
 ## Lobby
 
 | # | Case | Cover |

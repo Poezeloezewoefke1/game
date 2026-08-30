@@ -25,88 +25,150 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(520, 0)
+[node name="Columns" type="HBoxContainer" parent="Center"]
+theme_override_constants/separation = 18
 
-[node name="Margin" type="MarginContainer" parent="Center/Panel"]
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
+[node name="Panel" type="PanelContainer" parent="Center/Columns"]
+custom_minimum_size = Vector2(500, 0)
 
-[node name="Layout" type="VBoxContainer" parent="Center/Panel/Margin"]
-theme_override_constants/separation = 10
+[node name="Margin" type="MarginContainer" parent="Center/Columns/Panel"]
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 22
 
-[node name="Title" type="Label" parent="Center/Panel/Margin/Layout"]
+[node name="Layout" type="VBoxContainer" parent="Center/Columns/Panel/Margin"]
+theme_override_constants/separation = 9
+
+[node name="Title" type="Label" parent="Center/Columns/Panel/Margin/Layout"]
 text = "STARBOUND STATION"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 34
+theme_override_font_sizes/font_size = 32
 
-[node name="Subtitle" type="Label" parent="Center/Panel/Margin/Layout"]
+[node name="Subtitle" type="Label" parent="Center/Columns/Panel/Margin/Layout"]
 text = "THE LOST SIGNAL"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 17
 
-[node name="Sep1" type="HSeparator" parent="Center/Panel/Margin/Layout"]
+[node name="Sep1" type="HSeparator" parent="Center/Columns/Panel/Margin/Layout"]
 
-[node name="NameRow" type="HBoxContainer" parent="Center/Panel/Margin/Layout"]
+[node name="NameRow" type="HBoxContainer" parent="Center/Columns/Panel/Margin/Layout"]
 
-[node name="NameTag" type="Label" parent="Center/Panel/Margin/Layout/NameRow"]
-custom_minimum_size = Vector2(120, 0)
+[node name="NameTag" type="Label" parent="Center/Columns/Panel/Margin/Layout/NameRow"]
+custom_minimum_size = Vector2(130, 0)
 text = "Explorer name"
 
-[node name="NameEdit" type="LineEdit" parent="Center/Panel/Margin/Layout/NameRow"]
+[node name="NameEdit" type="LineEdit" parent="Center/Columns/Panel/Margin/Layout/NameRow"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 placeholder_text = "2-16 characters"
 
-[node name="AddressRow" type="HBoxContainer" parent="Center/Panel/Margin/Layout"]
+[node name="SessionRow" type="HBoxContainer" parent="Center/Columns/Panel/Margin/Layout"]
 
-[node name="AddressTag" type="Label" parent="Center/Panel/Margin/Layout/AddressRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "Host address"
+[node name="SessionTag" type="Label" parent="Center/Columns/Panel/Margin/Layout/SessionRow"]
+custom_minimum_size = Vector2(130, 0)
+text = "Session name"
 
-[node name="AddressEdit" type="LineEdit" parent="Center/Panel/Margin/Layout/AddressRow"]
+[node name="SessionEdit" type="LineEdit" parent="Center/Columns/Panel/Margin/Layout/SessionRow"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
-placeholder_text = "127.0.0.1"
+placeholder_text = "shown to players on your network"
 
-[node name="PortRow" type="HBoxContainer" parent="Center/Panel/Margin/Layout"]
-
-[node name="PortTag" type="Label" parent="Center/Panel/Margin/Layout/PortRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "UDP port"
-
-[node name="PortEdit" type="LineEdit" parent="Center/Panel/Margin/Layout/PortRow"]
-unique_name_in_owner = true
-size_flags_horizontal = 3
-placeholder_text = "7000"
-
-[node name="Sep2" type="HSeparator" parent="Center/Panel/Margin/Layout"]
-
-[node name="HostButton" type="Button" parent="Center/Panel/Margin/Layout"]
+[node name="HostButton" type="Button" parent="Center/Columns/Panel/Margin/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 text = "Host Game"
 
-[node name="JoinButton" type="Button" parent="Center/Panel/Margin/Layout"]
+[node name="Sep2" type="HSeparator" parent="Center/Columns/Panel/Margin/Layout"]
+
+[node name="AddressRow" type="HBoxContainer" parent="Center/Columns/Panel/Margin/Layout"]
+
+[node name="AddressTag" type="Label" parent="Center/Columns/Panel/Margin/Layout/AddressRow"]
+custom_minimum_size = Vector2(130, 0)
+text = "Code or address"
+
+[node name="AddressEdit" type="LineEdit" parent="Center/Columns/Panel/Margin/Layout/AddressRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+placeholder_text = "NOVA-7K3M  or  192.168.1.20"
+
+[node name="PortRow" type="HBoxContainer" parent="Center/Columns/Panel/Margin/Layout"]
+
+[node name="PortTag" type="Label" parent="Center/Columns/Panel/Margin/Layout/PortRow"]
+custom_minimum_size = Vector2(130, 0)
+text = "UDP port"
+
+[node name="PortEdit" type="LineEdit" parent="Center/Columns/Panel/Margin/Layout/PortRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+placeholder_text = "7000"
+
+[node name="CodeHint" type="Label" parent="Center/Columns/Panel/Margin/Layout"]
+unique_name_in_owner = true
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 12
+
+[node name="JoinButton" type="Button" parent="Center/Columns/Panel/Margin/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 text = "Join Game"
 
-[node name="SettingsButton" type="Button" parent="Center/Panel/Margin/Layout"]
+[node name="Sep3" type="HSeparator" parent="Center/Columns/Panel/Margin/Layout"]
+
+[node name="SettingsButton" type="Button" parent="Center/Columns/Panel/Margin/Layout"]
 unique_name_in_owner = true
 text = "Settings"
 
-[node name="QuitButton" type="Button" parent="Center/Panel/Margin/Layout"]
+[node name="QuitButton" type="Button" parent="Center/Columns/Panel/Margin/Layout"]
 unique_name_in_owner = true
 text = "Quit"
 
-[node name="StatusLabel" type="Label" parent="Center/Panel/Margin/Layout"]
+[node name="StatusLabel" type="Label" parent="Center/Columns/Panel/Margin/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 40)
 autowrap_mode = 2
 horizontal_alignment = 1
+
+[node name="BrowserPanel" type="PanelContainer" parent="Center/Columns"]
+custom_minimum_size = Vector2(360, 0)
+
+[node name="Margin" type="MarginContainer" parent="Center/Columns/BrowserPanel"]
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 22
+
+[node name="Layout" type="VBoxContainer" parent="Center/Columns/BrowserPanel/Margin"]
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Center/Columns/BrowserPanel/Margin/Layout"]
+text = "SESSIONS ON YOUR NETWORK"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 15
+
+[node name="Sep" type="HSeparator" parent="Center/Columns/BrowserPanel/Margin/Layout"]
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Columns/BrowserPanel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 260)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SessionList" type="VBoxContainer" parent="Center/Columns/BrowserPanel/Margin/Layout/Scroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="BrowserStatus" type="Label" parent="Center/Columns/BrowserPanel/Margin/Layout"]
+unique_name_in_owner = true
+autowrap_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+
+[node name="BrowserNote" type="Label" parent="Center/Columns/BrowserPanel/Margin/Layout"]
+autowrap_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 11
+text = "Only finds sessions on this network. For a friend elsewhere, use their join code and make sure they have forwarded the port."
 
 [node name="VersionLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -115,7 +177,7 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -520.0
+offset_left = -560.0
 offset_top = -34.0
 offset_right = -14.0
 offset_bottom = -10.0

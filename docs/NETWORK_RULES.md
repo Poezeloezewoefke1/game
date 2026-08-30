@@ -24,11 +24,71 @@ frame as the rejection throws the message away. The delay is the difference
 between a player knowing the lobby is full and a player staring at a silent
 failure.
 
+## LAN discovery
+
+The host broadcasts a small announcement on **UDP 7001** once a second so that
+players on the same network can pick the session out of a list. Discovery is
+deliberately on its own port: it is an unauthenticated broadcast and has no
+business sharing a socket with the session itself.
+
+The payload is a plain delimited string, not a serialised Variant. That is a
+security decision - a broadcast anyone can send is the wrong place to have a
+deserialisation step. Every field is validated individually, oversized packets
+are discarded unread, and the browser is capped at 32 entries so a flood cannot
+grow it without bound.
+
+**The host's address is taken from the UDP source address, never from the packet
+body.** An announcement therefore cannot claim to come from somewhere it did
+not, which removes the obvious way to lure players onto a machine of the
+sender's choosing.
+
+The host's display name is sent as the LAST field and parsed with a split limit,
+so a player called `Bo|b` cannot shift the port and player-count fields.
+
+### What discovery does not do
+
+Broadcasts do not cross routers. Discovery finds sessions on the local network
+and nothing else; it is not a server browser and there is no central list.
+
+### Known discovery limitations
+
+* **Announcements are unauthenticated.** Anyone on the network can advertise a
+  session, including one pointing at their own machine with an appealing name.
+  On a home LAN this is not meaningfully different from someone telling you the
+  wrong IP address. On an untrusted network, join by code instead.
+* **One listener per machine.** The browser binds a fixed port, so a second copy
+  of the game on the same computer cannot browse. It says so and falls back to
+  joining by code or address, rather than showing an empty list.
+* **The count and status can be a second stale**, since they are only as fresh
+  as the last announcement.
+
+## Join codes
+
+A code like `NOVA-7K3M` **is** the address, packed into eight characters -
+32 bits of IPv4, or 48 bits with a non-default port, in Crockford base32 plus a
+position-weighted checksum character.
+
+There is no lookup and no server. That is what makes it free: nothing to host,
+nothing to keep alive, no account.
+
+It follows that **a code cannot make an unreachable host reachable**. A code for
+a public address still needs that host to forward the game's UDP port, exactly
+as typing the address would. Codes remove typing mistakes, not NAT. The lobby
+labels each generated code with which of the two situations it is for.
+
+The alphabet excludes I, L, O and U, and decoding folds those back to 1, 1, 0
+and V, so a code read aloud over voice survives being misheard. The checksum is
+position-weighted so a transposed pair is rejected rather than silently
+resolving to a different host.
+
 ## What is explicitly NOT supported
 
 Stated plainly so nobody plans around a feature that does not exist:
 
-* No NAT traversal, no relay servers, no matchmaking, no server browser.
+* No NAT traversal, no relay servers, no matchmaking, and no global server
+  browser. LAN discovery finds sessions on your own network only.
+* Join codes are an encoding of an address, not a name registered anywhere. They
+  do not make a host reachable that was not already reachable.
 * No dedicated server. The host plays.
 * No host migration. If the host leaves, the session ends for everyone.
 * No reconnection or rejoin. A dropped player cannot return to a mission in

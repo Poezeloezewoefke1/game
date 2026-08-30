@@ -16,7 +16,7 @@ extends Node
 ## client must match exactly; mismatched clients are rejected at handshake.
 const PROTOCOL_VERSION: int = 1
 
-const GAME_VERSION: String = "0.1.0"
+const GAME_VERSION: String = "0.2.0"
 
 # --------------------------------------------------------------------------
 # Networking
@@ -41,6 +41,36 @@ const CONNECT_TIMEOUT: float = 10.0
 ## Seconds a joined client waits for the host handshake (protocol + lobby state)
 ## before giving up. Guards against connecting to a socket that is not this game.
 const HANDSHAKE_TIMEOUT: float = 8.0
+
+# --------------------------------------------------------------------------
+# LAN discovery
+# --------------------------------------------------------------------------
+#
+# The host broadcasts a short announcement on this port so players on the same
+# network can pick the session out of a list instead of typing an address.
+# Deliberately NOT the game port: discovery is an unauthenticated broadcast and
+# has no business sharing a socket with the session itself.
+
+const DISCOVERY_PORT: int = 7001
+
+## How often the host announces itself.
+const DISCOVERY_ANNOUNCE_INTERVAL: float = 1.0
+
+## An entry disappears from the browser this long after its last announcement,
+## so a host that quits stops being listed rather than lingering as a dead row.
+const DISCOVERY_ENTRY_TIMEOUT: float = 4.0
+
+## Hard cap on tracked sessions. Discovery packets are unauthenticated, so
+## anybody on the network can send them; without a cap a flood would grow the
+## browser without bound.
+const DISCOVERY_MAX_SESSIONS: int = 32
+
+## Anything larger is discarded unread.
+const DISCOVERY_MAX_PACKET_BYTES: int = 512
+
+const SESSION_NAME_MIN_LENGTH: int = 3
+const SESSION_NAME_MAX_LENGTH: int = 24
+const SESSION_NAME_FALLBACK: String = "Expedition"
 
 # --------------------------------------------------------------------------
 # Scene transition / readiness barrier

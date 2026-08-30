@@ -71,6 +71,14 @@ func _parse_args() -> void:
 			"slot": slot = value.to_int()
 
 
+## Neither a pass nor a failure: something that could not be attempted in this
+## environment. Kept distinct so a skipped check can never be mistaken for a
+## passing one.
+func _skip(label: String, detail: String = "") -> void:
+	print("NETCHECK SKIP [%s] %s%s" % [
+		role, label, "" if detail.is_empty() else "  <- " + detail])
+
+
 func _report(label: String, ok: bool, detail: String = "") -> void:
 	if not ok:
 		_failures += 1
@@ -94,9 +102,11 @@ func _run() -> void:
 # ==========================================================================
 
 func _run_host() -> void:
-	var result := NetworkManager.host_game(port, display_name)
+	var result := NetworkManager.host_game(port, display_name, "Probe Session")
 	if not _require(bool(result["ok"]), "host starts on port %d" % port, String(result["error"])):
 		return
+	_report("the host is announcing itself on the network", LanDiscovery.is_announcing(),
+		LanDiscovery.session_name())
 
 	var joined: bool = await _until(func() -> bool:
 		return LobbyManager.player_count() >= expect_peers + 1, 45.0)
@@ -212,6 +222,12 @@ func _carried_count() -> int:
 # ==========================================================================
 
 func _run_client() -> void:
+	# Slot 0 checks LAN discovery before joining. Only one process per machine
+	# can hold the discovery port, so the others would fail for an uninteresting
+	# reason - and a busy port is a skip, never a pass.
+	if slot == 0:
+		await _check_lan_discovery()
+
 	var result := NetworkManager.join_game(address, port, display_name)
 	if not _require(bool(result["ok"]), "client opens a socket", String(result["error"])):
 		return
@@ -347,6 +363,42 @@ func _run_client() -> void:
 	await _sleep(60.0)
 	NetworkManager.shutdown()
 	await _sleep(0.5)
+
+
+## Proves the host's announcement crosses a process boundary and lands in
+## another copy of the game, which is the whole point of the feature.
+func _check_lan_discovery() -> void:
+	if not LanDiscovery.start_listening():
+		_skip("LAN discovery", LanDiscovery.listen_error)
+		return
+
+	var seen: Variant = null
+	var waited := 0.0
+	while waited < 12.0:
+		for entry in LanDiscovery.sessions():
+			if int((entry as Dictionary)["port"]) == port:
+				seen = entry
+				break
+		if seen != null:
+			break
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+
+	_report("the host's session was discovered on the network", seen != null,
+		"after %.1fs" % waited)
+	if seen != null:
+		var entry: Dictionary = seen
+		_report("the discovered session carries a name", String(entry["name"]).length() >= 3,
+			String(entry["name"]))
+		_report("the discovered session is marked joinable", bool(entry["joinable"]))
+		var code := JoinCode.encode(String(entry["address"]), int(entry["port"]))
+		var decoded := JoinCode.decode(code)
+		_report("a join code round-trips through the discovered address",
+			bool(decoded["ok"]) and String(decoded["address"]) == String(entry["address"]),
+			code)
+
+	# Hand the port back before joining, so it is not held for the whole session.
+	LanDiscovery.stop_listening()
 
 
 # ==========================================================================

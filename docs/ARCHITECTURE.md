@@ -53,7 +53,18 @@ Two deliberate choices:
 | `SceneManager` | What is on screen; the scene readiness barrier | Mission rules |
 | `GameManager` | Mission state, the session epoch, authoritative outcomes | Sockets, scene loading details |
 | `SpawnManager` | World-object identity, authority spawning, cleanup | Rules |
+| `LanDiscovery` | Local-network announcements and the session browser | Anything about a live session |
 | `AudioDirector` | Named audio cues | Anything else |
+
+`LanDiscovery` is its own autoload rather than part of `NetworkManager` because
+it owns a *different socket with a different lifetime*: it is live in the menu
+before any session exists, and while hosting it keeps broadcasting after the
+ENet peer is up. Folding it into `NetworkManager` would put two unrelated socket
+lifecycles in one object.
+
+`JoinCode` is a pure static class, like `MissionRules` - it encodes an address
+into a short string and back, with no nodes and no networking, which is why its
+typo and transposition behaviour can be swept exhaustively in a unit test.
 
 `MissionRules` is deliberately **not** an autoload. It is a pure static class
 with no nodes, no tree and no networking, which is what makes every
