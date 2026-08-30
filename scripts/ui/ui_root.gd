@@ -20,6 +20,10 @@ const FAILURE_SCENE := "res://scenes/ui/failure_screen.tscn"
 var _hud: Control = null
 var _overlay: Control = null
 
+## Last capture state actually applied. Mouse mode is re-evaluated every frame
+## and only written when it changes, so no code path can leave it stale.
+var _capture_applied: bool = false
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -27,10 +31,44 @@ func _ready() -> void:
 	_toast_label.visible = false
 	_toast_timer.timeout.connect(_hide_toast)
 
+	set_process(true)
 	SceneManager.scene_changed.connect(_on_scene_changed)
 	GameManager.mission_ended.connect(_on_mission_ended)
 	GameManager.notice.connect(show_toast)
 	GameManager.mission_state_changed.connect(_on_mission_state_changed)
+
+
+## Mouse capture is decided HERE and nowhere else.
+##
+## It used to be applied only when an overlay opened or closed, and every screen
+## set Input.mouse_mode for itself on the way in. The lobby set it to VISIBLE,
+## nothing set it back when the hub mounted, and the player - which treats an
+## uncaptured mouse as "a menu is open" - silently refused to move, look, shoot
+## or interact. Pressing Escape twice fixed it, which is the worst kind of bug:
+## intermittent-looking and impossible to guess.
+##
+## Re-evaluating every frame removes the entire class of "some path forgot to
+## update it". It is a bool comparison; the assignment only happens on a change.
+func _process(_delta: float) -> void:
+	var want_capture := should_capture_mouse(
+		SceneManager.is_in_gameplay_scene(), has_overlay())
+	if want_capture == _capture_applied:
+		return
+	_capture_applied = want_capture
+	if DisplayServer.get_name() == "headless":
+		return
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if want_capture else Input.MOUSE_MODE_VISIBLE
+
+
+## The whole rule, as a pure function so it can be tested without a display.
+static func should_capture_mouse(in_gameplay_scene: bool, overlay_open: bool) -> bool:
+	return in_gameplay_scene and not overlay_open
+
+
+## What the UI currently believes. Tests assert on this because a headless run
+## cannot observe Input.mouse_mode.
+func wants_mouse_captured() -> bool:
+	return _capture_applied
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -82,7 +120,6 @@ func open_overlay(scene_path: String) -> Control:
 		return null
 	_overlay = packed.instantiate()
 	_overlay_slot.add_child(_overlay)
-	_apply_mouse_mode()
 	return _overlay
 
 
@@ -90,7 +127,6 @@ func close_overlay() -> void:
 	if _overlay != null:
 		_overlay.queue_free()
 		_overlay = null
-	_apply_mouse_mode()
 
 
 func close_all_overlays() -> void:
@@ -111,18 +147,6 @@ func _on_mission_state_changed(state: int) -> void:
 	if state == MissionRules.MissionState.TRANSITIONING_TO_NERAVA \
 			or state == MissionRules.MissionState.RETURNING_TO_LOBBY:
 		close_all_overlays()
-
-
-## Captured while playing, visible while an overlay or a menu is up.
-func _apply_mouse_mode() -> void:
-	if DisplayServer.get_name() == "headless":
-		return
-	var want_capture := SceneManager.is_in_gameplay_scene() and not has_overlay()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if want_capture else Input.MOUSE_MODE_VISIBLE
-
-
-func refresh_mouse_mode() -> void:
-	_apply_mouse_mode()
 
 
 # ==========================================================================

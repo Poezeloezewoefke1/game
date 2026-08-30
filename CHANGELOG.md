@@ -4,6 +4,40 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-30
+
+### Fixed
+
+- **The player could not move, look, shoot or interact once the hub loaded.**
+  The lobby set the mouse to `VISIBLE` and nothing captured it again on the
+  scene change; the player treats an uncaptured mouse as "a menu is open" and
+  skipped all input. Pressing Escape twice happened to fix it, which made it
+  look intermittent.
+
+  Mouse mode had four writers spread across three screens and `UIRoot`. It now
+  has exactly one, re-evaluated every frame, which removes the whole class of
+  "some path forgot to update it" rather than patching the one path that was
+  missing.
+
+- Tearing down during a scene transition called a method on a node the teardown
+  had already freed. A freed Node in Godot 4 is not `== null`, and cannot even
+  be passed to a parameter typed as `Node` - the argument check throws first.
+
+### Added
+
+- `tests/integration/test_app_shell.gd`, which drives the real `main.tscn`
+  shell. That shell had **no** test coverage, which is exactly why the movement
+  bug shipped: every other test binds its own roots and bypasses it. The gate
+  was verified by reintroducing the defect and confirming the test fails on
+  "entering the hub captures the mouse, so the player can actually move".
+
+### Note for future work
+
+The broken check short-circuits to `false` under a headless display server, so
+the tests were skipping the exact line that was wrong. Anything guarded by
+`DisplayServer.get_name() == "headless"` is untested by construction and should
+be treated with suspicion.
+
 ## [0.2.0] - 2026-08-30
 
 Joining without typing an IP address.
@@ -149,5 +183,6 @@ authentication or encryption. The Windows build has never been launched, nothing
 has been seen on a screen, and only loopback networking has been tested. See
 `docs/KNOWN_LIMITATIONS.md` for the full list with reasoning.
 
+[0.2.1]: https://github.com/Poezeloezewoefke1/game/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Poezeloezewoefke1/game/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Poezeloezewoefke1/game/releases/tag/v0.1.0

@@ -26,8 +26,7 @@ func _ready() -> void:
 	_ready_button.pressed.connect(_on_ready_pressed)
 	_back_button.pressed.connect(_on_back_pressed)
 	_advertise_edit.text_changed.connect(_on_advertise_changed)
-	if DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Mouse mode is owned by UIRoot alone - see the note on its _process().
 	_status_label.text = ""
 	_setup_share_box()
 	_refresh()

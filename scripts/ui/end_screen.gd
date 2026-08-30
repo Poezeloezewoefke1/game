@@ -36,8 +36,7 @@ func _ready() -> void:
 	_quit.pressed.connect(_on_quit)
 
 	AudioDirector.play(AudioDirector.Cue.VICTORY if is_victory else AudioDirector.Cue.FAILURE)
-	if DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Mouse mode is owned by UIRoot alone - see the note on its _process().
 	if host:
 		(_lobby if is_victory else _retry).grab_focus()
 	else:

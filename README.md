@@ -27,6 +27,7 @@ Concretely, and separating what has been *proven* from what has not:
 | Full mission lobby -> victory | Verified | `tests/integration/test_mission_flow.gd` against a real ENet host |
 | Combat, downed, revive, Star Map drop, failure | Verified | `tests/integration/test_combat_and_revive.gd` |
 | Sentinel targeting, stagger, projectiles, cleanup | Verified | `tests/integration/test_sentinel.gd` |
+| App shell: boot, host, mouse capture, pause, return to lobby | Verified | `tests/integration/test_app_shell.gd` |
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
 | Every objective is physically reachable | Verified | `tests/integration/test_level_reachability.gd` (navmesh path queries) |
 | 4-player session over real ENet, hostile-client probes | Verified | `tools/run_multiplayer_check.sh`, 5 OS processes, 73 assertions |

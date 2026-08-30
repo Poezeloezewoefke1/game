@@ -73,6 +73,20 @@ tools/check_structure.sh
 | 24 | Duplicate display names are allowed and do not confuse identity | [A] (identity is the peer id) |
 | 25 | Ready flags are cleared when returning to the lobby | [A] `test_session_reset` |
 
+## Application shell
+
+| # | Case | Cover |
+|---|---|---|
+| A1 | The game boots to the main menu | [A] `test_app_shell` |
+| A2 | The menu does not capture the mouse | [A] |
+| A3 | Hosting moves to the lobby by itself | [A] |
+| A4 | The lobby does not capture the mouse | [A] |
+| A5 | **Entering the hub captures the mouse, so the player can move** | [A] gate verified by reintroducing the defect |
+| A6 | The HUD is mounted in a gameplay scene and removed on leaving | [A] |
+| A7 | Pausing releases the mouse; resuming recaptures it | [A] |
+| A8 | Returning to the lobby releases the mouse and clears overlays | [A] |
+| A9 | Movement, look, jump, sprint actually feel right | [M] |
+
 ## Hub and transition
 
 | # | Case | Cover |

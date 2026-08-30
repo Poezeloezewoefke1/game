@@ -274,20 +274,39 @@ func _mount(scene_key: String) -> void:
 	# One frame so every _ready() in the subtree has definitely run and any
 	# deferred setup (nav region registration) has been processed.
 	await get_tree().process_frame
-
-	if generation != _load_generation:
-		# A newer transition superseded this one while we were awaiting.
-		Logx.warn("scene", "Mount of '%s' superseded" % scene_key)
+	if not _mount_still_valid(generation, instance, scene_key):
 		return
 
 	if instance.has_method("await_scene_ready"):
 		await instance.await_scene_ready()
-
-	if generation != _load_generation:
+	if not _mount_still_valid(generation, instance, scene_key):
 		return
 
 	Logx.info("scene", "Mounted '%s'" % scene_key)
 	scene_changed.emit(scene_key)
+
+
+## True when a mount that has been awaiting is still the one that should finish.
+##
+## TWO ways it can stop being valid, and both have to be checked:
+##   * a newer transition superseded it - the generation moved on;
+##   * the whole shell was torn down while it awaited, which frees the instance
+##     WITHOUT touching the generation. A freed Node in Godot 4 is not `== null`
+##     - it is a "previously freed" object that passes every null check and
+##     throws on the first method call - so this needs is_instance_valid().
+##     Quitting during a scene transition hit exactly that path.
+##
+## `instance` is deliberately untyped: passing a freed object into a parameter
+## typed as Node throws on the argument type check itself, before the function
+## body ever gets a chance to notice.
+func _mount_still_valid(generation: int, instance: Variant, scene_key: String) -> bool:
+	if generation != _load_generation:
+		Logx.warn("scene", "Mount of '%s' superseded" % scene_key)
+		return false
+	if not is_instance_valid(instance) or not is_instance_valid(scene_root):
+		Logx.warn("scene", "Mount of '%s' abandoned: the scene root went away" % scene_key)
+		return false
+	return true
 
 
 # ==========================================================================

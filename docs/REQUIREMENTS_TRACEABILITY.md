@@ -172,7 +172,11 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | UI-002 | Lobby: roster, host indicator, readiness, start, leave, status, capacity | `lobby.tscn/.gd` | runner phase 2 | AUTO (structure) / MANUAL |
 | UI-003 | HUD: crosshair, objective, prompt, health, heat, crystal, Star Map, carrier, team, downed, revive | `hud.tscn/.gd` | runner phase 2 | AUTO (structure) / MANUAL |
 | UI-004 | Pause, victory and failure screens | `pause_menu`, `end_screen` | runner phase 2 | AUTO (structure) / MANUAL |
-| UI-005 | Exactly one HUD instance can exist | mounted in `UIRoot`, outside the swapped scene | STATIC | STATIC |
+| UI-005 | Exactly one HUD instance can exist | mounted in `UIRoot`, outside the swapped scene | `test_app_shell` (mounted in a level, removed on leaving) | AUTO |
+| UI-008 | **Entering a gameplay scene captures the mouse, so the player can move** | `ui_root.gd:_process` | `test_app_shell` - gate verified by reintroducing the defect | AUTO |
+| UI-009 | Opening an overlay releases the mouse; closing recaptures it | `ui_root.gd:_process` | `test_app_shell` | AUTO |
+| UI-010 | Mouse mode has exactly one writer | `ui_root.gd` | `grep` in review; four writers reduced to one | STATIC |
+| UI-011 | A scene mount abandoned by teardown does not touch a freed node | `scene_manager.gd:_mount_still_valid` | `test_app_shell` (engine-error gate) | AUTO |
 | UI-006 | UI never owns authoritative state | all UI reads `GameManager` | STATIC | STATIC |
 | UI-007 | Interaction prompts match the specified wording | interactable `get_interaction_prompt` | STATIC | STATIC |
 

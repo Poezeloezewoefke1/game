@@ -21,16 +21,31 @@ point.
 **To close it:** run the manual `CI and export` section of
 `docs/TEST_CHECKLIST.md` on a Windows machine.
 
-### VERIFY-002 - Nothing has been seen on a screen
+### VERIFY-002 - Nothing has been seen on a screen from here
 
-**Status:** blocked.
-Every run so far has been `--headless`. Geometry, lighting, materials, the HUD
-layout, camera feel, the third-person spring arm, readability of the interaction
-prompt and the downed marker are all **unverified**. They are constructed
-correctly enough to instantiate without error, which is not the same as looking
-right.
-**To close it:** run the game on a desktop and work through the manual sections
-of `docs/TEST_CHECKLIST.md`.
+**Status:** partially closed, and instructive.
+Every run in this environment has been `--headless`. Geometry, lighting,
+materials, the HUD layout, camera feel, the third-person spring arm, readability
+of the interaction prompt and the downed marker remain **unverified**.
+
+The owner has since run the real game, and the first thing it produced was a
+bug that every headless test had passed over: the player could not move, because
+mouse capture was never applied when the hub loaded and the player treats an
+uncaptured mouse as "a menu is open". The check that broke,
+`_menu_blocking_input()`, short-circuits to `false` under a headless display
+server - so the tests were bypassing the exact line that was wrong.
+
+Two lessons now baked into the suite:
+
+* `tests/integration/test_app_shell.gd` drives the REAL `main.tscn` shell, which
+  previously had no coverage at all. It asserts on what the UI *believes* about
+  mouse capture, since a headless run cannot observe `Input.mouse_mode`.
+* Anything guarded by `DisplayServer.get_name() == "headless"` is, by
+  construction, untested. Those guards are now something to look at with
+  suspicion rather than trust.
+
+**To close the rest:** run the game on a desktop and work through the manual
+sections of `docs/TEST_CHECKLIST.md`.
 
 ### VERIFY-003 - Only loopback networking has been tested
 

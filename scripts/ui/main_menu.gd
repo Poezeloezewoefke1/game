@@ -61,8 +61,7 @@ func _ready() -> void:
 	_refresh_sessions()
 	_on_address_changed(_address_edit.text)
 
-	if DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Mouse mode is owned by UIRoot alone - see the note on its _process().
 	_name_edit.grab_focus()
 
 

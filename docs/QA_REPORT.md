@@ -25,7 +25,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 85 checks, 720 assertions, exit code 0, no engine errors.**
+**Result: PASS — 87 checks, 745 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -44,6 +44,7 @@ fired is not a gate.
       PASS  test_state_machine        (66 assertions)
       INTEGRATION tests...
       PASS  test_join_code            (108 assertions)
+      PASS  test_app_shell            (25 assertions)
       PASS  test_combat_and_revive    (62 assertions)
       PASS  test_concurrency          (17 assertions)
       PASS  test_lan_discovery        (23 assertions)
@@ -52,7 +53,7 @@ fired is not a gate.
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (85 checks passed, 720 assertions)
+ RESULT: PASS   (87 checks passed, 745 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -80,6 +81,9 @@ What that run genuinely covers:
   freezing, and cleanup on mission end.
 * Friendly fire: a teammate standing in the line of a blaster shot takes no
   damage.
+* The real application shell (main.tscn + main.gd + UIRoot) driven the way a
+  player drives it: boot to the menu, host, reach the lobby, start the mission,
+  pause, resume, and return to the lobby - asserting mouse capture at each step.
 * Join codes: exhaustive single-character-typo and transposition sweeps,
   confusable-letter folding, and rejection of malformed input.
 * LAN discovery over a real socket: announce, discover, reject nine malformed
@@ -164,7 +168,7 @@ Stated plainly. None of the following is claimed to work.
 | Not run | Why | Tracked as |
 |---|---|---|
 | The Windows executable was never launched | No Windows machine | VERIFY-001 |
-| Nothing was ever displayed on a screen | Every run was headless | VERIFY-002 |
+| Nothing was ever displayed on a screen BY ME | Every run here was headless. The owner has since run it, which produced defect 24 | VERIFY-002 |
 | Two physical LAN devices | Only loopback available | VERIFY-003 |
 | Internet play through a forwarded port | No such network | VERIFY-003 |
 | Artificial latency or packet loss | No conditioner available | VERIFY-004 |
@@ -205,6 +209,9 @@ are recorded because they are the reason the test suite looks the way it does.
 | 21 | **A downed teammate's revive bar hung on screen forever** | `test_combat_and_revive` | Downing a reviver erased the revive entry directly, which removed it from the tick loop - the only thing that would have cleared the target's bar. All cancellation now routes through `host_handle_revive_stop` |
 | 22 | A navigation wait could outlive the node that started it | Leak investigation | A Sentinel despawned mid-wait left a coroutine polling for four seconds holding a freed reference; `NavUtil.await_map_usable` now takes an `owner` and abandons the wait |
 | 23 | Dead state in `SceneManager` (`_loading` written, never read) | Adversarial review | Removed |
+| 24 | **The player could not move, look, shoot or interact after the hub loaded** | Reported by the owner running the real game - the first runtime feedback this project has had | The lobby set the mouse to VISIBLE and nothing captured it again on the scene change; the player treats an uncaptured mouse as "a menu is open". Mouse mode now has exactly one owner, re-evaluated every frame. Pressing Escape twice was the accidental workaround |
+| 25 | Tearing down during a scene transition threw on a freed node | The new app-shell test | `_mount` awaited, then called a method on an instance the teardown had freed; guarded with `is_instance_valid` |
+| 26 | A freed object cannot even be PASSED to a `Node`-typed parameter | Fixing 25 | The argument type check throws before the body runs, so the guard's parameter is deliberately untyped |
 
 ---
 
