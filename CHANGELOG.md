@@ -89,6 +89,9 @@ they shaped the test suite; the full table is in `docs/QA_REPORT.md`.
 - The test suite reported PASS while the engine was raising errors — GDScript
   cannot see them, so `tools/run_validation.sh` now greps the run log and fails.
   The gate was verified by reintroducing a real defect and confirming it fires.
+- A downed teammate's revive bar hung on screen for the rest of the mission when
+  the reviver was downed: the entry was erased directly, bypassing the only code
+  that clears the bar.
 
 ### Known limitations
 

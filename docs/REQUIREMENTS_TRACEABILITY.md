@@ -99,10 +99,11 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | PLR-005 | Zero health causes the downed state | `host_apply_damage` | `test_combat_and_revive` | AUTO |
 | PLR-006 | A downed player cannot act | `MissionRules.actor_can_act` | `test_mission_rules` | AUTO |
 | PLR-007 | Revive takes an uninterrupted 3 s and restores 40 health | `_host_tick_revives`, `host_revive` | `test_combat_and_revive` | AUTO |
-| PLR-008 | Revive cancels on distance, line of sight, release, downed reviver or disconnect | `_host_revive_pair_valid` | `test_combat_and_revive` (distance, not-downed, self) | AUTO (partial) |
+| PLR-008 | Revive cancels on distance, line of sight, release, downed reviver or disconnect | `_host_revive_pair_valid` | `test_combat_and_revive` (distance, downed reviver, not-downed target, self) | AUTO (partial - line of sight and release are MANUAL) |
 | PLR-009 | Revive races resolve deterministically, and the tick loop survives | first to finish wins; others cancelled; the key snapshot is re-checked | `test_concurrency` | AUTO |
 | PLR-010 | Display names are sanitised and never used as identity | `name_sanitizer.gd` | `test_name_sanitizer` | AUTO |
 | PLR-011 | Revive progress does not cost 60 reliable packets/second | replicated via `StateSync` | STATIC | STATIC |
+| PLR-012 | Cancelling a revive always clears the target's revive bar | every path routes through `host_handle_revive_stop` | `test_combat_and_revive` | AUTO |
 
 ## Blaster and Sentinel (AI / WPN)
 
@@ -113,16 +114,16 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | WPN-003 | The host validates heat and overheat | `host_process_fire_request` | `test_combat_and_revive` | AUTO |
 | WPN-004 | A shot must originate at the shooter | origin-vs-position check | `test_combat_and_revive` | AUTO |
 | WPN-005 | Clients cannot spawn authoritative projectiles | player fire is host-resolved hitscan; the tracer is cosmetic | STATIC | STATIC |
-| WPN-006 | The blaster cannot hurt teammates | no player damage path from a blaster shot | STATIC | STATIC |
+| WPN-006 | The blaster cannot hurt teammates | no player damage path from a blaster shot | `test_combat_and_revive` (shot straight through a teammate) | AUTO |
 | AI-001 | Exactly one Sentinel spawns, when the Star Map is first taken | `host_apply_star_map_pickup` + group check | `test_mission_flow` | AUTO |
 | AI-002 | A repeated Star Map request cannot duplicate the Sentinel | same | `test_mission_flow` | AUTO |
-| AI-003 | The Sentinel targets the carrier, else the nearest living player | `_host_select_target` | STATIC | STATIC |
+| AI-003 | The Sentinel targets the carrier, else the nearest living player | `_host_select_target` | `test_sentinel` (the carrier is deliberately the *farther* player) | AUTO |
 | AI-004 | Navigation is not reset every frame | `GUARDIAN_REPATH_INTERVAL` + movement delta | STATIC | STATIC |
-| AI-005 | Navigation queries wait until the map can genuinely answer | `nav_util.gd` | `test_level_reachability` | AUTO |
+| AI-005 | Navigation queries wait until the map can genuinely answer | `nav_util.gd` | `test_level_reachability`, `test_sentinel` | AUTO |
 | AI-006 | No path / stuck is recovered, not frozen | `_host_track_stuck` | STATIC | STATIC |
-| AI-007 | The Sentinel retargets when the carrier is downed or leaves | `_host_select_target` re-evaluated each tick | STATIC | STATIC |
-| AI-008 | Ten host-validated hits cause a 3 s stagger | `host_register_hit` | STATIC | STATIC |
-| AI-009 | Guardian projectiles damage a player once and despawn | `guardian_projectile.gd` (swept sphere test) | STATIC | STATIC |
+| AI-007 | The Sentinel retargets when the carrier is downed or leaves | `_host_select_target` re-evaluated each tick | `test_sentinel` | AUTO |
+| AI-008 | Ten host-validated hits cause a 3 s stagger, and hits during it are ignored | `host_register_hit` | `test_sentinel` | AUTO |
+| AI-009 | Guardian projectiles damage a player once and despawn | `guardian_projectile.gd` (swept sphere test) | `test_sentinel` | AUTO |
 | AI-010 | Projectiles cannot survive a reset | `GROUP_SESSION_BOUND` + `host_clear_all` | `test_session_reset` | AUTO |
 
 ## Levels (LVL)

@@ -244,12 +244,16 @@ func host_handle_peer_left(peer_id: int) -> void:
 		Logx.info("mission", "Returned %s to the world (peer %d left)" % [cid, peer_id])
 		changed = true
 
-	# 3. Cancel revives in either direction.
-	if _revives.erase(peer_id):
+	# 3. Cancel revives in either direction - again through the stop path, so
+	#    the surviving side's revive bar is actually cleared.
+	if _revives.has(peer_id):
+		host_handle_revive_stop(peer_id)
 		changed = true
 	for reviver in _revives.keys():
+		if not _revives.has(reviver):
+			continue
 		if int((_revives[reviver] as Dictionary)["target"]) == peer_id:
-			_revives.erase(reviver)
+			host_handle_revive_stop(reviver)
 			changed = true
 
 	_interact_limiter.forget(peer_id)
@@ -424,9 +428,12 @@ func host_on_player_downed(peer_id: int) -> void:
 	if star_map_state() == MissionRules.MAP_CARRIED and star_map_carrier() == peer_id:
 		_host_drop_star_map("carrier_downed")
 		_host_publish()
-	# Cancel a revive this player was performing, and any revive targeting them
-	# is cancelled too (they are no longer a valid target of a *completed* one).
-	_revives.erase(peer_id)
+	# Stop any revive this player was performing. It MUST go through
+	# host_handle_revive_stop rather than erasing the entry directly: erasing it
+	# removes the revive from the tick loop, which is the only thing that would
+	# otherwise have cleared the target's revive bar - leaving a downed teammate
+	# showing "BEING REVIVED 40%" for the rest of the mission.
+	host_handle_revive_stop(peer_id)
 	host_evaluate_failure()
 
 
@@ -435,8 +442,10 @@ func host_on_player_revived(peer_id: int) -> void:
 		return
 	Logx.info("mission", "peer %d revived" % peer_id)
 	for reviver in _revives.keys():
+		if not _revives.has(reviver):
+			continue
 		if int((_revives[reviver] as Dictionary)["target"]) == peer_id:
-			_revives.erase(reviver)
+			host_handle_revive_stop(reviver)
 
 
 func host_evaluate_failure() -> void:

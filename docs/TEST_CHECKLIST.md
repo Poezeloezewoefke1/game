@@ -99,11 +99,14 @@ tools/check_structure.sh
 | 59 | A shot with a stale epoch is refused | [A] |
 | 60 | Exactly one Sentinel spawns | [A] |
 | 61 | A repeated Star Map request cannot duplicate the Sentinel | [A] |
-| 62 | The Sentinel targets the Star Map carrier | [M] |
-| 63 | The Sentinel retargets when the carrier goes down | [M] |
+| 62 | The Sentinel targets the Star Map carrier, even when another player is nearer | [A] `test_sentinel` |
+| 63 | The Sentinel retargets when the carrier goes down, and never targets a downed player | [A] |
 | 64 | The Sentinel recovers rather than freezing when it has no path | [M] |
-| 65 | A guardian projectile damages a player once, then despawns | [M] |
-| 66 | Ten validated hits stagger the Sentinel for three seconds | [M] |
+| 65 | A guardian projectile damages a player once, then despawns | [A] |
+| 66 | Ten validated hits stagger the Sentinel for three seconds | [A] |
+| 66b | A validated blaster shot registers exactly one hit | [A] |
+| 66c | Hits during a stagger are ignored | [A] |
+| 66d | A teammate in the line of fire takes no damage | [A] |
 | 67 | The Sentinel and its projectiles are removed on reset | [A] |
 
 ## Health and revive
@@ -120,7 +123,7 @@ tools/check_structure.sh
 | 75 | Revive cancels when the reviver moves too far | [A] |
 | 76 | Revive cancels on loss of line of sight | [M] |
 | 77 | Revive cancels when `E` is released | [M] |
-| 78 | Revive cancels when the reviver is downed | [M] |
+| 78 | Revive cancels when the reviver is downed, and clears the target's bar | [A] |
 | 79 | Revive cancels when the reviver disconnects | [M] |
 | 80 | A revived player returns at exactly 40 health | [A] |
 | 81 | A standing player cannot be revived | [A] |

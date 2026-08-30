@@ -306,6 +306,27 @@ func host_register_hit(from_peer: int) -> void:
 		Logx.info("sentinel", "Staggered")
 
 
+## Read-only seams for tests. The Sentinel's brain is host-only and has no
+## natural observation point, so these expose what it decided without exposing
+## any way to change it.
+func debug_hit_count() -> int:
+	return _hits
+
+
+func debug_target_peer() -> int:
+	if _target == null or not is_instance_valid(_target):
+		return 0
+	return int(_target.get("owner_peer_id"))
+
+
+func debug_state() -> int:
+	return sync_state
+
+
+func debug_nav_ready() -> bool:
+	return _nav_ready
+
+
 @rpc("authority", "call_local", "unreliable")
 func _rpc_hit_flash() -> void:
 	if _core == null:

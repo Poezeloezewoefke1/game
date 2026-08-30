@@ -29,8 +29,10 @@ func run_async() -> void:
 		return
 
 	await _test_blaster_validation()
+	await _test_blaster_cannot_hurt_teammates()
 	await _test_damage_and_downed()
 	await _test_revive()
+	await _test_revive_cancels_when_the_reviver_goes_down()
 	await _test_star_map_drop()
 	await _test_total_failure()
 
@@ -96,6 +98,67 @@ func _test_blaster_validation() -> void:
 		"an overheated blaster refuses to fire")
 	_p1.set("heat", 0.0)
 	_p1.set("overheated", false)
+
+
+func _test_blaster_cannot_hurt_teammates() -> void:
+	set_current("friendly fire")
+	# Stand P1 right behind P2 and shoot straight through them. The blaster is
+	# specified to contribute only to Sentinel stagger, so a teammate in the
+	# line of fire must be completely unaffected.
+	_p1.global_position = Vector3(0, 0, 4)
+	_p1.set("sync_position", Vector3(0, 0, 4))
+	_p2.global_position = Vector3(0, 0, 0)
+	_p2.set("sync_position", Vector3(0, 0, 0))
+	await tree.physics_frame
+
+	# The previous phase fired a shot, so wait out the host's fire cadence -
+	# otherwise this is testing the cooldown, not friendly fire.
+	await wait_seconds(GameConfig.BLASTER_FIRE_INTERVAL + 0.2)
+	var before := int(_p2.get("health"))
+	var origin: Vector3 = _p1.authoritative_position() + Vector3.UP * 1.4
+	var direction := Vector3(0, 0, -1)
+	var fired: bool = _p1.host_process_fire_request(
+		GameConfig.HOST_PEER_ID, origin, direction, GameManager.session_epoch)
+	check(fired, "the shot at a teammate was accepted (it is a legal shot)")
+	await wait_frames(3)
+	check_eq(int(_p2.get("health")), before, "a teammate in the line of fire takes no damage")
+	check_false(bool(_p2.get("is_downed")), "a teammate cannot be downed by a blaster")
+	_p1.set("heat", 0.0)
+	_p1.set("overheated", false)
+
+
+func _test_revive_cancels_when_the_reviver_goes_down() -> void:
+	set_current("revive cancels on reviver downed")
+	# P2 is downed and P1 is reviving when P1 is downed too. The revive must
+	# stop, and the mission must fail because nobody is left standing.
+	_p2.host_set_downed()
+	await wait_frames(2)
+	_p1.global_position = Vector3(1.5, 0, 0)
+	_p1.set("sync_position", Vector3(1.5, 0, 0))
+	_p2.global_position = Vector3(0, 0, 0)
+	_p2.set("sync_position", Vector3(0, 0, 0))
+	await tree.physics_frame
+
+	GameManager.request_revive_start(P2)
+	await wait_frames(3)
+	check(bool(_p2.get("revive_active")), "the revive started")
+
+	_p1.host_set_downed()
+	await wait_frames(4)
+	check_false(bool(_p2.get("revive_active")), "the revive stops when the reviver goes down")
+	check(bool(_p2.get("is_downed")), "the target is still downed")
+	check_eq(GameManager.debug_active_revives(), 0, "no revive entry survives the reviver going down")
+
+	# Both are down, so the mission must have failed - and then be retryable.
+	check_eq(GameManager.mission_state(), MS.MISSION_FAILED,
+		"downing the last reviver fails the mission")
+	await GameManager.host_retry_mission()
+	check(await _session.await_scene(GameConfig.SCENE_NERAVA), "the retry re-enters Nerava")
+	await wait_frames(3)
+	_p1 = SpawnManager.player_node(GameConfig.HOST_PEER_ID)
+	_p2 = SpawnManager.player_node(P2)
+	check(_p1 != null and _p2 != null, "both players respawned after the retry")
+	check_false(bool(_p1.get("is_downed")), "the reviver is no longer downed after a retry")
 
 
 func _test_damage_and_downed() -> void:

@@ -24,6 +24,7 @@ Concretely, and separating what has been *proven* from what has not:
 | Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
 | Full mission lobby -> victory | Verified | `tests/integration/test_mission_flow.gd` against a real ENet host |
 | Combat, downed, revive, Star Map drop, failure | Verified | `tests/integration/test_combat_and_revive.gd` |
+| Sentinel targeting, stagger, projectiles, cleanup | Verified | `tests/integration/test_sentinel.gd` |
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
 | Every objective is physically reachable | Verified | `tests/integration/test_level_reachability.gd` (navmesh path queries) |
 | 4-player session over real ENet, hostile-client probes | Verified | `tools/run_multiplayer_check.sh`, 5 OS processes, 73 assertions |
