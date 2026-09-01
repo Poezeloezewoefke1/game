@@ -26,7 +26,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 98 checks, 828 assertions, exit code 0, no engine errors.**
+**Result: PASS — 99 checks, 921 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -36,11 +36,11 @@ errors and fails on them. That gate was verified by removing the fix for defect
 fired is not a gate.
 
 ```
-[1/3] Compiling scripts...     63 scripts, 0 failed
+[1/3] Compiling scripts...     64 scripts, 0 failed
 [2/3] Loading scenes...        20 scenes,  0 failed
 [3/3] UNIT tests...
       PASS  test_join_code            (108 assertions)
-      PASS  test_mesh_factory         (64 assertions)
+      PASS  test_mesh_factory         (157 assertions)
       PASS  test_mission_rules        (41 assertions)
       PASS  test_name_sanitizer       (23 assertions)
       PASS  test_rate_limiter         (13 assertions)
@@ -55,7 +55,7 @@ fired is not a gate.
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (98 checks passed, 828 assertions)
+ RESULT: PASS   (99 checks passed, 921 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -161,7 +161,25 @@ identically in both workflows, no binaries or build output tracked, no
 assignment-shaped secrets, `.gitignore` covers generated output, all script and
 scene filenames snake_case.
 
-### 6. Rendered screenshots
+### 6. Rendered model gallery
+
+```
+tools/render_models.sh <godot>
+```
+
+**Result: 13 images written** into `captures/models/`. Every model in the game
+is instantiated alone on a neutral sweep under three-point lighting and
+photographed from a fixed three-quarter angle: the explorer (upright and
+downed), the blaster, the Sentinel, the pedestal, the altar, the terminal, the
+drop pod, the power crystal, the Star Map, boulders, the five kinds of set
+dressing, and the nine `MeshFactory` primitives.
+
+Where possible the gallery instantiates the REAL scene and applies the same
+materials the owning script applies at runtime, rather than a hand-written
+approximation - otherwise it drifts away from the game and stops being
+evidence. This pass is what found defects 32, 34 and 35.
+
+### 7. Rendered screenshots
 
 ```
 tools/capture_screenshots.sh <godot>
@@ -241,6 +259,10 @@ are recorded because they are the reason the test suite looks the way it does.
 | 29 | A muzzle flash shorter than one frame was never drawn | The firing screenshots came out with no flash | `_process` runs before the draw, so a 55 ms timer expires unseen below ~18 fps - the player loses shot feedback exactly when the game is struggling. The flash now guarantees one rendered frame |
 | 30 | Hull surfaces at `metallic` 0.45-0.75 rendered near-black | Hub screenshots | A metal surface has no diffuse response - it shows reflected environment, and a sealed room lit by a flat background colour has none. These are painted panels, which are dielectric; values lowered accordingly |
 | 31 | Hub ceiling lamps delivered ~6% of their energy to the floor | Arithmetic during the same investigation | Godot's omni falloff divides by `pow(distance, omni_attenuation)`; at 1.4 over 7.4 m that is a rounding error. Softened, and real ceiling fixtures added |
+| 32 | **Small shapes silently built EMPTY meshes** | The blaster's coil rings were missing from the model gallery, and probing the node found a zero-size AABB | `_add_polygon` judged degeneracy against a fixed 1e-6, an area in SQUARE METRES: a 2 cm x 1 cm quad is under it, so every quad in a small torus was discarded, `generate_tangents` then failed on the empty surface, and the builder returned an ArrayMesh with no surfaces - which renders as nothing and reports nothing. Two blaster parts and several suit fittings were simply absent. Test is now relative to the polygon's own size, and `_commit` refuses to return an empty surface quietly |
+| 33 | The mesh winding test asserted something false for hollow shapes | Adding `tube` and `torus` | "Normals point away from the origin" assumes star-shaped geometry. A bore and a torus's inner surface legitimately face inward; asserting otherwise would force the barrel to be built solid. That half is now opt-out, the winding half still applies to everything |
+| 34 | **The power crystal sat buried in its own bedrock** | The model gallery photographed a squat cluster with no visible spike | `_process` assigned an ABSOLUTE `position.y`, throwing away the rest height its scene set. Fixed by naming the rest height and animating relative to it |
+| 35 | The power crystal's glow light had no colour | Same gallery shot - the crystal rendered white | The scene set no `light_color`, so a white lamp washed out the crystal it belongs to until the first snapshot refresh. Colour is a function of `crystal_id`, which never changes, so it is now set once at build time |
 
 ---
 

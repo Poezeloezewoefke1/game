@@ -123,6 +123,9 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | PLR-007 | Muzzle flash on every shot the host confirms, for the shooter and for everyone watching | `muzzle_flash.gd`, `player.gd::_rpc_tracer` | `test_app_shell :: first person` | AUTO |
 | ART-001 | Models built from procedural geometry, no downloaded or paid assets | `mesh_factory.gd`, `model_kit.gd`, `prop_builder.gd`, `prop_scatter.gd` | `test_mesh_factory` (71 assertions) | AUTO |
 | ART-002 | Generated geometry must match Godot's clockwise front-face winding | `mesh_factory.gd::_add_polygon` | `test_mesh_factory :: test_matches_godots_own_winding` | AUTO (read back off Godot's own primitives) |
+| ART-003 | No builder may return an empty mesh, at any scale | `mesh_factory.gd::_add_polygon`, `_commit` | `test_mesh_factory :: test_small_shapes_are_not_silently_empty` | AUTO |
+| ART-004 | Hollow shapes must actually be hollow | `mesh_factory.gd::tube` | `test_mesh_factory :: test_a_hollow_shape_really_is_hollow` | AUTO |
+| ART-005 | Every model is inspectable alone, not only in situ | `tools/model_gallery.gd`, `tools/render_models.sh` | `captures/models/` (13 images) | MANUAL (visual) |
 | PLR-002 | Walk, sprint, jump, mouse look, pitch clamp | `player.gd:_local_physics`, `_unhandled_input` | MANUAL | MANUAL |
 | PLR-003 | Remote players are smoothed, and snapped on large jumps | `_remote_physics` | STATIC | STATIC |
 | PLR-004 | Host authority over health | `StateSync` authority = 1 | `test_combat_and_revive` | AUTO |

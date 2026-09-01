@@ -12,6 +12,13 @@ class_name PowerCrystal
 @onready var _glow: OmniLight3D = $Glow
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 
+## Where the floating spike sits when it is not bobbing. The scene puts the
+## Mesh node here, and `_process` used to assign an ABSOLUTE y - which threw
+## that away on the first frame and dropped the crystal to the ground, buried
+## in its own bedrock. Keeping the rest height in one named place makes the
+## animation obviously relative to it.
+const HOVER_Y := 0.9
+
 var _spin: float = 0.0
 
 
@@ -22,9 +29,35 @@ func _ready() -> void:
 	# Big enough to be the thing you walk toward from across the alcove. At the
 	# first size it was a pebble you had to already know about to find.
 	_mesh.mesh = MeshFactory.crystal(1.45, 0.36, 6)
-	# A shard of rock it grew out of, so it reads as found rather than placed.
-	ModelKit.part(self, MeshFactory.rock(Vector3(1.3, 0.5, 1.3), object_id.hash()),
-		Vector3(0.0, 0.16, 0.0), Color(0.3, 0.28, 0.26), 0.05, 0.95)
+	# The bedrock it grew out of, so it reads as found rather than placed.
+	ModelKit.part(self, MeshFactory.rock(Vector3(1.35, 0.52, 1.35), object_id.hash()),
+		Vector3(0.0, 0.16, 0.0), Color(0.30, 0.28, 0.26), 0.05, 0.95)
+	# Smaller shards around the main spike. A crystal formation is a cluster;
+	# one lone spike reads as a prop someone stood upright.
+	var colour := crystal_colour(crystal_id)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = object_id.hash()
+	for i in 4:
+		var angle := TAU * float(i) / 4.0 + rng.randf_range(-0.4, 0.4)
+		var radius := rng.randf_range(0.32, 0.46)
+		var shard := ModelKit.emissive(self,
+			MeshFactory.crystal(rng.randf_range(0.3, 0.55), rng.randf_range(0.09, 0.14), 5),
+			Vector3(cos(angle) * radius, 0.36, sin(angle) * radius), colour, 0.7,
+			Vector3(rng.randf_range(-22.0, 22.0), rng.randf_range(0.0, 360.0),
+				rng.randf_range(-22.0, 22.0)))
+		shard.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	# Emission of 1.4 clipped every channel and the crystal rendered as a white
+	# blob with no colour left in it; the light below does the glowing.
+	_set_emission(_mesh, colour, 0.85)
+	if _glow != null:
+		# The crystal lights its own alcove, in its own colour. Each dead end
+		# then reads differently from a distance, and the reward at the end of a
+		# corridor is not sitting in the dark. The scene's light had NO colour
+		# set, so it was a white lamp washing out the crystal it belongs to.
+		_glow.light_color = colour
+		_glow.light_energy = 2.4
+		_glow.omni_range = 16.0
 
 
 func _process(delta: float) -> void:
@@ -32,7 +65,7 @@ func _process(delta: float) -> void:
 		return
 	_spin += delta * 1.4
 	_mesh.rotation.y = _spin
-	_mesh.position.y = 0.15 * sin(_spin * 1.6)
+	_mesh.position.y = HOVER_Y + 0.12 * sin(_spin * 1.6)
 
 
 func get_interaction_prompt(player: Node) -> String:
@@ -76,13 +109,6 @@ func refresh_visual_state() -> void:
 		_collision.set_deferred("disabled", not present)
 	if _glow != null:
 		_glow.visible = present
-		# The crystal lights its own alcove, in its own colour. Each dead end
-		# then reads differently from a distance, and the reward at the end of a
-		# corridor is not sitting in the dark.
-		_glow.light_color = crystal_colour(crystal_id)
-		_glow.light_energy = 2.4
-		_glow.omni_range = 16.0
-	_set_emission(_mesh, crystal_colour(crystal_id), 1.4)
 
 
 static func crystal_colour(id: String) -> Color:

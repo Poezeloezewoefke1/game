@@ -16,7 +16,7 @@ extends Node
 ## client must match exactly; mismatched clients are rejected at handshake.
 const PROTOCOL_VERSION: int = 1
 
-const GAME_VERSION: String = "0.3.0"
+const GAME_VERSION: String = "0.4.0"
 
 # --------------------------------------------------------------------------
 # Networking

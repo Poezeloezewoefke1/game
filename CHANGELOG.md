@@ -4,6 +4,73 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-01
+
+### Added
+
+- **A studio model gallery.** `tools/render_models.sh` photographs every model
+  in the game one at a time on a neutral sweep under three-point lighting, at a
+  fixed three-quarter angle. In-game screenshots show whether a scene works;
+  they are almost useless for judging a model, which is half-lit, half-occluded
+  and thirty metres away. Every model below was rebuilt against this.
+- Five new primitives in `MeshFactory`: `sphere`, `capsule`, `tube`, `wedge`
+  and `torus`. Limbs need capsules with spheres at the joints, a barrel needs a
+  bore you can see down, and a ring needs to be a ring. `_add_polygon` now
+  takes the point a face should turn its back on, which is what makes the
+  hollow shapes possible without giving up the solved-winding rule.
+
+### Changed
+
+- **The explorer** is now an astronaut rather than a stack of boxes: boots with
+  toes and ankle cuffs, capsule limbs with sphere joints, a segmented torso, a
+  neck ring, an egg-shaped helmet with a dark visor lens and lamps, a life
+  support pack with open-ended tanks, and the team colour on a harness instead
+  of two horizontal slabs that read as shelves.
+- **The blaster** gained the four things that make a gun read as a gun: a bore,
+  a trigger group inside a guard, a magazine, and a break in the silhouette
+  between receiver and barrel. Its three coil rings are the heat readout and
+  are now outside the shroud, where they can actually be seen.
+- **The Sentinel** is a fixed armoured head inside a rotating gyro ring: a
+  caged core, a hooded sensor with mandibles, thruster pods, and six armour
+  plates bolted to a continuous ring. Previously loose slabs orbiting a rock.
+- **The drop pod** is a landed craft - domed nose, beacon, hull banding, a
+  recessed hatch with a porthole and chevrons, legs with shock absorbers and
+  splayed feet, engines underneath.
+- **The Star Map** is an armillary: a lit core inside three gimbal rings at
+  different angles, with graduations and a polar axis. It was a `TorusMesh`,
+  the last engine primitive left in the game.
+- **The pedestal, altar and terminal** were rebuilt as carved masonry and a
+  real console: stepped octagonal bases, fluted columns, a cradle the crystal
+  sits in, a rune ring, caged crystals on the altar posts, and a keyboard with
+  actual keys under a hooded screen.
+- **Boulders** are chiselled and flat-bottomed rather than jittered spheres, so
+  they sit on the ground instead of hovering just above it.
+- **Foliage** is a three-lobed bush on a stem. It was `rock()` in green, which
+  wasted one of only five kinds of set dressing on a duplicate of another.
+
+### Fixed
+
+- **Small shapes were silently building EMPTY meshes.** `_add_polygon` judged a
+  polygon degenerate against a fixed 1e-6, which is an area in square metres: a
+  2 cm x 1 cm quad is under it. Every quad in a small torus was discarded, the
+  surface came out with no vertices, `generate_tangents` then failed, and the
+  builder returned an ArrayMesh with no surfaces - which renders as nothing and
+  reports nothing. Two parts of the blaster and several fittings on the suit
+  were simply absent. The test is now relative to the polygon's own size, and
+  `_commit` refuses to hand back an empty surface quietly.
+- The power crystal's hover animation assigned an ABSOLUTE height, throwing
+  away the rest height its scene set. The crystal dropped to the ground on the
+  first frame and sat buried in its own bedrock.
+- The power crystal's glow light had no colour set at all, so until the first
+  snapshot refresh it was a white lamp washing out the crystal it belongs to.
+  Colour is a function of `crystal_id`, which never changes, so it is now set
+  once at build time.
+- The mesh test's "normals point away from the origin" check assumed every
+  shape is star-shaped about its centre. A tube's bore and a torus's inner
+  surface legitimately face inward, and asserting otherwise would have forced
+  the barrel to be built solid. That half of the check is now opt-out; the
+  winding half still applies to everything.
+
 ## [0.3.0] - 2026-09-01
 
 ### Changed

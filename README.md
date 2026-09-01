@@ -19,7 +19,7 @@ Concretely, and separating what has been *proven* from what has not:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 63 scripts / 20 scenes |
+| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 64 scripts / 20 scenes |
 | Mission rules, state machine, name hygiene, rate limiting | Verified | 143 unit assertions |
 | Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
 | Join codes: round trip, typos, transpositions, confusable letters | Verified | 108 assertions in `tests/unit/test_join_code.gd` |
@@ -29,14 +29,15 @@ Concretely, and separating what has been *proven* from what has not:
 | Sentinel targeting, stagger, projectiles, cleanup | Verified | `tests/integration/test_sentinel.gd` |
 | App shell: boot, host, mouse capture, pause, return to lobby | Verified | `tests/integration/test_app_shell.gd` |
 | First person: no spring arm, camera at eye height, viewmodel, own body hidden | Verified | `tests/integration/test_app_shell.gd :: first person` |
-| Generated meshes are sane and wound the way Godot requires | Verified | `tests/unit/test_mesh_factory.gd`, 64 assertions, convention read off Godot's own primitives |
+| Generated meshes are sane, non-empty and wound the way Godot requires | Verified | `tests/unit/test_mesh_factory.gd`, 157 assertions, convention read off Godot's own primitives |
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
 | Every objective is physically reachable | Verified | `tests/integration/test_level_reachability.gd` (navmesh path queries) |
 | 4-player session over real ENet, hostile-client probes | Verified | `tools/run_multiplayer_check.sh`, 5 OS processes, 78 assertions |
 | Windows export produces a real PE32+ executable | Verified | `.github/workflows/build-windows.yml`, and locally |
 | **The Windows executable launches and plays** | **NOT verified** | No Windows machine was available - see `docs/KNOWN_LIMITATIONS.md` |
 | **Two physical LAN devices** | **NOT verified** | Only loopback was available |
-| Geometry, lighting, materials and models on screen | Verified by screenshot | `tools/capture_screenshots.sh` renders 15 in-game viewpoints under a software rasteriser |
+| Geometry, lighting and materials on screen | Verified by screenshot | `tools/capture_screenshots.sh` renders 15 in-game viewpoints under a software rasteriser |
+| Every individual model | Verified by screenshot | `tools/render_models.sh` photographs all 13 gallery subjects alone on a studio sweep |
 | **The game in motion — camera feel, aim, timing, HUD while playing** | **NOT verified** | Captures are still viewpoints, not play |
 | **Forward+ only effects (SSAO, SSIL, SDFGI)** | **NOT verified** | No GPU or Vulkan driver here, so captures use the Compatibility renderer |
 

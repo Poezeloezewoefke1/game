@@ -256,6 +256,20 @@ These are checked by rendering, not by reading: run
 - [x] Each Power Crystal is visible from across its alcove and glows in its own
       colour.
 - [x] The Sentinel reads as an armoured machine with a lit core, not a blob.
+
+Each model is also checked alone, via `tools/render_models.sh`:
+
+- [x] Every subject in `captures/models/` renders - an empty frame means the
+      builder produced a mesh with no surfaces, not that the shot was framed
+      badly.
+- [x] The explorer reads as a person: head, shoulders, elbows, knees, feet.
+- [x] The team colour is unmistakably a colour on all four players, including
+      against the white suit under a bright light.
+- [x] The blaster has a visible bore, a trigger inside a guard, and coil rings
+      that are outside the shroud where they can be seen.
+- [x] The Sentinel's sensor head clearly faces one way, so a player can tell
+      whether it has seen them.
+- [x] No two kinds of set dressing read as the same shape in different colours.
 - [ ] MANUAL: head bob, sprint FOV and damage shake feel right in motion. A
       still frame cannot show this.
 - [ ] MANUAL: the weapon's heat glow is readable at a glance while firing.

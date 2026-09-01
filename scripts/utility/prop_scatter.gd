@@ -91,7 +91,7 @@ func _rebuild() -> void:
 ## than resting on a flat plane like game pieces on a board.
 func _sink(scale_value: float) -> float:
 	match kind:
-		Kind.FOLIAGE: return scale_value * 0.5
+		Kind.FOLIAGE: return -scale_value * 0.08
 		Kind.RUBBLE: return -scale_value * 0.12
 		_: return -scale_value * 0.18
 
@@ -108,9 +108,28 @@ func _make(rng: RandomNumberGenerator, scale_value: float) -> MeshInstance3D:
 				MeshFactory.rock(Vector3(1.4, 1.1, 1.3) * scale_value, variant, 6, 8),
 				Vector3.ZERO, Color(0.31, 0.29, 0.27), 0.05, 0.96)
 		Kind.FOLIAGE:
-			return ModelKit.part(self,
-				MeshFactory.rock(Vector3(1.2, 1.5, 1.2) * scale_value, variant, 4, 6),
-				Vector3.ZERO, Color(0.14, 0.33, 0.19), 0.0, 0.9)
+			# A bush, not a green rock. Reusing `rock` here meant the foliage
+			# and the boulders were the same shape in two colours, which is a
+			# waste of one of only five kinds of dressing in the game: three
+			# overlapping canopy lobes on a short stem read as a plant even at
+			# a distance where nothing else about them is visible.
+			var bush := ModelKit.part(self,
+				MeshFactory.capsule(scale_value * 0.55, scale_value * 0.09, 6),
+				Vector3(0.0, scale_value * 0.1, 0.0), Color(0.22, 0.17, 0.11), 0.0, 0.95)
+			var leaf_rng := RandomNumberGenerator.new()
+			leaf_rng.seed = variant
+			for i in 3:
+				var angle := TAU * float(i) / 3.0 + leaf_rng.randf_range(-0.5, 0.5)
+				var spread: float = scale_value * leaf_rng.randf_range(0.16, 0.3)
+				ModelKit.part(bush,
+					MeshFactory.rock(Vector3(1.05, 0.72, 1.05) * scale_value
+						* leaf_rng.randf_range(0.72, 1.0), variant + i, 3, 6),
+					Vector3(cos(angle) * spread,
+						scale_value * leaf_rng.randf_range(0.3, 0.5),
+						sin(angle) * spread),
+					Color(0.14, 0.33, 0.19).lightened(leaf_rng.randf_range(0.0, 0.18)),
+					0.0, 0.9)
+			return bush
 		Kind.RUBBLE:
 			return ModelKit.part(self,
 				MeshFactory.beveled_box(

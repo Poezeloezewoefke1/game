@@ -42,20 +42,25 @@ func _check_mesh_sane(mesh: ArrayMesh, label: String) -> void:
 ## Two separate things have to be true, and the difference between them cost a
 ## long hunt:
 ##
-##   1. the stored normal points away from the shape's centre, and
-##   2. the triangle is wound the way Godot wants it.
+##   1. the triangle is wound the way Godot wants it, and
+##   2. for a SOLID shape, the stored normal points away from the origin.
 ##
-## The original version of this helper only checked (1), which is true by
-## construction in the builder and therefore could never fail. Meanwhile (2)
-## was wrong for every triangle in the project: Godot treats a CLOCKWISE
-## triangle as front-facing, so the right-hand-rule normal of a correctly wound
-## triangle points INWARD, opposite to the stored normal. Getting this backwards
-## renders every mesh inside-out - visible only as "the game is too dark",
-## because you end up looking at the unlit inner surface of the far side.
+## (1) applies to everything. The original version of this helper only checked
+## (2), which is true by construction in the builder and therefore could never
+## have failed - while (1) was wrong for every triangle in the project. Godot
+## treats a CLOCKWISE triangle as front-facing, so the right-hand-rule normal of
+## a correctly wound triangle points INWARD, opposite to the stored normal.
+## Getting that backwards renders every mesh inside-out, visible only as "the
+## game is too dark", because you end up looking at the unlit inner surface of
+## the far side.
 ##
-## The expectation below is not a guess: it is measured from Godot's own
+## (2) is checked separately and only where it applies: a torus and a tube have
+## surfaces that legitimately face the origin, and asserting otherwise would
+## force the bore to be built solid.
+##
+## The expectation for (1) is not a guess: it is measured from Godot's own
 ## BoxMesh and PlaneMesh in `test_matches_godots_own_winding`.
-func _check_outward_winding(mesh: ArrayMesh, label: String) -> void:
+func _check_outward_winding(mesh: ArrayMesh, label: String, solid: bool = true) -> void:
 	var arrays := _surface_arrays(mesh)
 	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
@@ -68,15 +73,17 @@ func _check_outward_winding(mesh: ArrayMesh, label: String) -> void:
 		var c: Vector3 = vertices[i + 2]
 		var centre: Vector3 = (a + b + c) / 3.0
 		var geometric: Vector3 = (b - a).cross(c - a)
-		if geometric.length_squared() < 1e-9:
+		if geometric.length_squared() < 1e-12:
 			continue
 		total += 1
-		if centre.length_squared() > 0.0001 and normals[i].dot(centre.normalized()) < -0.05:
+		if solid and centre.length_squared() > 0.0001 \
+				and normals[i].dot(centre.normalized()) < -0.05:
 			outward_normals += 1
 		if geometric.normalized().dot(normals[i]) > 0.0:
 			wrong_winding += 1
-	check_eq(outward_normals, 0, "%s: every stored normal points outward (%d of %d wrong)" % [
-		label, outward_normals, total])
+	if solid:
+		check_eq(outward_normals, 0, "%s: every stored normal points outward (%d of %d wrong)" % [
+			label, outward_normals, total])
 	check_eq(wrong_winding, 0,
 		"%s: every triangle is wound clockwise from outside, as Godot requires "
 		% label + "(%d of %d wrong)" % [wrong_winding, total])
@@ -218,3 +225,93 @@ func test_meshes_are_shared_not_reallocated() -> void:
 	check(first == second, "identical requests return the same shared mesh")
 	var different := MeshFactory.beveled_box(Vector3(1.0, 2.0, 4.0), 0.05)
 	check(first != different, "a different size returns a different mesh")
+
+
+func test_small_shapes_are_not_silently_empty() -> void:
+	# THE REGRESSION THIS GUARDS. `_add_polygon` judged degeneracy against a
+	# fixed area epsilon of 1e-6 square metres. A 2 cm x 1 cm quad is under
+	# that, so every quad in a small torus was discarded, the surface came out
+	# with no vertices, and the builder returned an ArrayMesh with NO SURFACES.
+	# It renders as nothing and reports nothing. Two parts of the blaster and
+	# several fittings on the suit were simply absent for a whole session.
+	#
+	# Sizes below are the real ones from the weapon, the suit and the props.
+	var cases: Array = [
+		["blaster coil", MeshFactory.torus(0.058, 0.013, 14, 6), false],
+		["trigger guard", MeshFactory.torus(0.046, 0.011, 12, 5), false],
+		["suit cuff", MeshFactory.torus(0.062, 0.018, 10, 5), false],
+		["visor seal", MeshFactory.torus(0.118, 0.016, 16, 6), false],
+		["antenna", MeshFactory.capsule(0.13, 0.011, 6), true],
+		["helmet lamp", MeshFactory.tube(0.05, 0.032, 0.022, 8), false],
+		["switch block", MeshFactory.beveled_box(Vector3(0.032, 0.032, 0.02), 0.008), true],
+		["sight lens", MeshFactory.beveled_box(Vector3(0.026, 0.03, 0.004), 0.002), true],
+		["glint", MeshFactory.sphere(0.021, 4, 7), true],
+	]
+	for entry in cases:
+		var label: String = entry[0]
+		var mesh: ArrayMesh = entry[1]
+		var solid: bool = entry[2]
+		if not check_eq(mesh.get_surface_count(), 1, "%s has a surface" % label):
+			continue
+		var vertices: PackedVector3Array = _surface_arrays(mesh)[Mesh.ARRAY_VERTEX]
+		check(vertices.size() >= 12, "%s has real geometry (%d vertices)"
+			% [label, vertices.size()])
+		check(mesh.get_aabb().size.length() > 0.001, "%s has a real size" % label)
+		_check_outward_winding(mesh, label, solid)
+
+
+func test_new_primitives_are_the_size_they_claim() -> void:
+	var ball := MeshFactory.sphere(0.4, 6, 11)
+	_check_mesh_sane(ball, "sphere")
+	_check_outward_winding(ball, "sphere")
+	check_near(ball.get_aabb().size.y, 0.8, 0.02, "a sphere of radius r is 2r tall")
+
+	# A capsule's `height` includes both caps, so a 1 m capsule is 1 m long -
+	# the other convention makes every call site do arithmetic.
+	var pill := MeshFactory.capsule(1.0, 0.2, 10, 3)
+	_check_mesh_sane(pill, "capsule")
+	_check_outward_winding(pill, "capsule")
+	check_near(pill.get_aabb().size.y, 1.0, 0.02, "capsule height includes its caps")
+	check_near(pill.get_aabb().size.x, 0.4, 0.03, "capsule is 2r wide")
+
+	var pipe := MeshFactory.tube(0.6, 0.25, 0.15, 12)
+	_check_mesh_sane(pipe, "tube")
+	_check_outward_winding(pipe, "tube", false)
+	check_near(pipe.get_aabb().size.y, 0.6, 0.02, "tube height")
+	check_near(pipe.get_aabb().size.x, 0.5, 0.03, "tube outer diameter")
+
+	var ring := MeshFactory.torus(0.5, 0.12, 16, 8)
+	_check_mesh_sane(ring, "torus")
+	_check_outward_winding(ring, "torus", false)
+	check_near(ring.get_aabb().size.x, 1.24, 0.04, "torus spans 2*(major+minor)")
+	check_near(ring.get_aabb().size.y, 0.24, 0.03, "torus is 2*minor tall")
+
+	var ramp := MeshFactory.wedge(Vector3(1.0, 0.8, 1.2), 0.2)
+	_check_mesh_sane(ramp, "wedge")
+	_check_outward_winding(ramp, "wedge")
+	check_near(ramp.get_aabb().size.y, 0.8, 0.02, "wedge height")
+	check_near(ramp.get_aabb().size.z, 1.2, 0.02, "wedge depth")
+
+
+func test_a_hollow_shape_really_is_hollow() -> void:
+	# A tube whose inner wall was wound or normalled like the outer one looks
+	# identical from outside and solid from the muzzle end, which defeats the
+	# entire reason for having the shape.
+	var pipe := MeshFactory.tube(0.6, 0.25, 0.15, 16)
+	var arrays := _surface_arrays(pipe)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var inward_facing := 0
+	for i in vertices.size():
+		var radial := Vector2(vertices[i].x, vertices[i].z)
+		if radial.length() > 0.19:
+			continue
+		var n := Vector2(normals[i].x, normals[i].z)
+		if n.length() < 0.5:
+			continue
+		# On the bore, the surface normal must point back towards the axis.
+		if n.normalized().dot(radial.normalized()) < -0.5:
+			inward_facing += 1
+	check(inward_facing >= 24,
+		"the bore's normals point inwards, so you can see down it (%d found)"
+		% inward_facing)
