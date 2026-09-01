@@ -239,6 +239,29 @@ tools/check_structure.sh
 
 ---
 
+## Visuals and first person
+
+These are checked by rendering, not by reading: run
+`tools/capture_screenshots.sh <godot>` and look at `captures/`.
+
+- [x] Rooms are lit. A lamp above a floor produces a visible pool of light on
+      it. (If this fails, suspect mesh winding before you touch any light:
+      an inside-out mesh shows its unlit interior and reads as "too dark".)
+- [x] Walls, floors, props and rocks read as solid objects with shaded faces,
+      not as flat single-colour slabs.
+- [x] The weapon is visible in the lower right, its shape readable against both
+      a dark and a bright background, and it does not cover the crosshair.
+- [x] Firing produces a flash at the barrel, and the flash lights what is near
+      it. Both firing shots (`05-hub-firing`, `15-nerava-firing`) show it.
+- [x] Each Power Crystal is visible from across its alcove and glows in its own
+      colour.
+- [x] The Sentinel reads as an armoured machine with a lit core, not a blob.
+- [ ] MANUAL: head bob, sprint FOV and damage shake feel right in motion. A
+      still frame cannot show this.
+- [ ] MANUAL: the weapon's heat glow is readable at a glance while firing.
+- [ ] MANUAL: on a machine with a Vulkan driver, the Forward+ renderer looks
+      correct - all captures here are Compatibility.
+
 ## Manual pass, in order, when a desktop is available
 
 1. Launch. Check the menu renders, the version label is right, and an invalid

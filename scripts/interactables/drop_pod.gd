@@ -2,8 +2,14 @@ extends Interactable
 ## Extraction point. Only a LIVING Star Map carrier can trigger it, and the
 ## check runs on the host against the host's own snapshot.
 
+@onready var _hull: MeshInstance3D = $Hull
 @onready var _ring: MeshInstance3D = $Ring
 @onready var _light: OmniLight3D = $PodLight
+
+
+func _ready() -> void:
+	super()
+	PropBuilder.build_drop_pod(self, _hull, _ring)
 
 
 func get_interaction_prompt(player: Node) -> String:
@@ -36,7 +42,7 @@ func host_validate_and_apply_interaction(peer_id: int, player: Node) -> Dictiona
 func refresh_visual_state() -> void:
 	var armed := GameManager.mission_state() == MissionRules.MissionState.RETURN_TO_DROP_POD
 	var colour := Color(0.35, 1.0, 0.55) if armed else Color(0.4, 0.5, 0.65)
-	_set_emission(_ring, colour, 2.4 if armed else 0.6)
+	_set_emission(_ring, colour, 1.2 if armed else 0.35)
 	if _light != null:
 		_light.light_color = colour
 		_light.light_energy = 1.8 if armed else 0.6

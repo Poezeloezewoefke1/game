@@ -18,7 +18,7 @@ extends Node
 
 const UNIT_DIR := "res://tests/unit"
 const INTEGRATION_DIR := "res://tests/integration"
-const SCRIPT_ROOTS: Array[String] = ["res://scripts", "res://tests"]
+const SCRIPT_ROOTS: Array[String] = ["res://scripts", "res://tests", "res://tools"]
 const SCENE_ROOTS: Array[String] = ["res://scenes"]
 
 ## Scenes that must not be instantiated bare by the scene phase, because they

@@ -17,7 +17,7 @@ func _ready() -> void:
 	super()
 	add_to_group(GameConfig.GROUP_SESSION_BOUND)
 	global_position = spawn_position
-	_set_emission(_mesh, Color(1.0, 0.87, 0.42), 3.4)
+	_set_emission(_mesh, Color(1.0, 0.87, 0.42), 1.5)
 
 
 func _process(delta: float) -> void:

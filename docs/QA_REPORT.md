@@ -5,7 +5,8 @@ line below is either backed by a command whose output was read, or explicitly
 marked as not run.
 
 **Engine used for every result here:** Godot `4.5.1.stable.official.f62fdbde1`,
-Linux x86_64, headless.
+Linux x86_64. Automated runs are headless; the screenshot pass in section 6
+renders for real under Xvfb with a software rasteriser.
 
 ---
 
@@ -25,7 +26,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 87 checks, 745 assertions, exit code 0, no engine errors.**
+**Result: PASS — 98 checks, 828 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -35,16 +36,17 @@ errors and fails on them. That gate was verified by removing the fix for defect
 fired is not a gate.
 
 ```
-[1/3] Compiling scripts...     46 scripts, 0 failed
+[1/3] Compiling scripts...     63 scripts, 0 failed
 [2/3] Loading scenes...        20 scenes,  0 failed
 [3/3] UNIT tests...
+      PASS  test_join_code            (108 assertions)
+      PASS  test_mesh_factory         (64 assertions)
       PASS  test_mission_rules        (41 assertions)
       PASS  test_name_sanitizer       (23 assertions)
       PASS  test_rate_limiter         (13 assertions)
       PASS  test_state_machine        (66 assertions)
       INTEGRATION tests...
-      PASS  test_join_code            (108 assertions)
-      PASS  test_app_shell            (25 assertions)
+      PASS  test_app_shell            (44 assertions)
       PASS  test_combat_and_revive    (62 assertions)
       PASS  test_concurrency          (17 assertions)
       PASS  test_lan_discovery        (23 assertions)
@@ -53,7 +55,7 @@ fired is not a gate.
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (87 checks passed, 745 assertions)
+ RESULT: PASS   (98 checks passed, 828 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -159,6 +161,27 @@ identically in both workflows, no binaries or build output tracked, no
 assignment-shaped secrets, `.gitignore` covers generated output, all script and
 scene filenames snake_case.
 
+### 6. Rendered screenshots
+
+```
+tools/capture_screenshots.sh <godot>
+```
+
+**Result: 15 images written.** The real game is hosted, driven into the hub and
+then into Nerava, and the host's own camera is moved to fifteen fixed viewpoints
+and photographed. Two of them fire the blaster on the captured frame so the
+muzzle flash is in shot.
+
+This runs under Xvfb with Mesa's software rasteriser, using
+`--rendering-driver opengl3 --rendering-method gl_compatibility`, because this
+machine has no GPU and no Vulkan driver. **What that means for the images:**
+geometry, layout, materials, colour and light direction are faithful; anything
+Forward+ only - SSAO, SSIL, SDFGI - is absent. The shipped game runs Forward+.
+
+The images are not committed (`captures/` is ignored); the command above
+reproduces them. This pass is what found defects 27, 29, 30 and 31 - none of
+which any headless test could have seen.
+
 ---
 
 ## What was NOT executed
@@ -168,7 +191,8 @@ Stated plainly. None of the following is claimed to work.
 | Not run | Why | Tracked as |
 |---|---|---|
 | The Windows executable was never launched | No Windows machine | VERIFY-001 |
-| Nothing was ever displayed on a screen BY ME | Every run here was headless. The owner has since run it, which produced defect 24 | VERIFY-002 |
+| The game running at a screen, in motion, played | Frames ARE now rendered here (section 6), but they are viewpoints, not play: camera feel, bob, aim, timing and the HUD in motion are still unverified. The owner running it for real is what produced defect 24 | VERIFY-002 |
+| Anything Forward+ only (SSAO, SSIL, SDFGI) | No GPU and no Vulkan driver here, so captures use the Compatibility renderer | VERIFY-002 |
 | Two physical LAN devices | Only loopback available | VERIFY-003 |
 | Internet play through a forwarded port | No such network | VERIFY-003 |
 | Artificial latency or packet loss | No conditioner available | VERIFY-004 |
@@ -212,6 +236,11 @@ are recorded because they are the reason the test suite looks the way it does.
 | 24 | **The player could not move, look, shoot or interact after the hub loaded** | Reported by the owner running the real game - the first runtime feedback this project has had | The lobby set the mouse to VISIBLE and nothing captured it again on the scene change; the player treats an uncaptured mouse as "a menu is open". Mouse mode now has exactly one owner, re-evaluated every frame. Pressing Escape twice was the accidental workaround |
 | 25 | Tearing down during a scene transition threw on a freed node | The new app-shell test | `_mount` awaited, then called a method on an instance the teardown had freed; guarded with `is_instance_valid` |
 | 26 | A freed object cannot even be PASSED to a `Node`-typed parameter | Fixing 25 | The argument type check throws before the body runs, so the guard's parameter is deliberately untyped |
+| 27 | **Every hand-built mesh in the game was inside-out, from the first commit** | The first rendered screenshots: rooms were near-black under lamps that should have lit them | Godot's front faces are CLOCKWISE; `MeshFactory` emitted counter-clockwise, so outward faces were culled and the visible surface was the unlit interior of the far side. Confirmed by an A/B against Godot's own `BoxMesh` (identical size, material and lamp; one lit, one black) and by a shader drawing the raw normal. No headless test could see it: collision, navigation, AABBs and silhouettes are identical either way |
+| 28 | The winding test could never have failed | Fixing 27 | It compared the stored normal to the shape's centre, which the builder guarantees. It now reads Godot's convention off `BoxMesh` and `PlaneMesh` and checks every generated mesh against it |
+| 29 | A muzzle flash shorter than one frame was never drawn | The firing screenshots came out with no flash | `_process` runs before the draw, so a 55 ms timer expires unseen below ~18 fps - the player loses shot feedback exactly when the game is struggling. The flash now guarantees one rendered frame |
+| 30 | Hull surfaces at `metallic` 0.45-0.75 rendered near-black | Hub screenshots | A metal surface has no diffuse response - it shows reflected environment, and a sealed room lit by a flat background colour has none. These are painted panels, which are dielectric; values lowered accordingly |
+| 31 | Hub ceiling lamps delivered ~6% of their energy to the floor | Arithmetic during the same investigation | Godot's omni falloff divides by `pow(distance, omni_attenuation)`; at 1.4 over 7.4 m that is a rounding error. Softened, and real ceiling fixtures added |
 
 ---
 

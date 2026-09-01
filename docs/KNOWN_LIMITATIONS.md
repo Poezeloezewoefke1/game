@@ -23,10 +23,30 @@ point.
 
 ### VERIFY-002 - Nothing has been seen on a screen from here
 
-**Status:** partially closed, and instructive.
-Every run in this environment has been `--headless`. Geometry, lighting,
-materials, the HUD layout, camera feel, the third-person spring arm, readability
-of the interaction prompt and the downed marker remain **unverified**.
+**Status:** largely closed, and instructive.
+
+Frames are now actually rendered here. `tools/capture_screenshots.sh` runs the
+real game under Xvfb with Mesa's software rasteriser and saves PNGs of fifteen
+in-game viewpoints, so geometry, lighting, materials, model shapes, the weapon
+in hand and the muzzle flash are all **seen** rather than reasoned about.
+
+Two caveats, both real:
+
+* The captures use the **Compatibility** renderer, because this machine has no
+  GPU and no Vulkan driver (`libvulkan` is present but there is no ICD, so
+  Forward+ cannot start). Geometry, layout, materials, colour and light
+  direction are faithful. Screen-space effects that are Forward+ only - SSAO,
+  SSIL, SDFGI - do not appear, and neither does anything the shipped renderer
+  does differently.
+* The captures are still viewpoints, not play. **Camera feel, head bob, sprint
+  FOV, aim, timing and the HUD in motion remain unverified**, along with the
+  readability of the interaction prompt and the downed marker during an actual
+  fight.
+
+Rendering earned its keep immediately: it is what exposed that every mesh in the
+game was inside-out (see the 0.3.0 entry in `CHANGELOG.md`). No headless
+test could have caught that - collision, navigation and AABBs are all identical
+either way, and the only symptom is a picture.
 
 The owner has since run the real game, and the first thing it produced was a
 bug that every headless test had passed over: the player could not move, because

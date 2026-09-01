@@ -33,8 +33,6 @@ shape = SubResource("SphereShape3D_body")
 mesh = SubResource("SphereMesh_core")
 
 [node name="Shell" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.7071, 0.7071, 0, -0.7071, 0.7071, 0, 0, 0)
-mesh = SubResource("TorusMesh_shell")
 
 [node name="Eye" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.82)

@@ -16,7 +16,7 @@ extends Node
 ## client must match exactly; mismatched clients are rejected at handshake.
 const PROTOCOL_VERSION: int = 1
 
-const GAME_VERSION: String = "0.2.1"
+const GAME_VERSION: String = "0.3.0"
 
 # --------------------------------------------------------------------------
 # Networking
@@ -99,6 +99,25 @@ const JUMP_VELOCITY: float = 8.0
 const AIR_CONTROL: float = 0.35
 const GROUND_ACCELERATION: float = 55.0
 const GROUND_FRICTION: float = 45.0
+
+## First person. The camera sits at eye height on the pivot itself - there is
+## no spring arm, so nothing can push the view into the player's own body.
+const EYE_HEIGHT: float = 1.62
+
+const FOV_BASE: float = 78.0
+## Widening while sprinting is the cheapest possible sense of speed.
+const FOV_SPRINT: float = 88.0
+const FOV_BLEND: float = 6.0
+
+## Camera roll and shake, all presentation only.
+const VIEW_BOB_FREQUENCY: float = 8.0
+const VIEW_BOB_AMOUNT: float = 0.035
+const LAND_DIP: float = 0.09
+const DAMAGE_SHAKE: float = 0.35
+## Firing shakes the view too, but an order of magnitude less than being
+## hit does - at ten shots a second, anything larger is nausea, not weight.
+const FIRE_SHAKE: float = 0.035
+const SHAKE_DECAY: float = 3.2
 
 const MOUSE_SENSITIVITY: float = 0.0022
 const PITCH_MIN_DEG: float = -75.0

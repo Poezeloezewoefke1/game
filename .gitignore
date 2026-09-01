@@ -55,3 +55,4 @@ Thumbs.db
 !.github/**
 !docs/**
 !tests/**
+captures/

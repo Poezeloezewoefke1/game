@@ -7,12 +7,19 @@ extends Interactable
 ## Map is a spawned entity, because only then does it need a position the level
 ## author did not choose.
 
+@onready var _base: MeshInstance3D = $Base
 @onready var _shield: MeshInstance3D = $Shield
 @onready var _map_mesh: MeshInstance3D = $StarMap
 @onready var _altar_light: OmniLight3D = $AltarLight
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 
 var _spin: float = 0.0
+
+
+func _ready() -> void:
+	super()
+	PropBuilder.build_altar(self, _base)
+	_map_mesh.position = Vector3(0.0, 2.05, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -68,7 +75,7 @@ func refresh_visual_state() -> void:
 		_shield.visible = not altar_open
 	if _map_mesh != null:
 		_map_mesh.visible = map_state == MissionRules.MAP_LOCKED or map_state == MissionRules.MAP_AVAILABLE
-		_set_emission(_map_mesh, Color(1.0, 0.87, 0.42), 3.2 if altar_open else 1.2)
+		_set_emission(_map_mesh, Color(1.0, 0.87, 0.42), 1.6 if altar_open else 0.7)
 	if _altar_light != null:
 		_altar_light.light_color = Color(1.0, 0.85, 0.45) if altar_open else Color(0.3, 0.6, 1.0)
 		_altar_light.light_energy = 2.4 if altar_open else 1.0

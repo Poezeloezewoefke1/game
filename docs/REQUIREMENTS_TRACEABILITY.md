@@ -118,7 +118,11 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 
 | ID | Requirement | Implementation | Verification | Status |
 |---|---|---|---|---|
-| PLR-001 | Third-person CharacterBody3D with spring-arm camera | `player.tscn`, `player.gd` | runner phase 2 | AUTO (structure) / MANUAL (feel) |
+| PLR-001 | ~~Third-person CharacterBody3D with spring-arm camera~~ **First-person camera at eye height, no spring arm** — changed on the owner's instruction ("make the game like first person"), superseding the original brief | `player.tscn`, `player.gd`, `view_model.gd`, `player_body.gd` | `test_app_shell :: first person` | AUTO (structure) / MANUAL (feel) |
+| PLR-006 | A viewmodel weapon whose glow reports blaster heat | `view_model.gd` | `test_app_shell :: first person` | AUTO (present) / MANUAL (readability) |
+| PLR-007 | Muzzle flash on every shot the host confirms, for the shooter and for everyone watching | `muzzle_flash.gd`, `player.gd::_rpc_tracer` | `test_app_shell :: first person` | AUTO |
+| ART-001 | Models built from procedural geometry, no downloaded or paid assets | `mesh_factory.gd`, `model_kit.gd`, `prop_builder.gd`, `prop_scatter.gd` | `test_mesh_factory` (71 assertions) | AUTO |
+| ART-002 | Generated geometry must match Godot's clockwise front-face winding | `mesh_factory.gd::_add_polygon` | `test_mesh_factory :: test_matches_godots_own_winding` | AUTO (read back off Godot's own primitives) |
 | PLR-002 | Walk, sprint, jump, mouse look, pitch clamp | `player.gd:_local_physics`, `_unhandled_input` | MANUAL | MANUAL |
 | PLR-003 | Remote players are smoothed, and snapped on large jumps | `_remote_physics` | STATIC | STATIC |
 | PLR-004 | Host authority over health | `StateSync` authority = 1 | `test_combat_and_revive` | AUTO |

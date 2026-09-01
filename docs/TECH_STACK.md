@@ -78,10 +78,26 @@ access: builds are published as workflow artifacts, never committed.
   `%APPDATA%\Godot\export_templates\4.5.1.stable\` (Windows).
 * For `tools/run_multiplayer_check.sh`: bash, and enough memory for four to
   five concurrent headless Godot processes (roughly 1.5 GB total).
+* For `tools/capture_screenshots.sh`: `xvfb-run` and a working OpenGL 3.3
+  driver. On a machine with no GPU, Mesa's `llvmpipe` software rasteriser is
+  enough - that is what this project's captures were taken with. The script
+  forces `--rendering-driver opengl3 --rendering-method gl_compatibility` for
+  exactly that reason; it does not change what the shipped game uses, which is
+  Forward+.
 
 No paid assets, paid plugins, downloaded model packs, or external services are
-used. Every asset in the repository is either engine-generated geometry or an
-original placeholder produced in code.
+used. Every model in the repository is generated at runtime by
+`scripts/utility/mesh_factory.gd` and its builders - chamfered boxes, faceted
+crystals, irregular rocks and tapered columns assembled into props, characters
+and the weapon. Nothing is downloaded, nothing is licensed from a third party,
+and there is not a single binary model file to keep in sync.
+
+One consequence is worth writing down, because it cost a long debugging session:
+**Godot treats a clockwise triangle as front-facing**, which is the opposite of
+the OpenGL convention Newell's method naturally produces. Any new geometry
+builder must match it, and `tests/unit/test_mesh_factory.gd` reads that
+convention back off Godot's own `BoxMesh` and `PlaneMesh` rather than trusting a
+remembered rule.
 
 ## Compatibility assumptions
 

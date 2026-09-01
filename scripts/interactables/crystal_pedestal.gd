@@ -17,6 +17,9 @@ func _ready() -> void:
 		Logx.error("pedestal", "%s has no pedestal_id" % object_id)
 	if not GameConfig.ALL_CRYSTAL_IDS.has(accepts_crystal_id):
 		Logx.error("pedestal", "%s accepts invalid crystal '%s'" % [object_id, accepts_crystal_id])
+	PropBuilder.build_pedestal(self, _socket, PowerCrystal.crystal_colour(accepts_crystal_id))
+	_crystal_mesh.mesh = MeshFactory.crystal(0.8, 0.22, 6)
+	_crystal_mesh.position = Vector3(0.0, 1.72, 0.0)
 
 
 func get_interaction_prompt(player: Node) -> String:
@@ -63,10 +66,10 @@ func refresh_visual_state() -> void:
 	var colour := PowerCrystal.crystal_colour(accepts_crystal_id)
 	if _crystal_mesh != null:
 		_crystal_mesh.visible = filled
-		_set_emission(_crystal_mesh, colour, 3.0)
+		_set_emission(_crystal_mesh, colour, 1.5)
 	if _beam != null:
 		_beam.visible = filled
-		_set_emission(_beam, colour, 2.0)
+		_set_emission(_beam, colour, 0.9)
 	if _light != null:
 		_light.visible = filled
 		_light.light_color = colour

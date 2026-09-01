@@ -19,6 +19,12 @@ func _ready() -> void:
 	super()
 	if not GameConfig.ALL_CRYSTAL_IDS.has(crystal_id):
 		Logx.error("crystal", "%s has invalid crystal_id '%s'" % [object_id, crystal_id])
+	# Big enough to be the thing you walk toward from across the alcove. At the
+	# first size it was a pebble you had to already know about to find.
+	_mesh.mesh = MeshFactory.crystal(1.45, 0.36, 6)
+	# A shard of rock it grew out of, so it reads as found rather than placed.
+	ModelKit.part(self, MeshFactory.rock(Vector3(1.3, 0.5, 1.3), object_id.hash()),
+		Vector3(0.0, 0.16, 0.0), Color(0.3, 0.28, 0.26), 0.05, 0.95)
 
 
 func _process(delta: float) -> void:
@@ -70,7 +76,13 @@ func refresh_visual_state() -> void:
 		_collision.set_deferred("disabled", not present)
 	if _glow != null:
 		_glow.visible = present
-	_set_emission(_mesh, crystal_colour(crystal_id), 2.6)
+		# The crystal lights its own alcove, in its own colour. Each dead end
+		# then reads differently from a distance, and the reward at the end of a
+		# corridor is not sitting in the dark.
+		_glow.light_color = crystal_colour(crystal_id)
+		_glow.light_energy = 2.4
+		_glow.omni_range = 16.0
+	_set_emission(_mesh, crystal_colour(crystal_id), 1.4)
 
 
 static func crystal_colour(id: String) -> Color:

@@ -55,6 +55,7 @@ func run_async() -> void:
 
 	await _test_menu_releases_the_mouse()
 	await _test_hub_captures_the_mouse()
+	await _test_first_person()
 	await _test_pause_releases_and_resume_recaptures()
 	await _test_returning_to_the_lobby_releases()
 
@@ -120,6 +121,71 @@ func _test_hub_captures_the_mouse() -> void:
 	if check(player != null, "the host's player spawned"):
 		check(bool(player.get("is_alive")) and not bool(player.get("is_downed")),
 			"the player is in a state that permits acting")
+
+
+## First person is a structural property, not a setting: if a spring arm comes
+## back, or the camera stops being a direct child of the pivot, the player ends
+## up looking at the back of their own head again.
+func _test_first_person() -> void:
+	set_current("first person")
+	var player: Node = SpawnManager.player_node(GameConfig.HOST_PEER_ID)
+	if not check(player != null, "the host's player exists"):
+		return
+
+	var pivot := player.get_node_or_null("CameraPivot") as Node3D
+	if not check(pivot != null, "the player has a CameraPivot"):
+		return
+	check_near(pivot.position.y, GameConfig.EYE_HEIGHT, 0.2,
+		"the camera pivot sits at eye height")
+
+	var camera := pivot.get_node_or_null("Camera3D") as Camera3D
+	check(camera != null, "the camera is a direct child of the pivot, not on a boom")
+	if camera != null:
+		check(camera.current, "the local player's camera is the active one")
+
+	check(_find_node_of_type(player, "SpringArm3D") == null,
+		"no spring arm survives anywhere on the player - that is what put the "
+		+ "camera behind the body and filled the screen with a capsule")
+
+	check(pivot.get_node_or_null("ViewModel") != null,
+		"the owning player has a viewmodel weapon")
+
+	# The flash hangs off the Muzzle, not the ViewModel, so that remote players
+	# - who never get a viewmodel - still light up when they shoot.
+	var flash := pivot.get_node_or_null("Muzzle/MuzzleFlash") as Node3D
+	if check(flash != null, "there is a muzzle flash at the muzzle"):
+		check(flash.has_method("flash"), "the muzzle flash can be fired")
+		check_false(flash.is_processing(),
+			"an idle muzzle flash does not process, so it is free until it fires")
+		var lit := _find_node_of_type(flash, "OmniLight3D") as OmniLight3D
+		if check(lit != null, "the flash carries its own light"):
+			check_near(lit.light_energy, 0.0, 0.001, "the idle flash emits nothing")
+			flash.call("flash")
+			check(lit.light_energy > 1.0, "firing lights the flash")
+			check(flash.is_processing(), "a lit flash processes so it can fade")
+			# And it must put itself away again rather than leaving a lamp on.
+			await wait_seconds(0.25)
+			check_near(lit.light_energy, 0.0, 0.001, "the flash goes out on its own")
+			check_false(flash.is_processing(), "a spent flash stops processing")
+
+	var body := player.get_node_or_null("Body") as Node3D
+	if check(body != null, "the player has a body"):
+		check_false(body.visible,
+			"the local player's own body is hidden, since the camera is inside it")
+		check(body.get_child_count() > 4,
+			"the body is assembled from parts, not a single capsule (%d parts)"
+			% body.get_child_count())
+
+
+func _find_node_of_type(root: Node, type_name: String) -> Node:
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node.is_class(type_name):
+			return node
+		for child in node.get_children():
+			stack.append(child)
+	return null
 
 
 func _test_pause_releases_and_resume_recaptures() -> void:

@@ -70,6 +70,7 @@ func _ready() -> void:
 	_agent.avoidance_enabled = false
 
 	_apply_materials()
+	PropBuilder.build_sentinel(_shell, _core, _eye)
 	AudioDirector.play(AudioDirector.Cue.SENTINEL_SPAWN)
 
 	if _is_host():
@@ -348,8 +349,8 @@ func _rpc_hit_flash() -> void:
 	if mat == null:
 		return
 	var tween := create_tween()
-	tween.tween_property(mat, "emission_energy_multiplier", 8.0, 0.05)
-	tween.tween_property(mat, "emission_energy_multiplier", 3.0, 0.2)
+	tween.tween_property(mat, "emission_energy_multiplier", 2.6, 0.05)
+	tween.tween_property(mat, "emission_energy_multiplier", 0.9, 0.2)
 
 
 # ==========================================================================
@@ -370,7 +371,7 @@ func _present_common(delta: float) -> void:
 	var colour := _state_colour()
 	if _light != null:
 		_light.light_color = colour
-		_light.light_energy = 1.0 if sync_state == State.STAGGERED else 2.4
+		_light.light_energy = 0.7 if sync_state == State.STAGGERED else 1.5
 	if _eye != null:
 		var mat := _eye.material_override as StandardMaterial3D
 		if mat != null:
@@ -387,11 +388,14 @@ func _state_colour() -> Color:
 
 
 func _apply_materials() -> void:
+	# Emission is kept low deliberately. With glow on, anything much above 1
+	# stops being "a glowing core" and becomes a white disc with a halo, taking
+	# the whole silhouette with it.
 	var core := StandardMaterial3D.new()
-	core.albedo_color = Color(1.0, 0.35, 0.25)
+	core.albedo_color = Color(0.72, 0.26, 0.2)
 	core.emission_enabled = true
-	core.emission = Color(1.0, 0.35, 0.25)
-	core.emission_energy_multiplier = 3.0
+	core.emission = Color(1.0, 0.4, 0.28)
+	core.emission_energy_multiplier = 0.9
 	_core.material_override = core
 
 	var shell := StandardMaterial3D.new()
@@ -401,8 +405,8 @@ func _apply_materials() -> void:
 	_shell.material_override = shell
 
 	var eye := StandardMaterial3D.new()
-	eye.albedo_color = Color(1.0, 0.25, 0.2)
+	eye.albedo_color = Color(1.0, 0.3, 0.24)
 	eye.emission_enabled = true
-	eye.emission = Color(1.0, 0.25, 0.2)
-	eye.emission_energy_multiplier = 4.0
+	eye.emission = Color(1.0, 0.3, 0.24)
+	eye.emission_energy_multiplier = 1.8
 	_eye.material_override = eye

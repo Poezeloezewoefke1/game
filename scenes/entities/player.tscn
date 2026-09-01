@@ -1,17 +1,13 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/player/player_body.gd" id="2_body"]
+[ext_resource type="Script" path="res://scripts/player/view_model.gd" id="3_view"]
+[ext_resource type="Script" path="res://scripts/player/muzzle_flash.gd" id="4_flash"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
 height = 1.8
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.4
-height = 1.8
-
-[sub_resource type="BoxMesh" id="BoxMesh_visor"]
-size = Vector3(0.42, 0.14, 0.12)
 
 [sub_resource type="SphereMesh" id="SphereMesh_downed"]
 radius = 0.45
@@ -35,37 +31,31 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="Body" type="Node3D" parent="."]
-
-[node name="Mesh" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("CapsuleMesh_body")
-
-[node name="Visor" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, -0.34)
-mesh = SubResource("BoxMesh_visor")
+script = ExtResource("2_body")
 
 [node name="CameraPivot" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
 
-[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.25, 0)
-collision_mask = 1
-spring_length = 3.4
-margin = 0.25
-
-[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
-fov = 75.0
+[node name="Camera3D" type="Camera3D" parent="CameraPivot"]
+fov = 78.0
 near = 0.05
+far = 400.0
+
+[node name="ViewModel" type="Node3D" parent="CameraPivot"]
+script = ExtResource("3_view")
 
 [node name="InteractRay" type="RayCast3D" parent="CameraPivot"]
 target_position = Vector3(0, 0, -3.2)
 collision_mask = 7
 
 [node name="Muzzle" type="Node3D" parent="CameraPivot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, -0.2, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, -0.13, -0.72)
+
+[node name="MuzzleFlash" type="Node3D" parent="CameraPivot/Muzzle"]
+script = ExtResource("4_flash")
 
 [node name="Nameplate" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
 billboard = 1
 no_depth_test = true
 fixed_size = true

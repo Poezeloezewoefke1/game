@@ -1,5 +1,5 @@
 extends CharacterBody3D
-## Third-person cooperative player.
+## First-person cooperative player.
 ##
 ## AUTHORITY SPLIT (the single most important thing in this file)
 ##   * MotionSync  - authority is the OWNING PEER. Carries `sync_position`,
@@ -39,6 +39,12 @@ var overheated: bool = false
 
 # --- Local only -----------------------------------------------------------
 var _pitch: float = 0.0
+## First-person camera feel. All local, all presentation.
+var _bob_time: float = 0.0
+var _view_shake: float = 0.0
+var _land_dip: float = 0.0
+var _was_grounded: bool = true
+var _speed_ratio: float = 0.0
 var _hovered: Node = null
 var _hovered_prompt: String = ""
 var _reviving_target: int = 0
@@ -63,13 +69,13 @@ var _host_last_pos_ms: int = 0
 var _host_speed_strikes: int = 0
 
 @onready var _camera_pivot: Node3D = $CameraPivot
-@onready var _spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
-@onready var _camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
+@onready var _camera: Camera3D = $CameraPivot/Camera3D
+@onready var _view_model: Node3D = $CameraPivot/ViewModel
 @onready var _interact_ray: RayCast3D = $CameraPivot/InteractRay
 @onready var _muzzle: Node3D = $CameraPivot/Muzzle
+@onready var _muzzle_flash: Node3D = $CameraPivot/Muzzle/MuzzleFlash
 @onready var _nameplate: Label3D = $Nameplate
-@onready var _body_mesh: MeshInstance3D = $Body/Mesh
-@onready var _visor_mesh: MeshInstance3D = $Body/Visor
+@onready var _body: Node3D = $Body
 @onready var _downed_marker: Node3D = $DownedMarker
 @onready var _motion_sync: MultiplayerSynchronizer = $MotionSync
 @onready var _state_sync: MultiplayerSynchronizer = $StateSync
@@ -103,14 +109,25 @@ func _ready() -> void:
 	_interact_ray.collide_with_bodies = true
 
 	_nameplate.text = display_name
-	_apply_team_colour()
+	_body.build(_team_colour())
+	_camera.fov = GameConfig.FOV_BASE
 
 	if is_local():
 		_camera.current = true
 		_nameplate.visible = false
+		# First person: you are inside this body, so it is switched off rather
+		# than left to fill the middle of your own screen.
+		_body.visible = false
 		_host_fire_limiter = null
+		# Pin the flash to the barrel tip so it rides the bob and the recoil.
+		if _view_model.has_method("muzzle_tip") and _muzzle_flash.has_method("set_follow"):
+			_muzzle_flash.set_follow(_view_model.muzzle_tip())
 	else:
 		_camera.current = false
+		# Only the owner needs a weapon in front of their face. Their flash then
+		# stays on the fixed Muzzle node, which is where a gun looks like it is
+		# when you are watching someone else fire it.
+		_view_model.queue_free()
 
 	if _is_host():
 		_host_fire_limiter = RateLimiter.new(
@@ -260,6 +277,8 @@ func _local_physics(delta: float) -> void:
 	if horizontal.length_squared() > 0.25:
 		sync_flags |= MOTION_MOVING
 
+	_speed_ratio = clampf(horizontal.length() / GameConfig.SPRINT_SPEED, 0.0, 1.0)
+	_update_first_person_view(delta, is_on_floor())
 	_update_interaction_focus()
 	_tick_local_actions()
 
@@ -291,6 +310,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pitch = clampf(_pitch - vertical * sens,
 			deg_to_rad(GameConfig.PITCH_MIN_DEG), deg_to_rad(GameConfig.PITCH_MAX_DEG))
 		_camera_pivot.rotation.x = _pitch
+		if is_instance_valid(_view_model) and _view_model.has_method("add_look_sway"):
+			_view_model.add_look_sway(motion.relative)
 
 
 # ==========================================================================
@@ -504,6 +525,13 @@ func _rpc_tracer(from: Vector3, to: Vector3) -> void:
 	if not _from_host():
 		return
 	AudioDirector.play(AudioDirector.Cue.BLASTER_FIRE)
+	# Everyone gets the flash, including the other three players, because the
+	# light at someone else's barrel is how you can tell they are shooting.
+	if is_instance_valid(_muzzle_flash) and _muzzle_flash.has_method("flash"):
+		_muzzle_flash.flash()
+	if is_local() and is_instance_valid(_view_model) and _view_model.has_method("kick"):
+		_view_model.kick()
+		shake_view(GameConfig.FIRE_SHAKE)
 	var stage := SceneManager.current_stage()
 	if stage == null:
 		return
@@ -536,6 +564,7 @@ func host_apply_damage(amount: int, _source: String = "") -> void:
 	health = maxi(health - amount, 0)
 	if owner_peer_id == GameConfig.HOST_PEER_ID:
 		AudioDirector.play(AudioDirector.Cue.PLAYER_HURT)
+		shake_view(GameConfig.DAMAGE_SHAKE)
 	elif NetworkManager.is_peer_connected(owner_peer_id):
 		_rpc_hurt_feedback.rpc_id(owner_peer_id)
 	if health <= 0:
@@ -621,6 +650,7 @@ func _rpc_hurt_feedback() -> void:
 	if not _from_host():
 		return
 	AudioDirector.play(AudioDirector.Cue.PLAYER_HURT)
+	shake_view(GameConfig.DAMAGE_SHAKE)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -683,25 +713,62 @@ func _refresh_downed_visuals() -> void:
 		return
 	_visuals_downed = is_downed
 	_downed_marker.visible = is_downed
-	if _body_mesh.material_override is StandardMaterial3D:
-		var mat := _body_mesh.material_override as StandardMaterial3D
-		mat.albedo_color = Color(0.55, 0.16, 0.18) if is_downed else _team_colour()
+	if _body.has_method("set_downed"):
+		_body.set_downed(is_downed)
 	if not is_local():
 		_nameplate.modulate = Color(1, 0.5, 0.5) if is_downed else Color(1, 1, 1)
 
 
-func _apply_team_colour() -> void:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = _team_colour()
-	mat.metallic = 0.25
-	mat.roughness = 0.55
-	_body_mesh.material_override = mat
-	var visor := StandardMaterial3D.new()
-	visor.albedo_color = Color(0.15, 0.85, 1.0)
-	visor.emission_enabled = true
-	visor.emission = Color(0.15, 0.85, 1.0)
-	visor.emission_energy_multiplier = 2.0
-	_visor_mesh.material_override = visor
+# ==========================================================================
+# First-person camera
+# ==========================================================================
+
+## Everything here is local presentation: head bob, a sprint field-of-view
+## push, a dip on landing, and a shake when hit. None of it is replicated and
+## none of it can change an outcome - but it is most of the difference between
+## "a camera is being moved" and "I am walking around in there".
+func _update_first_person_view(delta: float, grounded: bool) -> void:
+	if grounded and _speed_ratio > 0.05:
+		_bob_time += delta * GameConfig.VIEW_BOB_FREQUENCY * (0.55 + _speed_ratio)
+	else:
+		_bob_time = lerp(_bob_time, 0.0, clampf(delta * 5.0, 0.0, 1.0))
+
+	# Landing dip - a small downward push that recovers, so hitting the ground
+	# registers as an impact rather than an instant stop.
+	if grounded and not _was_grounded:
+		_land_dip = GameConfig.LAND_DIP
+	_was_grounded = grounded
+	_land_dip = move_toward(_land_dip, 0.0, delta * 0.35)
+
+	_view_shake = move_toward(_view_shake, 0.0, delta * GameConfig.SHAKE_DECAY * maxf(_view_shake, 0.1))
+
+	var bob_y := -absf(sin(_bob_time)) * GameConfig.VIEW_BOB_AMOUNT * _speed_ratio
+	var bob_x := sin(_bob_time * 0.5) * GameConfig.VIEW_BOB_AMOUNT * 0.6 * _speed_ratio
+	var shake := Vector3(
+		randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * _view_shake * 0.06
+
+	_camera_pivot.position = Vector3(
+		bob_x + shake.x,
+		GameConfig.EYE_HEIGHT + bob_y - _land_dip + shake.y,
+		0.0)
+	# A little roll into the bob keeps it from feeling like a lift.
+	_camera.rotation.z = sin(_bob_time * 0.5) * 0.012 * _speed_ratio + _view_shake * 0.05
+
+	var wanted_fov: float = GameConfig.FOV_SPRINT if (sync_flags & MOTION_SPRINTING) != 0 \
+		else GameConfig.FOV_BASE
+	_camera.fov = lerp(_camera.fov, wanted_fov, clampf(delta * GameConfig.FOV_BLEND, 0.0, 1.0))
+
+	if is_instance_valid(_view_model) and _view_model.has_method("update_motion"):
+		_view_model.update_motion(delta, _speed_ratio, grounded)
+		_view_model.set_heat_ratio(heat / GameConfig.BLASTER_HEAT_MAX, overheated)
+
+
+## Called when this player takes damage, so being shot is felt and not merely
+## read off a health bar.
+func shake_view(amount: float) -> void:
+	if not is_local():
+		return
+	_view_shake = minf(_view_shake + amount, 1.0)
 
 
 func _team_colour() -> Color:

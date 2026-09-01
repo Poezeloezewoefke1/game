@@ -4,6 +4,77 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-01
+
+### Changed
+
+- **The game is now first person.** The spring-arm chase camera is gone; the
+  camera sits at eye height inside the body, which is hidden for its owner and
+  drawn for everyone else. A viewmodel blaster is held in front of it, and its
+  energy coil and vent glow with the weapon's heat, so the overheat readout is
+  visible without looking at the HUD.
+
+### Fixed
+
+- **Every hand-built mesh in the game was inside-out, and had been from the
+  first commit.** Godot treats a *clockwise* triangle as front-facing;
+  `MeshFactory._add_polygon` emitted counter-clockwise, so the outward faces
+  were culled and what you actually saw was the unlit inner surface of the far
+  side of every wall, floor, rock, crystal and prop.
+
+  It never looked like a geometry bug. Silhouettes, collision, navigation,
+  physics and every headless test were unaffected; the only symptom was that
+  levels were extremely dark and flat, which reads as a lighting problem. The
+  hunt went through light attenuation, per-object light limits, tonemapping,
+  material metallic values, tangents, mesh compression and face tessellation
+  before an A/B against Godot's own `BoxMesh` — identical size, material and
+  lamp, one lit and one black — and a shader drawing the raw normal made it
+  unambiguous.
+
+  `tests/unit/test_mesh_factory.gd` now reads the convention back off Godot's
+  `BoxMesh` and `PlaneMesh` rather than asserting a remembered rule, and checks
+  every generated mesh against it. The old winding check compared the stored
+  normal to the shape's centre, which is true by construction in the builder and
+  so could never have failed.
+
+- A muzzle flash shorter than one frame expired before it could be drawn, so
+  below roughly 18 fps the player got no feedback at all for their own shots —
+  exactly when the game is struggling. It now guarantees one rendered frame.
+
+- Hull surfaces sat at `metallic` 0.45–0.75. A metal surface has no diffuse
+  response; it shows reflected environment, and a sealed room lit by a flat
+  background colour has none, so those walls rendered near-black. They are
+  painted panels, which are dielectric, and are now valued accordingly.
+
+- Hub ceiling lamps delivered about 6% of their energy to the floor. Godot's
+  omni falloff divides by `pow(distance, omni_attenuation)`, and 1.4 over 7.4 m
+  is a rounding error.
+
+### Added
+
+- `scripts/utility/mesh_factory.gd` — chamfered boxes, faceted crystals,
+  irregular rocks and tapered columns, built with `SurfaceTool` and shared
+  through a cache. Replaces the engine's `BoxMesh`/`PrismMesh` primitives.
+- `scripts/utility/prop_builder.gd`, `model_kit.gd` and `prop_scatter.gd` —
+  multi-part pedestals, altars, terminals, the drop pod and the Sentinel, plus
+  deterministic set dressing. The scatter is seeded and hand-bounded: level
+  layout and every gameplay object remain authored, not generated.
+- `scripts/player/player_body.gd` — a multi-part astronaut with a team-coloured
+  accent, replacing the capsule.
+- `scripts/player/view_model.gd` and `muzzle_flash.gd` — the first-person
+  weapon, its bob, sway and recoil, and the flash at the barrel. The flash is
+  driven by the host's tracer RPC, never by the local trigger press, so it
+  cannot show a shot the host rejected.
+- Head bob, a landing dip, sprint FOV, damage shake and a small firing shake.
+- Ceiling light fixtures in the hub, and a warm key against the ship's cold
+  cyan accents.
+- `tools/screenshot.gd` and `tools/capture_screenshots.sh` — renders the real
+  game to PNG under Xvfb with a software rasteriser. This is what turned the
+  visual work from guesswork into a feedback loop, and what found four of the
+  defects above.
+- `tests/unit/test_mesh_factory.gd` (64 assertions) and first-person structural
+  assertions in `tests/integration/test_app_shell.gd`.
+
 ## [0.2.1] - 2026-08-30
 
 ### Fixed
