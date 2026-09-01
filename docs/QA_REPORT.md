@@ -216,7 +216,7 @@ Stated plainly. None of the following is claimed to work.
 | Artificial latency or packet loss | No conditioner available | VERIFY-004 |
 | Audio playback | `AudioDirector` disables itself when headless | VERIFY-005 |
 | Frame time, memory or draw-call measurement | No display, no target hardware | VERIFY-006 |
-| GitHub Actions workflow execution | Workflows are authored and YAML-validated; they have not been run | — |
+| The Windows BUILD workflow on a runner | `build-windows.yml` is `workflow_dispatch` only and has never been triggered. `validate.yml` HAS run: 8 runs, all green, most recently on `949c95f` | — |
 | Host-disconnect behaviour observed by a client | Needs two live instances at a screen | NET-017 |
 
 ---

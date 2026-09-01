@@ -33,7 +33,8 @@ Concretely, and separating what has been *proven* from what has not:
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
 | Every objective is physically reachable | Verified | `tests/integration/test_level_reachability.gd` (navmesh path queries) |
 | 4-player session over real ENet, hostile-client probes | Verified | `tools/run_multiplayer_check.sh`, 5 OS processes, 78 assertions |
-| Windows export produces a real PE32+ executable | Verified | `.github/workflows/build-windows.yml`, and locally |
+| Windows export produces a real PE32+ executable | Verified | locally; `.github/workflows/build-windows.yml` is `workflow_dispatch` and has not been triggered |
+| CI runs the same gate a developer runs | Verified | `validate.yml`, 8 green runs, latest on `949c95f` |
 | **The Windows executable launches and plays** | **NOT verified** | No Windows machine was available - see `docs/KNOWN_LIMITATIONS.md` |
 | **Two physical LAN devices** | **NOT verified** | Only loopback was available |
 | Geometry, lighting and materials on screen | Verified by screenshot | `tools/capture_screenshots.sh` renders 15 in-game viewpoints under a software rasteriser |
