@@ -444,3 +444,206 @@ static func build_star_map(mesh: MeshInstance3D, tint: Color) -> void:
 		ModelKit.part(mesh, MeshFactory.tapered_column(0.09, 0.075, 0.03, 6),
 			Vector3(0.0, side * 0.68, 0.0), GOLD_DARK, 0.8, 0.25,
 			Vector3(0.0 if side > 0.0 else 180.0, 0.0, 0.0))
+
+
+# ==========================================================================
+# The Starfarer
+# ==========================================================================
+
+const SEAT_FRAME := Color(0.30, 0.33, 0.40)
+const SEAT_PAD := Color(0.24, 0.30, 0.38)
+const HULL_TRIM := Color(0.66, 0.70, 0.78)
+
+
+## A flight seat: pedestal, bucket, high back and a restraint harness.
+##
+## The harness is the load-bearing detail. A chair without one reads as office
+## furniture; two straps over the shoulders say "this vehicle accelerates hard
+## enough that you have to be held down", which is the whole reason the crew has
+## to sit before launch.
+static func build_crew_seat(root: Node3D, frame: MeshInstance3D,
+		cushion: MeshInstance3D) -> void:
+	frame.mesh = MeshFactory.beveled_box(Vector3(0.78, 0.16, 0.78), 0.04)
+	frame.position = Vector3(0.0, 0.46, 0.0)
+	ModelKit.set_albedo(frame, SEAT_FRAME)
+
+	cushion.mesh = MeshFactory.beveled_box(Vector3(0.70, 0.14, 0.70), 0.06)
+	cushion.position = Vector3(0.0, 0.60, 0.0)
+	ModelKit.set_albedo(cushion, SEAT_PAD)
+
+	# Pedestal and floor plate.
+	ModelKit.part(root, MeshFactory.tapered_column(0.40, 0.20, 0.13, 8),
+		Vector3(0.0, 0.20, 0.0), METAL_DARK, 0.7, 0.35)
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.66, 0.06, 0.66), 0.02),
+		Vector3(0.0, 0.03, 0.0), METAL, 0.75, 0.32)
+
+	# Back and headrest, raked back a little.
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.70, 0.86, 0.14), 0.05),
+		Vector3(0.0, 1.06, 0.32), SEAT_PAD, 0.1, 0.75, Vector3(9.0, 0.0, 0.0))
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.42, 0.22, 0.13), 0.05),
+		Vector3(0.0, 1.53, 0.24), SEAT_FRAME, 0.2, 0.6, Vector3(9.0, 0.0, 0.0))
+
+	# Arm rests.
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.10, 0.09, 0.52), 0.03),
+			Vector3(sx * 0.40, 0.86, -0.02), SEAT_FRAME, 0.5, 0.45)
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.08, 0.24, 0.08), 0.02),
+			Vector3(sx * 0.40, 0.72, 0.16), METAL, 0.7, 0.35)
+
+	# Five-point harness: two shoulder straps crossing to a central buckle.
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.09, 0.72, 0.04), 0.012),
+			Vector3(sx * 0.17, 1.06, 0.20), Color(0.20, 0.22, 0.26), 0.0, 0.9,
+			Vector3(9.0, 0.0, sx * 11.0))
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.14, 0.11, 0.06), 0.02),
+		Vector3(0.0, 0.76, 0.06), HULL_TRIM, 0.8, 0.3)
+
+
+## The four pre-flight stations. One housing, one big status panel, and a lever
+## or valve so each station looks like a thing you operate rather than a screen
+## you look at.
+static func build_ship_station(root: Node3D, housing: MeshInstance3D,
+		panel: MeshInstance3D) -> void:
+	housing.mesh = MeshFactory.beveled_box(Vector3(1.10, 1.40, 0.46), 0.05)
+	housing.position = Vector3(0.0, 0.70, 0.0)
+	ModelKit.set_albedo(housing, METAL_DARK)
+
+	panel.mesh = MeshFactory.beveled_box(Vector3(0.78, 0.44, 0.04), 0.015)
+	panel.position = Vector3(0.0, 1.12, -0.24)
+	panel.rotation_degrees = Vector3(-16.0, 0.0, 0.0)
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(1.20, 0.10, 0.56), 0.03),
+		Vector3(0.0, 0.05, 0.0), METAL, 0.7, 0.38)
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.90, 0.56, 0.10), 0.02),
+		Vector3(0.0, 1.12, -0.20), METAL, 0.6, 0.4, Vector3(-16.0, 0.0, 0.0))
+	# A wheel valve and three toggles. Something to put your hands on.
+	ModelKit.part(root, MeshFactory.torus(0.19, 0.035, 12, 6),
+		Vector3(0.0, 0.52, -0.26), HULL_TRIM, 0.8, 0.3, Vector3(90.0, 0.0, 0.0))
+	ModelKit.part(root, MeshFactory.tube(0.10, 0.05, 0.03, 8),
+		Vector3(0.0, 0.52, -0.24), METAL, 0.8, 0.3, Vector3(90.0, 0.0, 0.0))
+	for i in 3:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.05, 0.14, 0.05), 0.012),
+			Vector3(-0.36 + i * 0.12, 0.82, -0.26), HULL_TRIM, 0.7, 0.35,
+			Vector3(-24.0, 0.0, 0.0))
+
+
+## The chart table. A low plinth with a projected volume standing above it - the
+## hologram mesh is what the destination shader is applied to.
+static func build_nav_console(root: Node3D, table: MeshInstance3D,
+		hologram: MeshInstance3D) -> void:
+	table.mesh = MeshFactory.beveled_box(Vector3(2.10, 0.18, 1.40), 0.05)
+	table.position = Vector3(0.0, 0.92, 0.0)
+	ModelKit.set_albedo(table, METAL_DARK)
+
+	# A sphere rather than a box: the thing being projected is a WORLD.
+	hologram.mesh = MeshFactory.sphere(0.42, 8, 14)
+	hologram.position = Vector3(0.0, 1.62, 0.0)
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(1.90, 0.80, 1.20), 0.06),
+		Vector3(0.0, 0.44, 0.0), METAL, 0.6, 0.42)
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(2.16, 0.05, 1.46), 0.02),
+		Vector3(0.0, 1.02, 0.0), HULL_TRIM, 0.7, 0.3)
+	# Emitter ring in the table top, and a rail of controls along the near edge.
+	ModelKit.emissive(root, MeshFactory.torus(0.50, 0.035, 16, 6),
+		Vector3(0.0, 1.05, 0.0), Color(0.35, 0.85, 1.0), 1.2,
+		Vector3(90.0, 0.0, 0.0))
+	for i in 5:
+		ModelKit.emissive(root, MeshFactory.beveled_box(Vector3(0.07, 0.02, 0.05), 0.006),
+			Vector3(-0.36 + i * 0.18, 1.06, -0.56), Color(0.4, 0.9, 1.0), 0.9)
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.tapered_column(0.44, 0.14, 0.10, 6),
+			Vector3(sx * 0.78, 0.22, 0.0), METAL_DARK, 0.7, 0.35)
+
+
+## The launch lever: a floor-mounted throttle in a cage, with a status lamp.
+static func build_launch_lever(root: Node3D, housing: MeshInstance3D,
+		handle: MeshInstance3D) -> void:
+	housing.mesh = MeshFactory.beveled_box(Vector3(0.80, 1.00, 0.60), 0.05)
+	housing.position = Vector3(0.0, 0.50, 0.0)
+	ModelKit.set_albedo(housing, METAL_DARK)
+
+	handle.mesh = MeshFactory.beveled_box(Vector3(0.12, 0.66, 0.12), 0.03)
+	handle.position = Vector3(0.0, 1.32, -0.10)
+	handle.rotation_degrees = Vector3(-18.0, 0.0, 0.0)
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.94, 0.09, 0.72), 0.03),
+		Vector3(0.0, 0.045, 0.0), METAL, 0.75, 0.35)
+	# Slot the lever travels in, and the guard rails either side of it.
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.16, 0.05, 0.44), 0.012),
+		Vector3(0.0, 1.02, -0.02), Color(0.10, 0.11, 0.14), 0.4, 0.6)
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.06, 0.54, 0.06), 0.02),
+			Vector3(sx * 0.28, 1.24, -0.06), HULL_TRIM, 0.8, 0.3)
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.62, 0.06, 0.06), 0.02),
+		Vector3(0.0, 1.50, -0.06), HULL_TRIM, 0.8, 0.3)
+	# Grip on top of the lever.
+	ModelKit.part(root, MeshFactory.sphere(0.10, 5, 8),
+		Vector3(0.0, 1.62, -0.20), Color(0.72, 0.24, 0.20), 0.2, 0.6)
+	# Hazard stripes on the housing front.
+	for i in 3:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.13, 0.34, 0.02), 0.006),
+			Vector3(-0.24 + i * 0.24, 0.34, -0.31), Color(0.86, 0.62, 0.16), 0.2, 0.7,
+			Vector3(0.0, 0.0, 22.0))
+
+
+## The Warden. Bigger than the Sentinel and built to read at a distance: a heavy
+## faceted core, a hooded eye, four buttressed arms, and three shield nodes on a
+## ring around it. The nodes carry their own colliders so a shot can be told
+## from a shot at the body - that distinction is the whole shield phase.
+static func build_warden(root: Node3D, hull: MeshInstance3D, eye: MeshInstance3D,
+		shield: MeshInstance3D, ring: Node3D) -> void:
+	hull.mesh = MeshFactory.rock(Vector3(3.4, 2.6, 3.4), 41, 4, 9)
+	hull.position = Vector3.ZERO
+	ModelKit.set_albedo(hull, Color(0.24, 0.25, 0.30))
+
+	# Buttresses, angled down and out, so the silhouette is not a ball.
+	for i in 4:
+		var a := deg_to_rad(45.0 + i * 90.0)
+		ModelKit.part(root, MeshFactory.wedge(Vector3(0.9, 0.7, 2.4), 0.45),
+			Vector3(sin(a) * 1.9, -0.5, cos(a) * 1.9), Color(0.18, 0.19, 0.23),
+			0.65, 0.42, Vector3(18.0, rad_to_deg(a), 0.0))
+		ModelKit.emissive(root, MeshFactory.beveled_box(Vector3(0.12, 0.12, 1.5), 0.03),
+			Vector3(sin(a) * 1.85, -0.42, cos(a) * 1.85), Color(0.4, 0.8, 1.0), 1.1,
+			Vector3(18.0, rad_to_deg(a), 0.0))
+
+	# A hood over the eye. Without it the eye reads as a light bulb.
+	ModelKit.part(root, MeshFactory.wedge(Vector3(1.9, 0.8, 1.3), 0.3),
+		Vector3(0.0, 0.95, -1.25), Color(0.16, 0.17, 0.21), 0.6, 0.4,
+		Vector3(-26.0, 0.0, 0.0))
+	eye.mesh = MeshFactory.sphere(0.44, 6, 10)
+	eye.position = Vector3(0.0, 0.42, -1.55)
+
+	# The shield itself: a shell around everything, hidden once it is down.
+	shield.mesh = MeshFactory.sphere(3.6, 8, 14)
+	shield.position = Vector3.ZERO
+
+	# Three nodes on a ring, each its own body so it can be shot individually.
+	for i in 3:
+		var a := deg_to_rad(i * 120.0)
+		var body := StaticBody3D.new()
+		body.name = "Node%d" % (i + 1)
+		body.collision_layer = GameConfig.LAYER_ENEMY
+		body.collision_mask = 0
+		body.position = Vector3(sin(a) * 4.4, 0.4, cos(a) * 4.4)
+		# The metadata is what host_register_hit reads to know which node the
+		# ray found; walking the tree by name would break the first time
+		# somebody renamed a node.
+		body.set_meta("shield_index", i)
+		ring.add_child(body)
+
+		var shape := CollisionShape3D.new()
+		var sphere := SphereShape3D.new()
+		sphere.radius = 0.85
+		shape.shape = sphere
+		body.add_child(shape)
+
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = MeshFactory.crystal(1.5, 0.55, 6)
+		body.add_child(mesh)
+		ModelKit.set_emission(mesh, Color(0.45, 0.85, 1.0), 1.8)
+
+		# A tether back to the core, so the nodes read as held rather than as
+		# three separate things that happen to be nearby.
+		ModelKit.emissive(ring, MeshFactory.beveled_box(Vector3(0.07, 0.07, 4.0), 0.02),
+			Vector3(sin(a) * 2.2, 0.4, cos(a) * 2.2), Color(0.3, 0.7, 1.0), 0.9,
+			Vector3(0.0, rad_to_deg(a), 0.0))

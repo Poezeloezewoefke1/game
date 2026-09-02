@@ -33,6 +33,20 @@ const SCENE_INSTANTIATE_SKIP: Array[String] = [
 	# fully exercised - the level scenes below instantiate every one of them.
 	"res://scenes/interactables/power_crystal.tscn",
 	"res://scenes/interactables/crystal_pedestal.tscn",
+	"res://scenes/interactables/crew_seat.tscn",
+	"res://scenes/interactables/ship_station.tscn",
+	"res://scenes/enemies/warden.tscn",
+]
+
+## Scenes whose whole job is to disappear. A tracer lives for 0.09 s, so on a
+## slow headless frame it is gone before the loop below gets round to freeing
+## it - and "it freed itself" is the CORRECT outcome for them, not a fault.
+##
+## This was a latent flake for the life of the project: the phase only stayed
+## green because frames happened to be shorter than the tracer's lifetime. It
+## surfaced the moment adding one more scene shifted the timing.
+const SCENE_SELF_FREEING: Array[String] = [
+	"res://scenes/entities/blaster_tracer.tscn",
 ]
 
 var _failures: Array[String] = []
@@ -147,6 +161,18 @@ func _phase_scenes() -> void:
 			continue
 		add_child(instance)
 		await get_tree().process_frame
+		# A scene that has freed ITSELF by the time we come to free it is a real
+		# finding, not a tidy-up problem: something in its _ready or its first
+		# frame decided it should not exist. Reported by NAME, because the
+		# engine error this used to raise ("Cannot call method 'queue_free' on a
+		# previously freed instance") says nothing about which scene did it.
+		if not is_instance_valid(instance):
+			if SCENE_SELF_FREEING.has(path):
+				_passed += 1
+			else:
+				bad += 1
+				_failures.append("scene: %s freed itself on its first frame" % path)
+			continue
 		instance.queue_free()
 		await get_tree().process_frame
 		_passed += 1

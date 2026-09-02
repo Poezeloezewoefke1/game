@@ -271,6 +271,81 @@ const ALL_CRYSTAL_IDS: PackedStringArray = ["crystal_ruins", "crystal_cave", "cr
 
 const REQUIRED_PEDESTAL_COUNT: int = 3
 
+## Carryable that is not a crystal. It occupies the same single inventory slot,
+## which is the point: fetching the coupling costs you a trip.
+const ITEM_COUPLING: String = "power_coupling"
+
+# --------------------------------------------------------------------------
+# The ship
+# --------------------------------------------------------------------------
+
+## Stations that must all be green before the launch lever arms. Order is the
+## order the HUD lists them in.
+const SHIP_TASK_REACTOR: String = "task_reactor"
+const SHIP_TASK_COURSE: String = "task_course"
+const SHIP_TASK_FUEL: String = "task_fuel"
+const SHIP_TASK_HATCH: String = "task_hatch"
+
+const SHIP_TASK_IDS: PackedStringArray = [
+	"task_reactor", "task_course", "task_fuel", "task_hatch",
+]
+
+## What each station is called on screen.
+const SHIP_TASK_LABELS: Dictionary = {
+	"task_reactor": "Prime the reactor",
+	"task_course": "Plot the course",
+	"task_fuel": "Pressurise the fuel line",
+	"task_hatch": "Seal the outer hatch",
+}
+
+## How long each seat's restraint animation takes to settle. Purely cosmetic;
+## the seat is authoritative the instant the host accepts it.
+const SEAT_SETTLE_TIME: float = 0.35
+
+# --------------------------------------------------------------------------
+# Flight sequence timing (seconds). The host drives these; clients replay the
+# same numbers from the replicated phase start, so nobody's animation drifts.
+# --------------------------------------------------------------------------
+
+const FLIGHT_LAUNCH_TIME: float = 7.5
+const FLIGHT_TRANSIT_TIME: float = 4.0
+const FLIGHT_LANDING_TIME: float = 6.5
+
+# --------------------------------------------------------------------------
+# Surface hazard
+# --------------------------------------------------------------------------
+
+## Damage per second inside a live hazard field, and how often it is applied.
+const HAZARD_DAMAGE_PER_TICK: int = 6
+const HAZARD_TICK_INTERVAL: float = 1.0
+
+# --------------------------------------------------------------------------
+# The Warden (boss)
+# --------------------------------------------------------------------------
+
+## Damage one blaster bolt does to the Warden, and to one of its shield nodes.
+##
+## The Sentinel counts HITS and staggers on the tenth; it has no health at all.
+## A boss needs a bar, so it needs a number - at 25 a node takes 5 bolts and the
+## body takes 36, which is a fight for one player and a brisk one for four.
+const BLASTER_BOSS_DAMAGE: int = 25
+
+const BOSS_MAX_HEALTH: int = 900
+const BOSS_SHIELD_NODE_COUNT: int = 3
+const BOSS_SHIELD_NODE_HEALTH: int = 120
+## Health fraction at or below which the Warden enrages.
+const BOSS_ENRAGE_FRACTION: float = 0.35
+const BOSS_VOLLEY_INTERVAL: float = 2.6
+const BOSS_ENRAGED_VOLLEY_INTERVAL: float = 1.4
+const BOSS_VOLLEY_PROJECTILES: int = 3
+const BOSS_CONTACT_DAMAGE: int = 18
+const BOSS_MOVE_SPEED: float = 4.2
+## How far above its anchor the Warden hovers. It flies rather than walks, so it
+## needs no navmesh - which removes the whole class of navigation failures the
+## Sentinel carries three workarounds for, from the most important fight here.
+const BOSS_HOVER_HEIGHT: float = 3.4
+const BOSS_ENRAGED_MOVE_SPEED: float = 6.4
+
 # --------------------------------------------------------------------------
 # Physics layers (keep in sync with [layer_names] in project.godot)
 # --------------------------------------------------------------------------
@@ -289,6 +364,12 @@ const LAYER_PLAYER_HURTBOX: int = 1 << 5
 const GROUP_INTERACTABLE: String = "Interactable"
 const GROUP_PLAYER: String = "Player"
 const GROUP_GUARDIAN: String = "Guardian"
+## The Warden is ALSO a Guardian, so that hostile cleanup and the blaster's
+## target search keep working unchanged. This narrower group exists so the two
+## spawn calls can refuse duplicates of their own kind without refusing each
+## other: a Sentinel guarding a crystal and the Warden at the temple are allowed
+## to be alive at the same time.
+const GROUP_BOSS: String = "Boss"
 const GROUP_PROJECTILE: String = "Projectile"
 const GROUP_SESSION_BOUND: String = "SessionBound"
 
@@ -298,18 +379,26 @@ const GROUP_SESSION_BOUND: String = "SessionBound"
 
 const SCENE_MAIN_MENU: String = "main_menu"
 const SCENE_LOBBY: String = "lobby"
-const SCENE_HUB: String = "hub"
+## "ship" replaced "hub" when the Wayfinder Station became a vessel that flies.
+const SCENE_SHIP: String = "ship"
 const SCENE_NERAVA: String = "nerava"
+const SCENE_CINDER: String = "cinder"
+const SCENE_HALLOW: String = "hallow"
 
 const SCENE_PATHS: Dictionary = {
 	SCENE_MAIN_MENU: "res://scenes/ui/main_menu.tscn",
 	SCENE_LOBBY: "res://scenes/ui/lobby.tscn",
-	SCENE_HUB: "res://scenes/levels/wayfinder_hub.tscn",
+	SCENE_SHIP: "res://scenes/levels/starfarer_deck.tscn",
 	SCENE_NERAVA: "res://scenes/levels/nerava_landing_zone.tscn",
+	SCENE_CINDER: "res://scenes/levels/cinder_ashflats.tscn",
+	SCENE_HALLOW: "res://scenes/levels/hallow_icefield.tscn",
 }
 
 ## Scenes that are real gameplay levels (get an entity spawner, HUD, players).
-const GAMEPLAY_SCENES: PackedStringArray = ["hub", "nerava"]
+const GAMEPLAY_SCENES: PackedStringArray = ["ship", "nerava", "cinder", "hallow"]
+
+## Every surface a mission can land on. The ship is not one of them.
+const SURFACE_SCENES: PackedStringArray = ["nerava", "cinder", "hallow"]
 
 
 static func is_valid_scene_key(key: String) -> bool:

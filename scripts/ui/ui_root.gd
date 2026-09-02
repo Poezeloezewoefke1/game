@@ -144,7 +144,7 @@ func _on_mission_ended(victory: bool) -> void:
 func _on_mission_state_changed(state: int) -> void:
 	# A retry or a return-to-lobby must clear the end screen for everyone,
 	# including clients that never pressed a button.
-	if state == MissionRules.MissionState.TRANSITIONING_TO_NERAVA \
+	if state == MissionRules.MissionState.TRANSITIONING_TO_SURFACE \
 			or state == MissionRules.MissionState.RETURNING_TO_LOBBY:
 		close_all_overlays()
 

@@ -6,10 +6,15 @@ extends TestCase
 ## level, a missing spawn point, a level with no navigation region. Every one of
 ## those would present as a mysterious runtime bug rather than a load failure.
 
-var _levels := {
-	GameConfig.SCENE_HUB: "res://scenes/levels/wayfinder_hub.tscn",
-	GameConfig.SCENE_NERAVA: "res://scenes/levels/nerava_landing_zone.tscn",
-}
+## Taken from GameConfig rather than repeated here. The hand-written copy went
+## stale the moment the Wayfinder Station became the Starfarer: it kept checking
+## a scene file that no longer existed while two new planets went unchecked.
+var _levels: Dictionary = {}
+
+
+func _init() -> void:
+	for key in GameConfig.GAMEPLAY_SCENES:
+		_levels[String(key)] = GameConfig.scene_path(String(key))
 
 
 func is_async() -> bool:
@@ -31,10 +36,10 @@ func _check_level(key: String, path: String) -> void:
 	await tree.process_frame
 
 	_check_common(key, level)
-	if key == GameConfig.SCENE_HUB:
-		_check_hub(level)
+	if key == GameConfig.SCENE_SHIP:
+		_check_ship(level)
 	else:
-		_check_nerava(level)
+		_check_surface(key, level)
 
 	level.queue_free()
 	await tree.process_frame
@@ -76,23 +81,47 @@ func _check_common(key: String, level: Node) -> void:
 			"%s: %s is on the interactable physics layer" % [key, node.name])
 
 
-func _check_hub(level: Node) -> void:
+func _check_ship(level: Node) -> void:
 	var ids := _ids(level)
-	check(ids.has("hub_mission_terminal"), "the hub has a Mission Terminal")
-	check_eq(_count_by_property(level, "crystal_id"), 0, "the hub has no crystals")
+	# The pre-flight checklist is only enforceable if every station it names
+	# actually exists in the scene. A missing one would leave the launch lever
+	# permanently refusing, with nothing to interact with to fix it.
+	check(ids.has("ship_nav_console"), "the ship has a nav console")
+	check(ids.has("ship_launch_lever"), "the ship has a launch lever")
+	for task_id in GameConfig.SHIP_TASK_IDS:
+		if String(task_id) == GameConfig.SHIP_TASK_COURSE:
+			continue  # plotted at the nav console, not at a station of its own
+		check(ids.has("ship_%s" % task_id),
+			"the ship has a station for %s" % task_id)
+	var seats := 0
+	for node in level.find_children("*", "", true, false):
+		if node.get("seat_id") != null and String(node.get("seat_id")) != "":
+			seats += 1
+	check(seats >= GameConfig.MAX_PLAYERS,
+		"the ship seats the whole crew (%d seats, %d players)" % [seats, GameConfig.MAX_PLAYERS])
+	check_eq(_count_by_property(level, "crystal_id"), 0, "the ship has no crystals")
 
 
-func _check_nerava(level: Node) -> void:
+## Every surface a mission can land on has to satisfy the same contract, or the
+## mission that lands there is unwinnable. This used to check only Nerava by
+## name, which is exactly why the two new planets shipped without a navmesh.
+func _check_surface(key: String, level: Node) -> void:
 	var ids := _ids(level)
-	check(ids.has("nerava_drop_pod"), "Nerava has a Drop Pod")
-	check(ids.has("nerava_star_map_altar"), "Nerava has the Star Map altar")
+	check(ids.has("%s_drop_pod" % key) or ids.has("nerava_drop_pod"),
+		"%s has a Drop Pod" % key)
+	check(_count_by_property(level, "crystal_id") == GameConfig.ALL_CRYSTAL_IDS.size(),
+		"%s carries all %d crystals" % [key, GameConfig.ALL_CRYSTAL_IDS.size()])
+	check(_count_by_property(level, "pedestal_id") == GameConfig.REQUIRED_PEDESTAL_COUNT,
+		"%s has %d pedestals" % [key, GameConfig.REQUIRED_PEDESTAL_COUNT])
 
 	var nav := level.get_node_or_null("NavigationRegion3D") as NavigationRegion3D
-	if check(nav != null, "Nerava has a NavigationRegion3D"):
+	if check(nav != null, "%s has a NavigationRegion3D" % key):
 		check(nav.navigation_mesh != null, "the navigation region has a NavigationMesh")
 		check(nav.get_child_count() > 0, "the navigation region actually contains geometry")
 
-	check(level.get_node_or_null("GuardianAnchor") != null, "Nerava has a GuardianAnchor")
+	check(level.get_node_or_null("GuardianAnchor") != null, "%s has a GuardianAnchor" % key)
+	check(level.get_node_or_null("StarMapDropAnchor") != null,
+		"%s has a StarMapDropAnchor" % key)
 	check(level.get_node_or_null("StarMapDropAnchor") != null, "Nerava has a StarMapDropAnchor")
 	check(level.get_node_or_null("TempleTrigger") != null, "Nerava has a TempleTrigger")
 

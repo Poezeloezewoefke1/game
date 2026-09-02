@@ -133,7 +133,7 @@ func _run_host() -> void:
 
 	await GameManager.host_start_session()
 	var in_hub: bool = await _until(func() -> bool:
-		return SceneManager.current_scene_key == GameConfig.SCENE_HUB, 45.0)
+		return SceneManager.current_scene_key == GameConfig.SCENE_SHIP, 45.0)
 	_report("the readiness barrier releases and the hub mounts on every peer", in_hub)
 	if not in_hub:
 		return
@@ -147,10 +147,10 @@ func _run_host() -> void:
 		not GameManager.host_accepts_new_players())
 
 	# Dwell in the hub so the clients' host-only-terminal probe is answered
-	# while the mission is genuinely still in HUB_IDLE.
+	# while the mission is genuinely still in SHIP_IDLE.
 	await _sleep(6.0)
-	_report("the hub stayed in HUB_IDLE despite client terminal requests",
-		GameManager.mission_state() == MissionRules.MissionState.HUB_IDLE,
+	_report("the hub stayed in SHIP_IDLE despite client terminal requests",
+		GameManager.mission_state() == MissionRules.MissionState.SHIP_IDLE,
 		MissionRules.state_name(GameManager.mission_state()))
 
 	await GameManager.host_start_expedition()
@@ -189,7 +189,7 @@ func _run_host() -> void:
 	# every crystal is real progress. What must NOT happen is leaving the
 	# descent or unlocking anything the clients were not entitled to.
 	_report("the host stayed inside the descent throughout the probes",
-		MissionRules.is_nerava_state(GameManager.mission_state()),
+		MissionRules.is_surface_state(GameManager.mission_state()),
 		MissionRules.state_name(GameManager.mission_state()))
 	_report("the Star Map stayed locked throughout",
 		GameManager.star_map_state() == MissionRules.MAP_LOCKED)
@@ -244,7 +244,7 @@ func _run_client() -> void:
 
 	# --- Hub: a client must not be able to start the expedition. ---
 	var in_hub: bool = await _until(func() -> bool:
-		return SceneManager.current_scene_key == GameConfig.SCENE_HUB, 45.0)
+		return SceneManager.current_scene_key == GameConfig.SCENE_SHIP, 45.0)
 	_report("the host-driven transition mounted the hub here", in_hub)
 	if not in_hub:
 		return
@@ -254,15 +254,15 @@ func _run_client() -> void:
 	_report("the client's own player entity replicated", mine)
 
 	# Wait for the snapshot to settle first: capturing the state mid-transition
-	# would make the perfectly correct HUB_IDLE that follows look like a change.
+	# would make the perfectly correct SHIP_IDLE that follows look like a change.
 	var settled: bool = await _until(func() -> bool:
-		return GameManager.mission_state() == MissionRules.MissionState.HUB_IDLE, 30.0)
-	_report("the client sees the mission settle into HUB_IDLE", settled,
+		return GameManager.mission_state() == MissionRules.MissionState.SHIP_IDLE, 30.0)
+	_report("the client sees the mission settle into SHIP_IDLE", settled,
 		MissionRules.state_name(GameManager.mission_state()))
 	GameManager.request_interact("hub_mission_terminal")
 	await _sleep(1.5)
 	_report("a client cannot start the expedition through the terminal",
-		GameManager.mission_state() == MissionRules.MissionState.HUB_IDLE,
+		GameManager.mission_state() == MissionRules.MissionState.SHIP_IDLE,
 		MissionRules.state_name(GameManager.mission_state()))
 
 	# --- Nerava ---

@@ -75,7 +75,7 @@ func test_unknown_crystal_id_rejected() -> void:
 
 func test_crystal_pickup_needs_a_nerava_state() -> void:
 	var s := _snap()
-	s["state"] = MS.HUB_IDLE
+	s["state"] = MS.SHIP_IDLE
 	check_denied(MissionRules.can_pick_up_crystal(s, 2, GameConfig.CRYSTAL_RUINS, ALIVE),
 		"wrong_mission_state", "crystals cannot be taken outside the descent")
 
@@ -232,7 +232,7 @@ func test_downed_carrier_cannot_extract() -> void:
 
 func test_only_the_host_starts_the_expedition() -> void:
 	var s := _snap()
-	s["state"] = MS.HUB_IDLE
+	s["state"] = MS.SHIP_IDLE
 	check_allowed(MissionRules.can_start_expedition(s, GameConfig.HOST_PEER_ID, ALIVE),
 		"the host may start")
 	check_denied(MissionRules.can_start_expedition(s, 42, ALIVE),

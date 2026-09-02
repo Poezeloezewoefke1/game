@@ -48,7 +48,7 @@ func _reach_nerava() -> bool:
 	check_eq(LobbyManager.player_count(), 2, "two players are on the roster")
 
 	await GameManager.host_start_session()
-	if not check(await _session.await_scene(GameConfig.SCENE_HUB), "the hub mounts"):
+	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts"):
 		return false
 	await GameManager.host_start_expedition()
 	if not check(await _session.await_scene(GameConfig.SCENE_NERAVA), "Nerava mounts"):

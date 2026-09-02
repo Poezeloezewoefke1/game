@@ -28,7 +28,12 @@ const STONE_DARK := Color(0.29, 0.27, 0.25)
 @export_enum("crate_stack", "barrel_cluster", "pipe_run", "floodlight", "antenna_mast",
 	"cable_spool", "locker_bank", "console_bank", "hazard_barrier", "wreckage",
 	"supply_pallet", "vent_stack", "banner", "ruin_pillar", "ruin_rubble",
-	"temple_brazier", "carved_stele")
+	"temple_brazier", "carved_stele",
+	# Ship interior. A crew lives on the Starfarer, so the deck needs the things
+	# people need rather than only the things a spaceship needs.
+	"bunk_bed", "crew_bunk", "mess_table", "galley_unit", "med_bed",
+	"reactor_core", "pilot_console", "storage_rack", "cryo_pod", "ship_plant",
+	"foot_locker", "wall_pipes")
 var kind: String = "crate_stack":
 	set(value):
 		kind = value
@@ -84,6 +89,18 @@ func _rebuild() -> void:
 		"ruin_rubble": _ruin_rubble(rng)
 		"temple_brazier": _temple_brazier(rng)
 		"carved_stele": _carved_stele(rng)
+		"bunk_bed": _bunk_bed(rng)
+		"crew_bunk": _crew_bunk(rng)
+		"mess_table": _mess_table(rng)
+		"galley_unit": _galley_unit(rng)
+		"med_bed": _med_bed(rng)
+		"reactor_core": _reactor_core(rng)
+		"pilot_console": _pilot_console(rng)
+		"storage_rack": _storage_rack(rng)
+		"cryo_pod": _cryo_pod(rng)
+		"ship_plant": _ship_plant(rng)
+		"foot_locker": _foot_locker(rng)
+		"wall_pipes": _wall_pipes(rng)
 
 	if solid:
 		_add_collision()
@@ -507,3 +524,245 @@ func _carved_stele(rng: RandomNumberGenerator) -> void:
 	_part(MeshFactory.wedge(Vector3(0.86, 0.22, 0.4), 0.35),
 		Vector3(0.0, 0.2 + height + 0.1, 0.0), STONE_DARK, 0.0, 0.94,
 		Vector3(-90.0, 0.0, 0.0))
+
+# ==========================================================================
+# Ship interior
+#
+# The deck is where the crew lives between missions, so these are furniture
+# before they are set dressing: a bed reads as a bed because it has a mattress
+# that overhangs its frame, a pillow that is not centred, and a blanket that
+# stops short of the foot.
+# ==========================================================================
+
+const BEDDING := Color(0.62, 0.64, 0.70)
+const BLANKET := Color(0.24, 0.34, 0.46)
+const BLANKET_ALT := Color(0.40, 0.28, 0.30)
+const PILLOW := Color(0.80, 0.82, 0.86)
+const PANEL := Color(0.30, 0.33, 0.39)
+const SCREEN := Color(0.36, 0.86, 1.00)
+const LEAF := Color(0.28, 0.52, 0.30)
+
+
+## One mattress on a frame, at a given height. Shared by the bunk and the single
+## bed so the two cannot drift apart.
+func _mattress(base_y: float, rng: RandomNumberGenerator, blanket: Color) -> void:
+	# Frame, then mattress overhanging it slightly - the overhang is most of
+	# what stops it reading as two stacked boxes.
+	_part(MeshFactory.beveled_box(Vector3(0.94, 0.10, 2.02), 0.02),
+		Vector3(0.0, base_y, 0.0), PANEL, 0.55, 0.45)
+	_part(MeshFactory.beveled_box(Vector3(1.02, 0.17, 2.08), 0.05),
+		Vector3(0.0, base_y + 0.13, 0.0), BEDDING, 0.0, 0.88)
+	# Blanket over the lower two thirds, with a turned-down edge.
+	_part(MeshFactory.beveled_box(Vector3(1.04, 0.06, 1.28), 0.03),
+		Vector3(0.0, base_y + 0.24, 0.30), blanket, 0.0, 0.92)
+	_part(MeshFactory.beveled_box(Vector3(1.04, 0.05, 0.16), 0.02),
+		Vector3(0.0, base_y + 0.27, -0.34), blanket.lightened(0.18), 0.0, 0.92)
+	# Pillow, pushed off centre because nobody's pillow is ever square.
+	_part(MeshFactory.beveled_box(Vector3(0.56, 0.13, 0.34), 0.06),
+		Vector3(rng.randf_range(-0.10, 0.10), base_y + 0.28, -0.78), PILLOW, 0.0, 0.9,
+		Vector3(0.0, rng.randf_range(-9.0, 9.0), 0.0))
+
+
+func _bunk_bed(rng: RandomNumberGenerator) -> void:
+	# Four posts and two decks.
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_part(MeshFactory.beveled_box(Vector3(0.09, 2.20, 0.09), 0.02),
+				Vector3(sx * 0.50, 1.10, sz * 1.00), METAL, 0.75, 0.35)
+	_mattress(0.42, rng, BLANKET)
+	_mattress(1.52, rng, BLANKET_ALT if rng.randf() < 0.5 else BLANKET)
+	# Guard rail on the top bunk, and the ladder to reach it.
+	_part(MeshFactory.beveled_box(Vector3(0.06, 0.34, 1.30), 0.02),
+		Vector3(0.50, 1.92, 0.24), METAL, 0.75, 0.35)
+	for i in 4:
+		_part(MeshFactory.beveled_box(Vector3(0.30, 0.05, 0.05), 0.012),
+			Vector3(-0.50, 0.66 + i * 0.32, -0.94), TRIM, 0.7, 0.4)
+	# A reading lamp on the lower bunk. Small, warm, and the only light source
+	# a crew member gets to control themselves.
+	_glow(MeshFactory.beveled_box(Vector3(0.11, 0.05, 0.09), 0.02),
+		Vector3(0.42, 0.86, -0.80), Color(1.0, 0.82, 0.55), 1.6)
+
+
+func _crew_bunk(rng: RandomNumberGenerator) -> void:
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_part(MeshFactory.beveled_box(Vector3(0.09, 0.50, 0.09), 0.02),
+				Vector3(sx * 0.50, 0.25, sz * 1.00), METAL, 0.75, 0.35)
+	_mattress(0.42, rng, BLANKET_ALT)
+	# Headboard shelf with somebody's things on it.
+	_part(MeshFactory.beveled_box(Vector3(1.06, 0.06, 0.24), 0.02),
+		Vector3(0.0, 0.86, -1.02), PANEL, 0.6, 0.4)
+	_part(MeshFactory.beveled_box(Vector3(0.14, 0.19, 0.10), 0.02),
+		Vector3(-0.28, 0.98, -1.02), CRATE_ALT, 0.1, 0.8)
+	_part(MeshFactory.tube(0.13, 0.045, 0.032, 8),
+		Vector3(0.16, 0.95, -1.00), TRIM, 0.3, 0.5)
+	if rng.randf() < 0.6:
+		_glow(MeshFactory.beveled_box(Vector3(0.10, 0.14, 0.01), 0.005),
+			Vector3(0.36, 0.99, -1.06), Color(0.5, 0.9, 1.0), 0.9)
+
+
+func _mess_table(rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.beveled_box(Vector3(2.20, 0.09, 0.96), 0.03),
+		Vector3(0.0, 0.78, 0.0), TRIM, 0.35, 0.45)
+	for sx in [-1.0, 1.0]:
+		_part(MeshFactory.beveled_box(Vector3(0.12, 0.78, 0.66), 0.03),
+			Vector3(sx * 0.86, 0.39, 0.0), METAL, 0.7, 0.4)
+		# A bench each side, because a table with no seats reads as a counter.
+		_part(MeshFactory.beveled_box(Vector3(2.00, 0.08, 0.34), 0.02),
+			Vector3(0.0, 0.44, sx * 0.86), PANEL, 0.4, 0.6)
+		for bx in [-0.76, 0.76]:
+			_part(MeshFactory.beveled_box(Vector3(0.08, 0.44, 0.08), 0.02),
+				Vector3(bx, 0.22, sx * 0.86), METAL, 0.7, 0.4)
+	# Trays and a mug somebody did not clear away.
+	for i in rng.randi_range(1, 3):
+		var x: float = rng.randf_range(-0.8, 0.8)
+		_part(MeshFactory.beveled_box(Vector3(0.38, 0.03, 0.28), 0.01),
+			Vector3(x, 0.84, rng.randf_range(-0.2, 0.2)), CRATE_ALT, 0.2, 0.7,
+			Vector3(0.0, rng.randf_range(-20.0, 20.0), 0.0))
+	_part(MeshFactory.tube(0.11, 0.048, 0.036, 8),
+		Vector3(rng.randf_range(-0.7, 0.7), 0.88, rng.randf_range(-0.3, 0.3)),
+		Color(0.78, 0.80, 0.84), 0.15, 0.55)
+
+
+func _galley_unit(rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.beveled_box(Vector3(2.40, 0.94, 0.70), 0.03),
+		Vector3(0.0, 0.47, 0.0), PANEL, 0.5, 0.5)
+	_part(MeshFactory.beveled_box(Vector3(2.48, 0.07, 0.76), 0.02),
+		Vector3(0.0, 0.97, 0.0), TRIM, 0.6, 0.3)
+	# A sunken basin, a tap, and cupboard seams.
+	_part(MeshFactory.beveled_box(Vector3(0.52, 0.05, 0.44), 0.02),
+		Vector3(-0.70, 0.95, 0.0), METAL_DARK, 0.8, 0.35)
+	_part(MeshFactory.tube(0.30, 0.028, 0.018, 8),
+		Vector3(-0.70, 1.14, -0.22), TRIM, 0.8, 0.25)
+	for x in [-0.10, 0.55, 1.05]:
+		_part(MeshFactory.beveled_box(Vector3(0.02, 0.80, 0.02), 0.004),
+			Vector3(x, 0.50, 0.36), METAL_DARK, 0.6, 0.5)
+	_glow(MeshFactory.beveled_box(Vector3(0.30, 0.10, 0.02), 0.01),
+		Vector3(0.80, 0.72, -0.36), Color(1.0, 0.55, 0.25), 1.1)
+	if rng.randf() < 0.7:
+		_part(MeshFactory.tube(0.22, 0.07, 0.055, 8),
+			Vector3(0.30, 1.11, 0.05), CRATE_ALT, 0.2, 0.7)
+
+
+func _med_bed(_rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.beveled_box(Vector3(0.90, 0.62, 2.00), 0.03),
+		Vector3(0.0, 0.31, 0.0), TRIM, 0.4, 0.4)
+	_part(MeshFactory.beveled_box(Vector3(0.96, 0.14, 2.04), 0.05),
+		Vector3(0.0, 0.68, 0.0), Color(0.72, 0.78, 0.82), 0.0, 0.7)
+	# The back rest is raised, which is what makes it a med bed rather than a
+	# table.
+	_part(MeshFactory.beveled_box(Vector3(0.94, 0.12, 0.66), 0.04),
+		Vector3(0.0, 0.79, -0.68), Color(0.72, 0.78, 0.82), 0.0, 0.7,
+		Vector3(-22.0, 0.0, 0.0))
+	# Monitor arm and screen.
+	_part(MeshFactory.beveled_box(Vector3(0.07, 1.10, 0.07), 0.02),
+		Vector3(0.56, 0.55, -0.90), METAL, 0.8, 0.3)
+	_part(MeshFactory.beveled_box(Vector3(0.46, 0.34, 0.05), 0.02),
+		Vector3(0.40, 1.24, -0.90), METAL_DARK, 0.6, 0.4, Vector3(0.0, -24.0, 0.0))
+	_glow(MeshFactory.beveled_box(Vector3(0.38, 0.26, 0.01), 0.005),
+		Vector3(0.39, 1.24, -0.87), Color(0.45, 1.0, 0.70), 1.4, Vector3(0.0, -24.0, 0.0))
+
+
+func _reactor_core(_rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.tube(2.90, 0.60, 0.44, 12),
+		Vector3(0.0, 1.45, 0.0), METAL_DARK, 0.85, 0.3)
+	_glow(MeshFactory.tapered_column(2.40, 0.34, 0.30, 10),
+		Vector3(0.0, 1.42, 0.0), Color(0.42, 0.86, 1.0), 2.2)
+	# Containment rings, brighter towards the middle.
+	for i in 4:
+		_part(MeshFactory.torus(0.66, 0.07, 12, 6),
+			Vector3(0.0, 0.42 + i * 0.66, 0.0), TRIM, 0.8, 0.28)
+	_part(MeshFactory.beveled_box(Vector3(1.60, 0.24, 1.60), 0.05),
+		Vector3(0.0, 0.12, 0.0), PANEL, 0.6, 0.45)
+	for a in [0.0, 90.0, 180.0, 270.0]:
+		var r := deg_to_rad(a)
+		_part(MeshFactory.beveled_box(Vector3(0.16, 0.60, 0.16), 0.03),
+			Vector3(sin(r) * 0.86, 0.30, cos(r) * 0.86), METAL, 0.8, 0.3)
+
+
+func _pilot_console(rng: RandomNumberGenerator) -> void:
+	# Angled towards the pilot, which is why this is not a console_bank.
+	_part(MeshFactory.beveled_box(Vector3(1.70, 0.70, 0.60), 0.04),
+		Vector3(0.0, 0.35, 0.0), PANEL, 0.55, 0.45)
+	_part(MeshFactory.wedge(Vector3(1.70, 0.34, 0.56), 0.25),
+		Vector3(0.0, 0.86, -0.02), METAL_DARK, 0.6, 0.4, Vector3(-14.0, 0.0, 0.0))
+	_glow(MeshFactory.beveled_box(Vector3(1.44, 0.26, 0.02), 0.006),
+		Vector3(0.0, 0.94, -0.20), SCREEN, 1.5, Vector3(-14.0, 0.0, 0.0))
+	# Throttle levers and a row of switches.
+	for i in 3:
+		_part(MeshFactory.beveled_box(Vector3(0.05, 0.20, 0.05), 0.012),
+			Vector3(-0.60 + i * 0.10, 0.82, 0.18), TRIM, 0.7, 0.35,
+			Vector3(rng.randf_range(-18.0, 8.0), 0.0, 0.0))
+	for i in 6:
+		_glow(MeshFactory.beveled_box(Vector3(0.05, 0.03, 0.02), 0.005),
+			Vector3(0.16 + i * 0.09, 0.80, 0.22),
+			Color(0.4, 1.0, 0.6) if i % 2 == 0 else Color(1.0, 0.72, 0.3), 1.0)
+
+
+func _storage_rack(rng: RandomNumberGenerator) -> void:
+	for sx in [-1.0, 1.0]:
+		_part(MeshFactory.beveled_box(Vector3(0.08, 2.30, 0.08), 0.02),
+			Vector3(sx * 0.90, 1.15, 0.0), METAL, 0.8, 0.3)
+	for i in 4:
+		var y := 0.32 + i * 0.62
+		_part(MeshFactory.beveled_box(Vector3(1.88, 0.06, 0.62), 0.02),
+			Vector3(0.0, y, 0.0), TRIM, 0.6, 0.4)
+		for j in rng.randi_range(1, 3):
+			var w: float = rng.randf_range(0.30, 0.52)
+			_part(MeshFactory.beveled_box(Vector3(w, 0.34, 0.44), 0.03),
+				Vector3(rng.randf_range(-0.7, 0.7), y + 0.20, rng.randf_range(-0.06, 0.06)),
+				CRATE if rng.randf() < 0.5 else CRATE_ALT, 0.2, 0.75,
+				Vector3(0.0, rng.randf_range(-8.0, 8.0), 0.0))
+
+
+func _cryo_pod(_rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.beveled_box(Vector3(0.94, 2.16, 0.72), 0.08),
+		Vector3(0.0, 1.08, 0.0), PANEL, 0.6, 0.4)
+	_glow(MeshFactory.beveled_box(Vector3(0.62, 1.62, 0.06), 0.03),
+		Vector3(0.0, 1.18, 0.34), Color(0.45, 0.80, 1.0), 0.9)
+	_part(MeshFactory.beveled_box(Vector3(0.98, 0.18, 0.80), 0.04),
+		Vector3(0.0, 0.09, 0.0), METAL_DARK, 0.7, 0.35)
+	_glow(MeshFactory.beveled_box(Vector3(0.24, 0.05, 0.02), 0.008),
+		Vector3(0.0, 0.34, 0.38), Color(0.4, 1.0, 0.7), 1.2)
+
+
+func _ship_plant(rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.tapered_column(0.34, 0.24, 0.19, 8),
+		Vector3(0.0, 0.17, 0.0), Color(0.42, 0.34, 0.28), 0.1, 0.85)
+	_part(MeshFactory.beveled_box(Vector3(0.34, 0.05, 0.34), 0.02),
+		Vector3(0.0, 0.36, 0.0), Color(0.22, 0.18, 0.14), 0.0, 0.95)
+	# A handful of leaves at different angles. Green is the rarest colour on a
+	# ship and it is worth spending it here.
+	for i in rng.randi_range(5, 8):
+		var yaw: float = rng.randf_range(0.0, 360.0)
+		var lean: float = rng.randf_range(18.0, 52.0)
+		var len_v: float = rng.randf_range(0.30, 0.58)
+		_part(MeshFactory.wedge(Vector3(0.13, 0.03, len_v), 0.6),
+			Vector3(0.0, 0.42 + len_v * 0.22, 0.0),
+			LEAF.lightened(rng.randf_range(-0.1, 0.18)), 0.0, 0.9,
+			Vector3(-lean, yaw, 0.0))
+
+
+func _foot_locker(rng: RandomNumberGenerator) -> void:
+	_part(MeshFactory.beveled_box(Vector3(0.94, 0.46, 0.52), 0.03),
+		Vector3(0.0, 0.23, 0.0), CRATE_ALT, 0.3, 0.65)
+	_part(MeshFactory.beveled_box(Vector3(0.98, 0.06, 0.56), 0.02),
+		Vector3(0.0, 0.48, 0.0), METAL, 0.7, 0.4)
+	for sx in [-1.0, 1.0]:
+		_part(MeshFactory.beveled_box(Vector3(0.05, 0.40, 0.05), 0.012),
+			Vector3(sx * 0.44, 0.22, 0.24), TRIM, 0.75, 0.3)
+	if rng.randf() < 0.5:
+		_part(MeshFactory.beveled_box(Vector3(0.16, 0.10, 0.02), 0.006),
+			Vector3(0.0, 0.30, 0.27), HAZARD, 0.2, 0.7)
+
+
+func _wall_pipes(rng: RandomNumberGenerator) -> void:
+	# A run of conduit along a bulkhead. Purely to break up flat wall.
+	for i in rng.randi_range(3, 5):
+		var y: float = 0.6 + i * 0.34
+		_part(MeshFactory.tube(3.20, 0.070 + i * 0.008, 0.050, 8),
+			Vector3(0.0, y, 0.0), METAL if i % 2 == 0 else RUST, 0.75, 0.42,
+			Vector3(0.0, 0.0, 90.0))
+	for x in [-1.20, 0.0, 1.20]:
+		_part(MeshFactory.beveled_box(Vector3(0.10, 1.50, 0.24), 0.02),
+			Vector3(x, 1.20, 0.06), METAL_DARK, 0.7, 0.4)

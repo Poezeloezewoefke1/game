@@ -1,0 +1,857 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/utility/world_block.gd" id="2_block"]
+[ext_resource type="PackedScene" path="res://scenes/multiplayer/entity_root.tscn" id="3_entityroot"]
+[ext_resource type="Material" path="res://resources/sky_hub.tres" id="5_sky"]
+[ext_resource type="Script" path="res://scripts/utility/set_dressing.gd" id="6_dress"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/crew_seat.tscn" id="7_seat"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/ship_station.tscn" id="8_station"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/nav_console.tscn" id="9_nav"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/launch_lever.tscn" id="10_lever"]
+
+[sub_resource type="Sky" id="Sky_ship"]
+sky_material = ExtResource("5_sky")
+radiance_size = 3
+
+[sub_resource type="Environment" id="Environment_ship"]
+background_mode = 2
+sky = SubResource("Sky_ship")
+ambient_light_source = 2
+ambient_light_color = Color(0.30, 0.40, 0.58, 1)
+ambient_light_energy = 0.30
+tonemap_mode = 3
+tonemap_exposure = 1.02
+tonemap_white = 2.2
+glow_enabled = true
+glow_intensity = 0.45
+glow_strength = 1.0
+glow_bloom = 0.06
+glow_blend_mode = 1
+glow_hdr_threshold = 1.1
+fog_enabled = true
+fog_light_color = Color(0.11, 0.17, 0.29, 1)
+fog_light_energy = 0.5
+fog_density = 0.008
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 1.10
+
+[node name="StarfarerDeck" type="Node3D"]
+script = ExtResource("1_level")
+level_key = "ship"
+ambience = 3
+
+[node name="EntityRoot" parent="." instance=ExtResource("3_entityroot")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_ship")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.94, -0.2, 0.27, 0, 0.8, 0.6, -0.34, -0.56, 0.75, 0, 10, -20)
+light_color = Color(0.72, 0.82, 1, 1)
+light_energy = 0.42
+light_specular = 0.5
+shadow_enabled = false
+
+[node name="Hull" type="Node3D" parent="."]
+
+[node name="Floor" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, -0.500, 0.000)
+script = ExtResource("2_block")
+size = Vector3(19.000, 1.000, 49.000)
+palette = "floor"
+
+[node name="Ceiling" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.800, 0.000)
+script = ExtResource("2_block")
+size = Vector3(19.000, 0.800, 49.000)
+palette = "hull_dark"
+
+[node name="PortWall1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 2.200, -18.250)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 12.500)
+palette = "hull"
+
+[node name="PortWall2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 2.200, -5.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 6.000)
+palette = "hull"
+
+[node name="PortWall3" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 2.200, 13.750)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 21.500)
+palette = "hull"
+
+[node name="PortSill1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 0.600, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.200, 4.000)
+palette = "hull"
+
+[node name="PortHead1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 3.700, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.400, 4.000)
+palette = "hull"
+
+[node name="PortGlass1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.180, 2.100, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.180, 1.800, 4.000)
+palette = "viewport"
+bevel = 0.020
+
+[node name="PortFrame1_12" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.980, 1.200, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 4.200)
+palette = "trim"
+solid = false
+
+[node name="PortFrame1_30" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.980, 3.000, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 4.200)
+palette = "trim"
+solid = false
+
+[node name="PortSill2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 0.600, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.200, 5.000)
+palette = "hull"
+
+[node name="PortHead2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.300, 3.700, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.400, 5.000)
+palette = "hull"
+
+[node name="PortGlass2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.180, 2.100, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.180, 1.800, 5.000)
+palette = "viewport"
+bevel = 0.020
+
+[node name="PortFrame2_12" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.980, 1.200, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 5.200)
+palette = "trim"
+solid = false
+
+[node name="PortFrame2_30" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.980, 3.000, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 5.200)
+palette = "trim"
+solid = false
+
+[node name="StbdWall1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 2.200, -18.250)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 12.500)
+palette = "hull"
+
+[node name="StbdWall2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 2.200, -5.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 6.000)
+palette = "hull"
+
+[node name="StbdWall3" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 2.200, 13.750)
+script = ExtResource("2_block")
+size = Vector3(0.600, 4.400, 21.500)
+palette = "hull"
+
+[node name="StbdSill1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 0.600, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.200, 4.000)
+palette = "hull"
+
+[node name="StbdHead1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 3.700, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.400, 4.000)
+palette = "hull"
+
+[node name="StbdGlass1" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.180, 2.100, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.180, 1.800, 4.000)
+palette = "viewport"
+bevel = 0.020
+
+[node name="StbdFrame1_12" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.980, 1.200, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 4.200)
+palette = "trim"
+solid = false
+
+[node name="StbdFrame1_30" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.980, 3.000, -10.000)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 4.200)
+palette = "trim"
+solid = false
+
+[node name="StbdSill2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 0.600, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.200, 5.000)
+palette = "hull"
+
+[node name="StbdHead2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.300, 3.700, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.600, 1.400, 5.000)
+palette = "hull"
+
+[node name="StbdGlass2" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.180, 2.100, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.180, 1.800, 5.000)
+palette = "viewport"
+bevel = 0.020
+
+[node name="StbdFrame2_12" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.980, 1.200, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 5.200)
+palette = "trim"
+solid = false
+
+[node name="StbdFrame2_30" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.980, 3.000, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.220, 0.140, 5.200)
+palette = "trim"
+solid = false
+
+[node name="BowSill" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.550, -24.300)
+script = ExtResource("2_block")
+size = Vector3(19.000, 1.100, 0.600)
+palette = "hull"
+
+[node name="BowHeader" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.900, -24.300)
+script = ExtResource("2_block")
+size = Vector3(19.000, 1.000, 0.600)
+palette = "hull"
+
+[node name="BowPillarP" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.000, 2.250, -24.300)
+script = ExtResource("2_block")
+size = Vector3(2.000, 2.300, 0.600)
+palette = "hull"
+
+[node name="BowPillarS" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.000, 2.250, -24.300)
+script = ExtResource("2_block")
+size = Vector3(2.000, 2.300, 0.600)
+palette = "hull"
+
+[node name="BowGlass" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.250, -24.100)
+script = ExtResource("2_block")
+size = Vector3(14.000, 2.300, 0.200)
+palette = "viewport"
+bevel = 0.020
+
+[node name="BowMullion-47" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -4.700, 2.250, -24.080)
+script = ExtResource("2_block")
+size = Vector3(0.220, 2.300, 0.280)
+palette = "trim"
+solid = false
+
+[node name="BowMullion0" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.250, -24.080)
+script = ExtResource("2_block")
+size = Vector3(0.220, 2.300, 0.280)
+palette = "trim"
+solid = false
+
+[node name="BowMullion47" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 4.700, 2.250, -24.080)
+script = ExtResource("2_block")
+size = Vector3(0.220, 2.300, 0.280)
+palette = "trim"
+solid = false
+
+[node name="Stern" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.200, 24.300)
+script = ExtResource("2_block")
+size = Vector3(19.000, 4.400, 0.600)
+palette = "hull"
+
+[node name="Bulk1SideP" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.500, 2.200, -15.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk1SideS" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.500, 2.200, -15.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk1Lintel" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.500, -15.000)
+script = ExtResource("2_block")
+size = Vector3(4.000, 1.800, 0.500)
+palette = "panel"
+
+[node name="Bulk1Trim" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.600, -15.000)
+script = ExtResource("2_block")
+size = Vector3(4.400, 0.180, 0.620)
+palette = "trim"
+solid = false
+
+[node name="Bulk2SideP" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.500, 2.200, -4.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk2SideS" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.500, 2.200, -4.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk2Lintel" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.500, -4.000)
+script = ExtResource("2_block")
+size = Vector3(4.000, 1.800, 0.500)
+palette = "panel"
+
+[node name="Bulk2Trim" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.600, -4.000)
+script = ExtResource("2_block")
+size = Vector3(4.400, 0.180, 0.620)
+palette = "trim"
+solid = false
+
+[node name="Bulk3SideP" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.500, 2.200, 5.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk3SideS" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.500, 2.200, 5.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk3Lintel" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.500, 5.000)
+script = ExtResource("2_block")
+size = Vector3(4.000, 1.800, 0.500)
+palette = "panel"
+
+[node name="Bulk3Trim" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.600, 5.000)
+script = ExtResource("2_block")
+size = Vector3(4.400, 0.180, 0.620)
+palette = "trim"
+solid = false
+
+[node name="Bulk4SideP" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.500, 2.200, 15.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk4SideS" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.500, 2.200, 15.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 4.400, 0.500)
+palette = "panel"
+
+[node name="Bulk4Lintel" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.500, 15.000)
+script = ExtResource("2_block")
+size = Vector3(4.000, 1.800, 0.500)
+palette = "panel"
+
+[node name="Bulk4Trim" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.600, 15.000)
+script = ExtResource("2_block")
+size = Vector3(4.400, 0.180, 0.620)
+palette = "trim"
+solid = false
+
+[node name="DividerFwd" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.200, 6.750)
+script = ExtResource("2_block")
+size = Vector3(0.500, 4.400, 3.500)
+palette = "panel"
+
+[node name="DividerAft" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 2.200, 13.250)
+script = ExtResource("2_block")
+size = Vector3(0.500, 4.400, 3.500)
+palette = "panel"
+
+[node name="DividerLintel" type="StaticBody3D" parent="Hull"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.500, 10.000)
+script = ExtResource("2_block")
+size = Vector3(0.500, 1.800, 3.000)
+palette = "panel"
+
+[node name="Lighting" type="Node3D" parent="."]
+
+[node name="StripBridge" type="StaticBody3D" parent="Lighting"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.280, -19.500)
+script = ExtResource("2_block")
+size = Vector3(0.500, 0.120, 7.000)
+palette = "neon"
+solid = false
+
+[node name="LampBridge" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.90, -19.50)
+light_color = Color(0.62, 0.78, 1.00, 1)
+light_energy = 1.50
+omni_range = 16.0
+omni_attenuation = 0.9
+
+[node name="StripQuarters" type="StaticBody3D" parent="Lighting"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.280, -9.500)
+script = ExtResource("2_block")
+size = Vector3(0.500, 0.120, 7.000)
+palette = "neon"
+solid = false
+
+[node name="LampQuarters" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.90, -9.50)
+light_color = Color(1.00, 0.84, 0.66, 1)
+light_energy = 1.30
+omni_range = 16.0
+omni_attenuation = 0.9
+
+[node name="StripMess" type="StaticBody3D" parent="Lighting"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.280, 0.500)
+script = ExtResource("2_block")
+size = Vector3(0.500, 0.120, 7.000)
+palette = "neon"
+solid = false
+
+[node name="LampMess" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.90, 0.50)
+light_color = Color(1.00, 0.88, 0.72, 1)
+light_energy = 1.40
+omni_range = 16.0
+omni_attenuation = 0.9
+
+[node name="StripMedBay" type="StaticBody3D" parent="Lighting"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.280, 10.000)
+script = ExtResource("2_block")
+size = Vector3(0.500, 0.120, 7.000)
+palette = "neon"
+solid = false
+
+[node name="LampMedBay" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.90, 10.00)
+light_color = Color(0.80, 1.00, 0.92, 1)
+light_energy = 1.20
+omni_range = 16.0
+omni_attenuation = 0.9
+
+[node name="StripCargo" type="StaticBody3D" parent="Lighting"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.280, 19.500)
+script = ExtResource("2_block")
+size = Vector3(0.500, 0.120, 7.000)
+palette = "neon"
+solid = false
+
+[node name="LampCargo" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.90, 19.50)
+light_color = Color(0.86, 0.90, 1.00, 1)
+light_energy = 1.20
+omni_range = 16.0
+omni_attenuation = 0.9
+
+[node name="LampEngineering" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2.4, 10)
+light_color = Color(0.42, 0.78, 1, 1)
+light_energy = 1.6
+omni_range = 14.0
+
+[node name="Deck" type="Node3D" parent="."]
+
+[node name="SpineLine" type="StaticBody3D" parent="Deck"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.015, 0.000)
+script = ExtResource("2_block")
+size = Vector3(0.280, 0.030, 46.000)
+palette = "neon"
+solid = false
+
+[node name="Threshold-15" type="StaticBody3D" parent="Deck"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.015, -15.000)
+script = ExtResource("2_block")
+size = Vector3(4.200, 0.030, 0.300)
+palette = "neon"
+solid = false
+
+[node name="Threshold-4" type="StaticBody3D" parent="Deck"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.015, -4.000)
+script = ExtResource("2_block")
+size = Vector3(4.200, 0.030, 0.300)
+palette = "neon"
+solid = false
+
+[node name="Threshold5" type="StaticBody3D" parent="Deck"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.015, 5.000)
+script = ExtResource("2_block")
+size = Vector3(4.200, 0.030, 0.300)
+palette = "neon"
+solid = false
+
+[node name="Threshold15" type="StaticBody3D" parent="Deck"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.015, 15.000)
+script = ExtResource("2_block")
+size = Vector3(4.200, 0.030, 0.300)
+palette = "neon"
+solid = false
+
+[node name="Furnishings" type="Node3D" parent="."]
+
+[node name="BridgeConsole1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.600, 0.000, -22.600)
+script = ExtResource("6_dress")
+kind = "pilot_console"
+variant = 0
+solid = true
+
+[node name="BridgeConsole2" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -1.900, 0.000, -22.600)
+script = ExtResource("6_dress")
+kind = "pilot_console"
+variant = 1
+solid = true
+
+[node name="BridgeConsole3" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 1.900, 0.000, -22.600)
+script = ExtResource("6_dress")
+kind = "pilot_console"
+variant = 2
+solid = true
+
+[node name="BridgeConsole4" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.600, 0.000, -22.600)
+script = ExtResource("6_dress")
+kind = "pilot_console"
+variant = 3
+solid = true
+
+[node name="BridgeRackP" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.000, 0.000, -17.000)
+script = ExtResource("6_dress")
+kind = "console_bank"
+variant = 0
+solid = true
+
+[node name="BridgeRackS" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.000, 0.000, -17.000)
+script = ExtResource("6_dress")
+kind = "console_bank"
+variant = 1
+solid = true
+
+[node name="BridgePipesP" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.600, 0.000, -20.000)
+script = ExtResource("6_dress")
+kind = "wall_pipes"
+variant = 0
+solid = false
+
+[node name="BridgePlant" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 7.600, 0.000, -21.500)
+script = ExtResource("6_dress")
+kind = "ship_plant"
+variant = 0
+solid = false
+
+[node name="BunkP1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -7.200, 0.000, -12.600)
+script = ExtResource("6_dress")
+kind = "bunk_bed"
+variant = 0
+solid = true
+
+[node name="BunkP2" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -7.200, 0.000, -6.400)
+script = ExtResource("6_dress")
+kind = "bunk_bed"
+variant = 1
+solid = true
+
+[node name="BunkS1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 7.200, 0.000, -12.600)
+script = ExtResource("6_dress")
+kind = "bunk_bed"
+variant = 2
+solid = true
+
+[node name="BunkS2" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 7.200, 0.000, -6.400)
+script = ExtResource("6_dress")
+kind = "crew_bunk"
+variant = 3
+solid = true
+
+[node name="LockersP" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.400, 0.000, -9.500)
+script = ExtResource("6_dress")
+kind = "locker_bank"
+variant = 0
+solid = true
+
+[node name="LockersS" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.400, 0.000, -9.500)
+script = ExtResource("6_dress")
+kind = "locker_bank"
+variant = 1
+solid = true
+
+[node name="FootLockerP1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.200, 0.000, -14.200)
+script = ExtResource("6_dress")
+kind = "foot_locker"
+variant = 0
+solid = true
+
+[node name="FootLockerS1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.200, 0.000, -14.200)
+script = ExtResource("6_dress")
+kind = "foot_locker"
+variant = 1
+solid = true
+
+[node name="QuartersPlant" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -4.600, 0.000, -5.000)
+script = ExtResource("6_dress")
+kind = "ship_plant"
+variant = 1
+solid = false
+
+[node name="QuartersPipes" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.600, 0.000, -13.500)
+script = ExtResource("6_dress")
+kind = "wall_pipes"
+variant = 1
+solid = false
+
+[node name="MessTable" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 0.600)
+script = ExtResource("6_dress")
+kind = "mess_table"
+variant = 0
+solid = true
+
+[node name="Galley" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -7.400, 0.000, 3.000)
+script = ExtResource("6_dress")
+kind = "galley_unit"
+variant = 0
+solid = true
+
+[node name="GalleyRack" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.200, 0.000, -1.400)
+script = ExtResource("6_dress")
+kind = "storage_rack"
+variant = 0
+solid = true
+
+[node name="MessCrates" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.9397, 0, 0.3420, 0, 1, 0, -0.3420, 0, 0.9397, 7.600, 0.000, 3.400)
+script = ExtResource("6_dress")
+kind = "crate_stack"
+variant = 2
+solid = true
+
+[node name="MessPlant" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 7.200, 0.000, -1.200)
+script = ExtResource("6_dress")
+kind = "ship_plant"
+variant = 2
+solid = false
+
+[node name="MedBed1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -6.400, 0.000, 7.600)
+script = ExtResource("6_dress")
+kind = "med_bed"
+variant = 0
+solid = true
+
+[node name="MedBed2" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -6.400, 0.000, 12.400)
+script = ExtResource("6_dress")
+kind = "med_bed"
+variant = 1
+solid = true
+
+[node name="MedCryo" type="Node3D" parent="Furnishings"]
+transform = Transform3D(-1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, -1.0000, -2.200, 0.000, 6.400)
+script = ExtResource("6_dress")
+kind = "cryo_pod"
+variant = 0
+solid = true
+
+[node name="MedRack" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.300, 0.000, 10.000)
+script = ExtResource("6_dress")
+kind = "storage_rack"
+variant = 1
+solid = true
+
+[node name="Reactor" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.400, 0.000, 10.000)
+script = ExtResource("6_dress")
+kind = "reactor_core"
+variant = 0
+solid = true
+
+[node name="EngPipesS" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.600, 0.000, 7.500)
+script = ExtResource("6_dress")
+kind = "wall_pipes"
+variant = 2
+solid = false
+
+[node name="EngPipesA" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.600, 0.000, 13.000)
+script = ExtResource("6_dress")
+kind = "wall_pipes"
+variant = 3
+solid = false
+
+[node name="EngSpool" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, 0.8660, 2.400, 0.000, 13.600)
+script = ExtResource("6_dress")
+kind = "cable_spool"
+variant = 0
+solid = true
+
+[node name="CargoRackP" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.200, 0.000, 18.000)
+script = ExtResource("6_dress")
+kind = "storage_rack"
+variant = 2
+solid = true
+
+[node name="CargoRackS" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 8.200, 0.000, 18.000)
+script = ExtResource("6_dress")
+kind = "storage_rack"
+variant = 3
+solid = true
+
+[node name="CargoCrates1" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.9781, 0, -0.2079, 0, 1, 0, 0.2079, 0, 0.9781, -5.000, 0.000, 21.000)
+script = ExtResource("6_dress")
+kind = "crate_stack"
+variant = 0
+solid = true
+
+[node name="CargoCrates2" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.9511, 0, 0.3090, 0, 1, 0, -0.3090, 0, 0.9511, 5.200, 0.000, 21.400)
+script = ExtResource("6_dress")
+kind = "crate_stack"
+variant = 1
+solid = true
+
+[node name="CargoBarrels" type="Node3D" parent="Furnishings"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -2.600, 0.000, 17.200)
+script = ExtResource("6_dress")
+kind = "barrel_cluster"
+variant = 0
+solid = true
+
+[node name="CargoPallet" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.9135, 0, -0.4067, 0, 1, 0, 0.4067, 0, 0.9135, 3.000, 0.000, 17.400)
+script = ExtResource("6_dress")
+kind = "supply_pallet"
+variant = 0
+solid = true
+
+[node name="AirlockPipes" type="Node3D" parent="Furnishings"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -8.600, 0.000, 22.500)
+script = ExtResource("6_dress")
+kind = "wall_pipes"
+variant = 4
+solid = false
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="CrewSeat1" parent="Interactables" instance=ExtResource("7_seat")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.600, 0.000, -20.200)
+object_id = "ship_seat_1"
+seat_id = "ship_seat_1"
+is_bridge_seat = true
+
+[node name="CrewSeat2" parent="Interactables" instance=ExtResource("7_seat")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -1.900, 0.000, -20.200)
+object_id = "ship_seat_2"
+seat_id = "ship_seat_2"
+is_bridge_seat = true
+
+[node name="CrewSeat3" parent="Interactables" instance=ExtResource("7_seat")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 1.900, 0.000, -20.200)
+object_id = "ship_seat_3"
+seat_id = "ship_seat_3"
+is_bridge_seat = true
+
+[node name="CrewSeat4" parent="Interactables" instance=ExtResource("7_seat")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.600, 0.000, -20.200)
+object_id = "ship_seat_4"
+seat_id = "ship_seat_4"
+is_bridge_seat = true
+
+[node name="NavConsole" parent="Interactables" instance=ExtResource("9_nav")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, -16.600)
+
+[node name="LaunchLever" parent="Interactables" instance=ExtResource("10_lever")]
+transform = Transform3D(0.8192, 0, 0.5736, 0, 1, 0, -0.5736, 0, 0.8192, 6.400, 0.000, -16.400)
+
+[node name="StationReactor" parent="Interactables" instance=ExtResource("8_station")]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 2.300, 0.000, 8.400)
+object_id = "ship_task_reactor"
+task_id = "task_reactor"
+
+[node name="StationFuel" parent="Interactables" instance=ExtResource("8_station")]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 7.600, 0.000, 13.400)
+object_id = "ship_task_fuel"
+task_id = "task_fuel"
+
+[node name="StationHatch" parent="Interactables" instance=ExtResource("8_station")]
+transform = Transform3D(-1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, -1.0000, 0.000, 0.000, 22.900)
+object_id = "ship_task_hatch"
+task_id = "task_hatch"
+
+[node name="PlayerSpawnPoints" type="Node3D" parent="."]
+
+[node name="Spawn1" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -1.600, 0.000, -9.500)
+
+[node name="Spawn2" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 1.600, 0.000, -9.500)
+
+[node name="Spawn3" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -1.600, 0.000, -6.500)
+
+[node name="Spawn4" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 1.600, 0.000, -6.500)

@@ -17,11 +17,13 @@ extends Node
 
 const PLAYER_SCENE := "res://scenes/entities/player.tscn"
 const GUARDIAN_SCENE := "res://scenes/enemies/sentinel.tscn"
+const WARDEN_SCENE := "res://scenes/enemies/warden.tscn"
 const GUARDIAN_PROJECTILE_SCENE := "res://scenes/enemies/guardian_projectile.tscn"
 const DROPPED_STAR_MAP_SCENE := "res://scenes/interactables/dropped_star_map.tscn"
 
 const KIND_PLAYER := "player"
 const KIND_GUARDIAN := "guardian"
+const KIND_WARDEN := "warden"
 const KIND_GUARDIAN_PROJECTILE := "gproj"
 const KIND_DROPPED_STAR_MAP := "smap"
 
@@ -239,14 +241,32 @@ func host_despawn_player(peer_id: int) -> void:
 func host_spawn_guardian() -> Node:
 	if not _is_host() or not has_level():
 		return null
-	if not get_tree().get_nodes_in_group(GameConfig.GROUP_GUARDIAN).is_empty():
-		Logx.warn("spawn", "Guardian already present; refusing duplicate spawn")
-		return null
+	# Only another SENTINEL blocks this, not the Warden: a crystal's guard and
+	# the temple's boss are allowed to be alive at the same time.
+	for existing in get_tree().get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		if not existing.is_in_group(GameConfig.GROUP_BOSS):
+			Logx.warn("spawn", "A Sentinel is already present; refusing duplicate spawn")
+			return null
 	var origin := Vector3.ZERO
 	if _guardian_anchor != null and is_instance_valid(_guardian_anchor):
 		origin = _guardian_anchor.global_position
 	Logx.info("spawn", "Spawning the Sentinel at %s" % str(origin))
 	return _spawner.spawn({"kind": KIND_GUARDIAN, "pos": origin})
+
+
+## The Warden hovers, so it spawns above the anchor rather than on it.
+func host_spawn_warden() -> Node:
+	if not _is_host() or not has_level():
+		return null
+	if not get_tree().get_nodes_in_group(GameConfig.GROUP_BOSS).is_empty():
+		Logx.warn("spawn", "The Warden is already awake; refusing a second")
+		return null
+	var origin := Vector3.ZERO
+	if _guardian_anchor != null and is_instance_valid(_guardian_anchor):
+		origin = _guardian_anchor.global_position
+	origin.y += GameConfig.BOSS_HOVER_HEIGHT
+	Logx.info("spawn", "Spawning the Warden at %s" % str(origin))
+	return _spawner.spawn({"kind": KIND_WARDEN, "pos": origin})
 
 
 func host_spawn_guardian_projectile(origin: Vector3, direction: Vector3) -> Node:
@@ -292,6 +312,8 @@ func _spawn_entity(data: Variant) -> Node:
 			return _build_player(d)
 		KIND_GUARDIAN:
 			return _build_simple(GUARDIAN_SCENE, "Sentinel", d)
+		KIND_WARDEN:
+			return _build_simple(WARDEN_SCENE, "Warden", d)
 		KIND_GUARDIAN_PROJECTILE:
 			return _build_projectile(d)
 		KIND_DROPPED_STAR_MAP:

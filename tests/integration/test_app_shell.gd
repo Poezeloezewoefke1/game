@@ -106,7 +106,7 @@ func _test_hub_captures_the_mouse() -> void:
 	check_false(_ui_root.wants_mouse_captured(), "the lobby does not capture the mouse")
 
 	await GameManager.host_start_session()
-	if not check(await _wait_for_scene(GameConfig.SCENE_HUB, 25.0), "the mission starts and the hub mounts"):
+	if not check(await _wait_for_scene(GameConfig.SCENE_SHIP, 25.0), "the mission starts and the hub mounts"):
 		return
 	await wait_frames(3)
 

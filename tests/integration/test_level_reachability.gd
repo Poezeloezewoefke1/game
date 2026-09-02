@@ -40,7 +40,7 @@ func run_async() -> void:
 		return
 
 	await GameManager.host_start_session()
-	if not check(await _session.await_scene(GameConfig.SCENE_HUB), "the hub mounts"):
+	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts"):
 		_session.stop()
 		return
 	await GameManager.host_start_expedition()

@@ -297,7 +297,9 @@ func _publish_transform() -> void:
 
 ## Called by the host after IT validated a blaster shot. Never called from a
 ## client RPC, so there is no path for a client to inflate the hit count.
-func host_register_hit(from_peer: int) -> void:
+## `part` is unused here - the Sentinel is one body - but the signature has to
+## match the Warden's, because the host's fire path calls whichever it hit.
+func host_register_hit(from_peer: int, _part: Node = null) -> void:
 	if not _is_host():
 		return
 	if sync_state == State.STAGGERED or GameManager.is_mission_over():

@@ -46,7 +46,7 @@ func _setup() -> bool:
 	set_current("setup")
 	LobbyManager.host_add_player(P2, "Second")
 	await GameManager.host_start_session()
-	if not check(await _session.await_scene(GameConfig.SCENE_HUB), "the hub mounts"):
+	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts"):
 		return false
 	await GameManager.host_start_expedition()
 	if not check(await _session.await_scene(GameConfig.SCENE_NERAVA), "Nerava mounts"):
@@ -58,13 +58,20 @@ func _setup() -> bool:
 	if not check(_p1 != null and _p2 != null, "both players spawned"):
 		return false
 
-	# Put the mission where the Star Map is genuinely takeable, then take it -
-	# that is the only thing that spawns a Sentinel.
+	# Taking the Star Map now wakes the WARDEN, not a Sentinel - the Sentinel's
+	# job moved to guarding a crystal. So this test spawns one directly, which
+	# is also more honest about what it is testing: the Sentinel's brain, not
+	# the route that happens to create it.
 	GameManager.snapshot["temple_discovered"] = true
 	GameManager.snapshot["state"] = MS.RETRIEVE_STAR_MAP
 	GameManager.snapshot["altar_active"] = true
-	GameManager.snapshot["star_map_state"] = MissionRules.MAP_AVAILABLE
-	GameManager.host_apply_star_map_pickup(P2)
+	# The carrier is written straight into the snapshot rather than going
+	# through host_apply_star_map_pickup, because that call now also wakes the
+	# Warden - and this test is about the Sentinel preferring the carrier over
+	# the nearer player, not about the boss.
+	GameManager.snapshot["star_map_state"] = MissionRules.MAP_CARRIED
+	GameManager.snapshot["star_map_carrier"] = P2
+	SpawnManager.host_spawn_guardian()
 	await wait_frames(3)
 
 	var guardians := tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN)

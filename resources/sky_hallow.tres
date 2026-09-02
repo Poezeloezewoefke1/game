@@ -1,0 +1,42 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/deep_space_sky.gdshader" id="1_sky"]
+
+[resource]
+shader = ExtResource("1_sky")
+shader_parameter/star_density = 0.92
+shader_parameter/star_brightness = 3.1
+shader_parameter/star_size = 1.0
+shader_parameter/galaxy_axis = Vector3(0.34, 0.88, 0.33)
+shader_parameter/galaxy_strength = 1.05
+shader_parameter/galaxy_core_colour = Color(0.86, 0.92, 1, 1)
+shader_parameter/galaxy_dust_colour = Color(0.16, 0.2, 0.3, 1)
+shader_parameter/nebula_strength = 0.7
+shader_parameter/nebula_a = Color(0.24, 0.6, 1, 1)
+shader_parameter/nebula_b = Color(0.5, 0.3, 0.9, 1)
+shader_parameter/sun_direction = Vector3(0.5, 0.3, -0.81)
+shader_parameter/sun_colour = Color(0.86, 0.93, 1, 1)
+shader_parameter/sun_size = 0.007
+shader_parameter/exposure = 1.0
+shader_parameter/planet1_enabled = true
+shader_parameter/planet1_direction = Vector3(-0.34, 0.52, -0.78)
+shader_parameter/planet1_size = 0.17
+shader_parameter/planet1_colour_a = Color(0.55, 0.76, 0.9, 1)
+shader_parameter/planet1_colour_b = Color(0.18, 0.34, 0.52, 1)
+shader_parameter/planet1_atmosphere = Color(0.6, 0.86, 1, 1)
+shader_parameter/planet1_bands = 17.0
+shader_parameter/planet1_ring_inner = 1.6
+shader_parameter/planet1_ring_outer = 2.7
+shader_parameter/planet1_ring_tilt = 0.78
+shader_parameter/planet1_use_photo = false
+shader_parameter/planet2_enabled = true
+shader_parameter/planet2_direction = Vector3(0.72, 0.2, 0.66)
+shader_parameter/planet2_size = 0.038
+shader_parameter/planet2_colour_a = Color(0.42, 0.55, 0.72, 1)
+shader_parameter/planet2_colour_b = Color(0.16, 0.26, 0.42, 1)
+shader_parameter/planet2_atmosphere = Color(0.45, 0.68, 1, 1)
+shader_parameter/planet2_use_photo = false
+shader_parameter/moon_enabled = true
+shader_parameter/moon_direction = Vector3(-0.62, 0.34, 0.71)
+shader_parameter/moon_size = 0.055
+shader_parameter/moon_colour = Color(0.86, 0.9, 0.94, 1)

@@ -145,7 +145,7 @@ func _run() -> void:
 		return
 
 	await GameManager.host_start_session()
-	if not await _wait_for(GameConfig.SCENE_HUB, 40.0):
+	if not await _wait_for(GameConfig.SCENE_SHIP, 40.0):
 		push_error("hub never mounted")
 		get_tree().quit(1)
 		return

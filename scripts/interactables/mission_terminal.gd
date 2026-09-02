@@ -16,7 +16,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt(player: Node) -> String:
-	if GameManager.mission_state() != MissionRules.MissionState.HUB_IDLE:
+	if GameManager.mission_state() != MissionRules.MissionState.SHIP_IDLE:
 		return ""
 	if NetworkManager.local_peer_id() != GameConfig.HOST_PEER_ID:
 		return "Only the host can begin the expedition"
@@ -27,7 +27,7 @@ func get_interaction_prompt(player: Node) -> String:
 
 func can_interact(player: Node) -> bool:
 	return NetworkManager.local_peer_id() == GameConfig.HOST_PEER_ID \
-		and GameManager.mission_state() == MissionRules.MissionState.HUB_IDLE \
+		and GameManager.mission_state() == MissionRules.MissionState.SHIP_IDLE \
 		and player != null and not bool(player.get("is_downed"))
 
 
@@ -42,7 +42,7 @@ func host_validate_and_apply_interaction(peer_id: int, player: Node) -> Dictiona
 
 
 func refresh_visual_state() -> void:
-	var ready_to_use := GameManager.mission_state() == MissionRules.MissionState.HUB_IDLE
+	var ready_to_use := GameManager.mission_state() == MissionRules.MissionState.SHIP_IDLE
 	var colour := Color(0.25, 0.95, 0.75) if ready_to_use else Color(0.35, 0.4, 0.5)
 	_set_emission(_screen, colour, 1.1 if ready_to_use else 0.3)
 	if _light != null:

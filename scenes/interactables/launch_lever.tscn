@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/launch_lever.gd" id="1_lever"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lever"]
+size = Vector3(1.0, 1.8, 0.9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_housing"]
+size = Vector3(0.8, 1.0, 0.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_handle"]
+size = Vector3(0.12, 0.66, 0.12)
+
+[node name="LaunchLever" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_lever")
+object_id = "ship_launch_lever"
+needs_line_of_sight = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("BoxShape3D_lever")
+
+[node name="Housing" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_housing")
+
+[node name="Handle" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, -0.1)
+mesh = SubResource("BoxMesh_handle")
+
+[node name="Lamp" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.3)
+light_color = Color(1, 0.35, 0.28, 1)
+light_energy = 0.6
+omni_range = 5.0

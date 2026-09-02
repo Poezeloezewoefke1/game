@@ -1,0 +1,653 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/utility/world_block.gd" id="2_block"]
+[ext_resource type="Script" path="res://scripts/interactables/temple_trigger.gd" id="3_trigger"]
+[ext_resource type="PackedScene" path="res://scenes/multiplayer/entity_root.tscn" id="4_entityroot"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/drop_pod.tscn" id="5_pod"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/power_crystal.tscn" id="6_crystal"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/crystal_pedestal.tscn" id="7_pedestal"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/star_map_altar.tscn" id="8_altar"]
+[ext_resource type="Script" path="res://scripts/utility/prop_scatter.gd" id="9_scatter"]
+[ext_resource type="Script" path="res://scripts/utility/set_dressing.gd" id="10_dress"]
+[ext_resource type="Material" path="res://resources/sky_hallow.tres" id="11_sky"]
+
+[sub_resource type="Sky" id="Sky_hallow"]
+sky_material = ExtResource("11_sky")
+radiance_size = 3
+
+[sub_resource type="Environment" id="Env_hallow"]
+background_mode = 2
+sky = SubResource("Sky_hallow")
+ambient_light_source = 2
+ambient_light_color = Color(0.46, 0.58, 0.74, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 3
+tonemap_exposure = 1.05
+tonemap_white = 2.2
+glow_enabled = true
+glow_intensity = 0.42
+glow_strength = 1.0
+glow_bloom = 0.06
+glow_blend_mode = 1
+glow_hdr_threshold = 1.15
+fog_enabled = true
+fog_light_color = Color(0.62, 0.72, 0.86, 1)
+fog_light_energy = 1.1
+fog_density = 0.028
+adjustment_enabled = true
+adjustment_contrast = 1.04
+adjustment_saturation = 0.92
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_hallow"]
+vertices = PackedVector3Array()
+cell_size = 0.2
+cell_height = 0.2
+agent_height = 2.0
+agent_radius = 0.6
+agent_max_climb = 0.4
+agent_max_slope = 45.0
+region_min_size = 3.0
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_temple_trigger"]
+size = Vector3(30, 6, 30)
+
+[node name="HallowIcefield" type="Node3D"]
+script = ExtResource("1_level")
+level_key = "hallow"
+ambience = 1
+
+[node name="EntityRoot" parent="." instance=ExtResource("4_entityroot")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_hallow")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.9, -0.28, 0.33, 0, 0.76, 0.65, -0.43, -0.58, 0.69, 0, 30, 0)
+light_color = Color(0.78, 0.88, 1, 1)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_hallow")
+
+[node name="Basin" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, -1.000, 0.000)
+script = ExtResource("2_block")
+size = Vector3(124.000, 2.000, 124.000)
+palette = "ice"
+
+[node name="RimNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 7.000, -65.000)
+script = ExtResource("2_block")
+size = Vector3(136.000, 16.000, 6.000)
+palette = "ice"
+
+[node name="RimSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 7.000, 65.000)
+script = ExtResource("2_block")
+size = Vector3(136.000, 16.000, 6.000)
+palette = "ice"
+
+[node name="RimEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 65.000, 7.000, 0.000)
+script = ExtResource("2_block")
+size = Vector3(6.000, 16.000, 136.000)
+palette = "ice"
+
+[node name="RimWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -65.000, 7.000, 0.000)
+script = ExtResource("2_block")
+size = Vector3(6.000, 16.000, 136.000)
+palette = "ice"
+
+[node name="Plateau" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.700, 0.000)
+script = ExtResource("2_block")
+size = Vector3(34.000, 1.400, 34.000)
+palette = "rock"
+
+[node name="PlateauRamp1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.350, -20.000)
+script = ExtResource("2_block")
+size = Vector3(9.000, 1.400, 7.000)
+palette = "rock"
+
+[node name="PlateauRamp2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 20.000, 0.350, -0.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 1.400, 9.000)
+palette = "rock"
+
+[node name="PlateauRamp3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.350, 20.000)
+script = ExtResource("2_block")
+size = Vector3(9.000, 1.400, 7.000)
+palette = "rock"
+
+[node name="PlateauRamp4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -20.000, 0.350, 0.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 1.400, 9.000)
+palette = "rock"
+
+[node name="TemplePillar1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -7.000, 4.400, -7.000)
+script = ExtResource("2_block")
+size = Vector3(1.800, 6.000, 1.800)
+palette = "ice"
+
+[node name="TemplePillar2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 7.000, 4.400, -7.000)
+script = ExtResource("2_block")
+size = Vector3(1.800, 6.000, 1.800)
+palette = "ice"
+
+[node name="TemplePillar3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -7.000, 4.400, 7.000)
+script = ExtResource("2_block")
+size = Vector3(1.800, 6.000, 1.800)
+palette = "ice"
+
+[node name="TemplePillar4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 7.000, 4.400, 7.000)
+script = ExtResource("2_block")
+size = Vector3(1.800, 6.000, 1.800)
+palette = "ice"
+
+[node name="TempleLintelN" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 7.800, -7.000)
+script = ExtResource("2_block")
+size = Vector3(16.000, 1.200, 2.200)
+palette = "ice"
+
+[node name="TempleLintelS" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 7.800, 7.000)
+script = ExtResource("2_block")
+size = Vector3(16.000, 1.200, 2.200)
+palette = "ice"
+
+[node name="TempleBack" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 4.800, -11.500)
+script = ExtResource("2_block")
+size = Vector3(18.000, 6.800, 1.600)
+palette = "ice"
+
+[node name="Mesa1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -30.000, 2.500, -26.000)
+script = ExtResource("2_block")
+size = Vector3(13.000, 5.000, 9.000)
+palette = "ice"
+
+[node name="MesaRamp1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -20.500, 1.250, -26.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 2.500, 6.300)
+palette = "ice"
+
+[node name="Mesa2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 26.000, 2.000, -32.000)
+script = ExtResource("2_block")
+size = Vector3(11.000, 4.000, 8.000)
+palette = "ice"
+
+[node name="MesaRamp2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 34.500, 1.000, -32.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 2.000, 5.600)
+palette = "ice"
+
+[node name="Mesa3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 34.000, 3.000, 18.000)
+script = ExtResource("2_block")
+size = Vector3(14.000, 6.000, 10.000)
+palette = "ice"
+
+[node name="MesaRamp3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 44.000, 1.500, 18.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 3.000, 7.000)
+palette = "ice"
+
+[node name="Mesa4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -33.000, 2.250, 22.000)
+script = ExtResource("2_block")
+size = Vector3(12.000, 4.500, 9.000)
+palette = "ice"
+
+[node name="MesaRamp4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -24.000, 1.125, 22.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 2.250, 6.300)
+palette = "ice"
+
+[node name="Mesa5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.000, 1.750, 38.000)
+script = ExtResource("2_block")
+size = Vector3(10.000, 3.500, 7.000)
+palette = "ice"
+
+[node name="MesaRamp5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.875, 38.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 1.750, 4.900)
+palette = "ice"
+
+[node name="Mesa6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 16.000, 1.500, 40.000)
+script = ExtResource("2_block")
+size = Vector3(9.000, 3.000, 7.000)
+palette = "ice"
+
+[node name="MesaRamp6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 23.500, 0.750, 40.000)
+script = ExtResource("2_block")
+size = Vector3(7.000, 1.500, 4.900)
+palette = "ice"
+
+[node name="RuinsBack" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -30.973, 4.000, 44.234)
+script = ExtResource("2_block")
+size = Vector3(16.000, 8.000, 4.000)
+palette = "ice"
+
+[node name="RuinsShoulder1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -7.665, 3.000, 48.397)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="RuinsShoulder3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -42.856, 3.000, 23.756)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="RuinsFloor" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -26.385, 0.150, 37.681)
+script = ExtResource("2_block")
+size = Vector3(18.000, 0.300, 14.000)
+palette = "rock"
+
+[node name="CaveBack" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -27.000, 4.000, -46.765)
+script = ExtResource("2_block")
+size = Vector3(16.000, 8.000, 4.000)
+palette = "ice"
+
+[node name="CaveShoulder1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -40.623, 3.000, -27.400)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="CaveShoulder3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -3.418, 3.000, -48.881)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="CaveFloor" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -23.000, 0.150, -39.837)
+script = ExtResource("2_block")
+size = Vector3(18.000, 0.300, 14.000)
+palette = "rock"
+
+[node name="GroveBack" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 53.795, 4.000, -4.706)
+script = ExtResource("2_block")
+size = Vector3(16.000, 8.000, 4.000)
+palette = "ice"
+
+[node name="GroveShoulder1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 42.001, 3.000, -25.237)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="GroveShoulder3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 45.745, 3.000, 17.560)
+script = ExtResource("2_block")
+size = Vector3(7.000, 6.000, 7.000)
+palette = "ice"
+
+[node name="GroveFloor" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 45.825, 0.150, -4.009)
+script = ExtResource("2_block")
+size = Vector3(18.000, 0.300, 14.000)
+palette = "rock"
+
+[node name="LandingPad" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.120, 54.000)
+script = ExtResource("2_block")
+size = Vector3(20.000, 0.240, 16.000)
+palette = "rock"
+
+[node name="Dressing" type="Node3D" parent="NavigationRegion3D"]
+
+[node name="D01_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -22.943, 0.000, 32.766)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 1
+solid = true
+
+[node name="D02_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9511, 0, -0.3090, 0, 1, 0, 0.3090, 0, 0.9511, -29.826, 0.000, 42.596)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 2
+solid = true
+
+[node name="D03_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9781, 0, 0.2079, 0, 1, 0, -0.2079, 0, 0.9781, -20.500, 0.000, -35.507)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 3
+solid = true
+
+[node name="D04_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, 0.8660, 41.840, 0.000, -3.661)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 0
+solid = true
+
+[node name="D05_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -24.000, 0.000, 8.000)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 1
+solid = true
+
+[node name="D06_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 26.000, 0.000, -6.000)
+script = ExtResource("10_dress")
+kind = "ruin_pillar"
+variant = 2
+solid = true
+
+[node name="D07_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -14.000, 0.000, 24.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 3
+solid = false
+
+[node name="D08_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.7660, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.7660, 18.000, 0.000, 26.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 0
+solid = false
+
+[node name="D09_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9781, 0, -0.2079, 0, 1, 0, 0.2079, 0, 0.9781, -30.000, 0.000, -8.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 1
+solid = false
+
+[node name="D10_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9397, 0, 0.3420, 0, 1, 0, -0.3420, 0, 0.9397, 32.000, 0.000, 4.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 2
+solid = false
+
+[node name="D11_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9903, 0, -0.1392, 0, 1, 0, 0.1392, 0, 0.9903, 6.000, 0.000, -30.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 3
+solid = false
+
+[node name="D12_ruin_rubble" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9272, 0, -0.3746, 0, 1, 0, 0.3746, 0, 0.9272, -40.000, 0.000, 34.000)
+script = ExtResource("10_dress")
+kind = "ruin_rubble"
+variant = 0
+solid = false
+
+[node name="D13_temple_brazier" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.500, 0.000, 8.000)
+script = ExtResource("10_dress")
+kind = "temple_brazier"
+variant = 1
+solid = true
+
+[node name="D14_temple_brazier" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.500, 0.000, 8.000)
+script = ExtResource("10_dress")
+kind = "temple_brazier"
+variant = 2
+solid = true
+
+[node name="D15_temple_brazier" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -9.500, 0.000, -6.000)
+script = ExtResource("10_dress")
+kind = "temple_brazier"
+variant = 3
+solid = true
+
+[node name="D16_temple_brazier" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 9.500, 0.000, -6.000)
+script = ExtResource("10_dress")
+kind = "temple_brazier"
+variant = 0
+solid = true
+
+[node name="D17_carved_stele" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9781, 0, -0.2079, 0, 1, 0, 0.2079, 0, 0.9781, -13.000, 0.000, -2.000)
+script = ExtResource("10_dress")
+kind = "carved_stele"
+variant = 1
+solid = true
+
+[node name="D18_carved_stele" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9781, 0, 0.2079, 0, 1, 0, -0.2079, 0, 0.9781, 13.000, 0.000, -2.000)
+script = ExtResource("10_dress")
+kind = "carved_stele"
+variant = 2
+solid = true
+
+[node name="D19_carved_stele" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.7660, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.7660, -20.000, 0.000, -20.000)
+script = ExtResource("10_dress")
+kind = "carved_stele"
+variant = 3
+solid = true
+
+[node name="D20_carved_stele" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.8192, 0, 0.5736, 0, 1, 0, -0.5736, 0, 0.8192, 21.000, 0.000, 19.000)
+script = ExtResource("10_dress")
+kind = "carved_stele"
+variant = 0
+solid = true
+
+[node name="D21_wreckage" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9135, 0, -0.4067, 0, 1, 0, 0.4067, 0, 0.9135, -18.000, 0.000, 44.000)
+script = ExtResource("10_dress")
+kind = "wreckage"
+variant = 1
+solid = true
+
+[node name="D22_wreckage" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9613, 0, 0.2756, 0, 1, 0, -0.2756, 0, 0.9613, 20.000, 0.000, -44.000)
+script = ExtResource("10_dress")
+kind = "wreckage"
+variant = 2
+solid = true
+
+[node name="D23_wreckage" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9903, 0, -0.1392, 0, 1, 0, 0.1392, 0, 0.9903, -34.000, 0.000, -12.000)
+script = ExtResource("10_dress")
+kind = "wreckage"
+variant = 3
+solid = true
+
+[node name="D24_crate_stack" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9848, 0, -0.1736, 0, 1, 0, 0.1736, 0, 0.9848, -6.000, 0.000, 50.000)
+script = ExtResource("10_dress")
+kind = "crate_stack"
+variant = 0
+solid = true
+
+[node name="D25_crate_stack" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.9703, 0, 0.2419, 0, 1, 0, -0.2419, 0, 0.9703, 6.000, 0.000, 51.000)
+script = ExtResource("10_dress")
+kind = "crate_stack"
+variant = 1
+solid = true
+
+[node name="D26_floodlight" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -8.000, 0.000, 48.000)
+script = ExtResource("10_dress")
+kind = "floodlight"
+variant = 2
+solid = true
+
+[node name="D27_floodlight" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 8.000, 0.000, 48.000)
+script = ExtResource("10_dress")
+kind = "floodlight"
+variant = 3
+solid = true
+
+[node name="D28_floodlight" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -30.000, 0.000, 30.000)
+script = ExtResource("10_dress")
+kind = "floodlight"
+variant = 0
+solid = true
+
+[node name="D29_floodlight" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 30.000, 0.000, -30.000)
+script = ExtResource("10_dress")
+kind = "floodlight"
+variant = 1
+solid = true
+
+[node name="D30_hazard_barrier" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 46.000)
+script = ExtResource("10_dress")
+kind = "hazard_barrier"
+variant = 2
+solid = false
+
+[node name="D31_antenna_mast" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 11.000, 0.000, 56.000)
+script = ExtResource("10_dress")
+kind = "antenna_mast"
+variant = 3
+solid = true
+
+[node name="D32_locker_bank" type="Node3D" parent="NavigationRegion3D/Dressing"]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, -9.000, 0.000, 52.000)
+script = ExtResource("10_dress")
+kind = "locker_bank"
+variant = 0
+solid = true
+
+[node name="Scatter" type="Node3D" parent="NavigationRegion3D"]
+script = ExtResource("9_scatter")
+kind = 0
+count = 44
+region = Vector3(108, 0, 108)
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="DropPod" parent="Interactables" instance=ExtResource("5_pod")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 54.000)
+
+[node name="CrystalRuins" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -26.385, 0.300, 37.681)
+object_id = "hallow_crystal_ruins"
+crystal_id = "crystal_ruins"
+
+[node name="CrystalCave" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -23.000, 0.300, -39.837)
+object_id = "hallow_crystal_cave"
+crystal_id = "crystal_cave"
+
+[node name="CrystalGrove" parent="Interactables" instance=ExtResource("6_crystal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 45.825, 0.300, -4.009)
+object_id = "hallow_crystal_grove"
+crystal_id = "crystal_grove"
+
+[node name="PedestalA" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.000, 1.400, 3.000)
+object_id = "hallow_pedestal_a"
+pedestal_id = "pedestal_a"
+accepts_crystal_id = "crystal_ruins"
+
+[node name="PedestalB" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 5.000, 1.400, 3.000)
+object_id = "hallow_pedestal_b"
+pedestal_id = "pedestal_b"
+accepts_crystal_id = "crystal_cave"
+
+[node name="PedestalC" parent="Interactables" instance=ExtResource("7_pedestal")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -8.000)
+object_id = "hallow_pedestal_c"
+pedestal_id = "pedestal_c"
+accepts_crystal_id = "crystal_grove"
+
+[node name="StarMapAltar" parent="Interactables" instance=ExtResource("8_altar")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -2.000)
+
+[node name="TempleTrigger" type="Area3D" parent="."]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.000, 15.000)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("3_trigger")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TempleTrigger"]
+shape = SubResource("BoxShape3D_temple_trigger")
+
+[node name="GuardianAnchor" type="Marker3D" parent="."]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -6.000)
+
+[node name="StarMapDropAnchor" type="Marker3D" parent="."]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -2.000)
+
+[node name="PlayerSpawnPoints" type="Node3D" parent="."]
+
+[node name="Spawn1" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -3.000, 0.300, 50.000)
+
+[node name="Spawn2" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 3.000, 0.300, 50.000)
+
+[node name="Spawn3" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -3.000, 0.300, 57.000)
+
+[node name="Spawn4" type="Marker3D" parent="PlayerSpawnPoints"]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 3.000, 0.300, 57.000)
+
+[node name="Light1" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 6, -2.0)
+light_color = Color(0.6, 0.82, 1, 1)
+light_energy = 2.0
+omni_range = 34.0
+
+[node name="Light2" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.0, 6, -38.0)
+light_color = Color(0.5, 0.72, 1, 1)
+light_energy = 1.4
+omni_range = 26.0
+
+[node name="Light3" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40.0, 6, 24.0)
+light_color = Color(0.55, 0.76, 1, 1)
+light_energy = 1.4
+omni_range = 26.0
+
+[node name="Light4" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 6, 54.0)
+light_color = Color(0.8, 0.9, 1, 1)
+light_energy = 1.4
+omni_range = 22.0
+

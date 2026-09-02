@@ -27,11 +27,20 @@ enum Cue {
 	REVIVE_COMPLETE,
 	VICTORY,
 	FAILURE,
+	# The Warden. Distinct from the Sentinel's cues, because during the boss
+	# fight both can be on screen and "something fired" is not useful if you
+	# cannot tell what.
+	WARDEN_VOLLEY,
+	WARDEN_SHIELD_BREAK,
+	WARDEN_DEATH,
 }
 
 ## Cue -> [frequency_hz, seconds, volume_db]. Deliberately simple: these are
 ## placeholders whose only job is to be audibly distinct.
 const _CUE_TONES: Dictionary = {
+	Cue.WARDEN_VOLLEY:       [148.0, 0.22, -9.0],
+	Cue.WARDEN_SHIELD_BREAK: [1180.0, 0.30, -7.0],
+	Cue.WARDEN_DEATH:        [72.0, 1.10, -5.0],
 	Cue.UI_CLICK:            [880.0, 0.05, -14.0],
 	Cue.UI_BACK:             [440.0, 0.06, -16.0],
 	Cue.UI_ERROR:            [180.0, 0.18, -12.0],

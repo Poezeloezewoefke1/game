@@ -60,6 +60,7 @@ func _on_barrier_completed(scene_key: String, _transition_id: int) -> void:
 func _process(delta: float) -> void:
 	if multiplayer.multiplayer_peer != null and multiplayer.is_server():
 		_host_tick_revives(delta)
+		_host_tick_flight()
 
 
 # ==========================================================================
@@ -151,27 +152,114 @@ func host_start_session() -> bool:
 		Logx.warn("mission", "start_session in state %s" % MissionRules.state_name(mission_state()))
 		return false
 	session_epoch += 1
-	_host_reset_facts()
-	if not _host_set_state(MS.TRANSITIONING_TO_HUB):
+	# A brand-new session starts the campaign over: first destination, nothing
+	# completed, no seats held, every station red.
+	snapshot = MissionRules.fresh_ship_snapshot(session_epoch)
+	if not _host_set_state(MS.TRANSITIONING_TO_SHIP, true):
 		return false
 	await SpawnManager.host_clear_all()
 	LobbyManager.host_clear_ready_flags()
-	var started: bool = await SceneManager.host_transition_to(GameConfig.SCENE_HUB)
+	var started: bool = await SceneManager.host_transition_to(GameConfig.SCENE_SHIP)
 	return started
 
 
-## Hub Mission Terminal -> Nerava. Host only (validated for peer 1).
+## Pull the lever. Host only. Begins the scripted launch; the descent itself
+## happens later, when _host_tick_flight walks the sequence to its end.
+##
+## The mission facts are NOT reset here. Resetting them at launch would wipe the
+## destination the crew just plotted, so the reset happens at touchdown, once
+## the scene the facts describe is the scene we are actually going to.
+func host_begin_launch() -> bool:
+	if not _is_host():
+		return false
+	if mission_state() != MS.SHIP_IDLE:
+		return false
+	if not _host_set_state(MS.LAUNCHING):
+		return false
+	snapshot["flight_started_ms"] = Time.get_ticks_msec()
+	Logx.info("flight", "Launch for %s" % String(snapshot.get("mission_id", "?")))
+	AudioDirector.play(AudioDirector.Cue.UI_CLICK)
+	_host_publish()
+	return true
+
+
+## Kept as the name the tests and tools have always used for "get the crew off
+## the ship and onto the planet". It now skips the flight and lands directly,
+## which is what an automated run wants: sitting through eighteen seconds of
+## scripted camera work in a headless test proves nothing.
 func host_start_expedition() -> bool:
 	if not _is_host():
 		return false
-	if mission_state() != MS.HUB_IDLE:
+	if mission_state() != MS.SHIP_IDLE:
+		return false
+	if not _host_set_state(MS.LAUNCHING):
+		return false
+	if not _host_set_state(MS.IN_TRANSIT):
+		return false
+	if not _host_set_state(MS.LANDING):
+		return false
+	return await _host_touch_down()
+
+
+## Walks LAUNCHING -> IN_TRANSIT -> LANDING on the host clock. Clients play the
+## matching animation from the replicated state and `flight_started_ms`, so
+## nobody's sequence drifts from anybody else's.
+func _host_tick_flight() -> void:
+	var state := mission_state()
+	if not MissionRules.is_flight_state(state):
+		return
+	var started := int(snapshot.get("flight_started_ms", 0))
+	if started <= 0:
+		return
+	var elapsed := float(Time.get_ticks_msec() - started) / 1000.0
+	match state:
+		MS.LAUNCHING:
+			if elapsed >= GameConfig.FLIGHT_LAUNCH_TIME:
+				_host_advance_flight(MS.IN_TRANSIT)
+		MS.IN_TRANSIT:
+			if elapsed >= GameConfig.FLIGHT_TRANSIT_TIME:
+				_host_advance_flight(MS.LANDING)
+		MS.LANDING:
+			if elapsed >= GameConfig.FLIGHT_LANDING_TIME:
+				# Guarded, because the touchdown is asynchronous and this runs
+				# every frame: without it the scene transition starts once per
+				# frame until the state finally changes.
+				if not _touching_down:
+					_touching_down = true
+					_host_touch_down()
+
+
+func _host_advance_flight(next_state: int) -> void:
+	if not _host_set_state(next_state):
+		return
+	snapshot["flight_started_ms"] = Time.get_ticks_msec()
+	Logx.info("flight", "-> %s" % MissionRules.state_name(next_state))
+	_host_publish()
+
+
+var _touching_down: bool = false
+
+
+## Touchdown: everyone out of their seats, mission facts reset for the planet we
+## actually arrived at, and the surface scene mounted.
+func _host_touch_down() -> bool:
+	var destination := String(snapshot.get("mission_id", MissionCatalog.first_id()))
+	var scene_key := MissionCatalog.scene_key(destination)
+	if not GameConfig.is_valid_scene_key(scene_key):
+		Logx.error("flight", "Mission '%s' has no scene; aborting to the deck" % destination)
+		_touching_down = false
+		_host_set_state(MS.SHIP_IDLE, true)
+		_host_publish()
 		return false
 	session_epoch += 1
+	host_clear_all_seats()
 	_host_reset_facts()
-	if not _host_set_state(MS.TRANSITIONING_TO_NERAVA):
+	if not _host_set_state(MS.TRANSITIONING_TO_SURFACE, true):
+		_touching_down = false
 		return false
 	await SpawnManager.host_clear_all()
-	var started: bool = await SceneManager.host_transition_to(GameConfig.SCENE_NERAVA)
+	var started: bool = await SceneManager.host_transition_to(scene_key)
+	_touching_down = false
 	return started
 
 
@@ -183,12 +271,15 @@ func host_retry_mission() -> bool:
 		return false
 	session_epoch += 1
 	_host_reset_facts()
-	if not _host_set_state(MS.TRANSITIONING_TO_NERAVA):
+	if not _host_set_state(MS.TRANSITIONING_TO_SURFACE):
 		return false
 	await SpawnManager.host_clear_all()
 	_revives.clear()
 	Logx.info("mission", "Retry (epoch %d)" % session_epoch)
-	var started: bool = await SceneManager.host_transition_to(GameConfig.SCENE_NERAVA)
+	var scene_key := MissionCatalog.scene_key(String(snapshot.get("mission_id", "")))
+	if not GameConfig.is_valid_scene_key(scene_key):
+		scene_key = GameConfig.SCENE_NERAVA
+	var started: bool = await SceneManager.host_transition_to(scene_key)
 	return started
 
 
@@ -286,17 +377,20 @@ func host_report_temple_discovered() -> void:
 func host_on_scene_barrier_completed(scene_key: String) -> void:
 	if not _is_host():
 		return
-	match scene_key:
-		GameConfig.SCENE_HUB:
-			SpawnManager.host_spawn_all_players()
-			_host_set_state(MS.HUB_IDLE)
-		GameConfig.SCENE_NERAVA:
-			SpawnManager.host_spawn_all_players()
-			_host_set_state(MS.FIND_TEMPLE)
-		GameConfig.SCENE_LOBBY:
-			pass
-		_:
-			pass
+	if scene_key == GameConfig.SCENE_SHIP:
+		SpawnManager.host_spawn_all_players()
+		# Arriving on the deck clears whatever the last flight left behind. A
+		# stale seat entry here would let the crew launch with nobody actually
+		# strapped in.
+		host_clear_all_seats()
+		snapshot["ship_tasks"] = {}
+		_host_set_state(MS.SHIP_IDLE)
+	elif GameConfig.SURFACE_SCENES.has(scene_key):
+		# Every planet enters at the same point in the mission. Which planet it
+		# is lives in the snapshot, not in this branch - that is what stops a
+		# new destination needing a new case here.
+		SpawnManager.host_spawn_all_players()
+		_host_set_state(MS.FIND_TEMPLE)
 	_host_publish()
 
 
@@ -369,6 +463,66 @@ func host_handle_interact_request(peer_id: int, object_id: String, epoch: int) -
 # Host: authoritative mission mutations (called by interactables)
 # ==========================================================================
 
+func host_apply_take_seat(peer_id: int, seat_id: String) -> void:
+	var seats: Dictionary = snapshot["seats"]
+	seats[seat_id] = peer_id
+	_host_write_seat(peer_id, seat_id)
+	Logx.info("ship", "peer %d took seat %s" % [peer_id, seat_id])
+	_host_publish()
+
+
+func host_apply_leave_seat(peer_id: int) -> void:
+	var seat_id := MissionRules.seat_of(snapshot, peer_id)
+	if seat_id == "":
+		return
+	var seats: Dictionary = snapshot["seats"]
+	seats.erase(seat_id)
+	_host_write_seat(peer_id, "")
+	Logx.info("ship", "peer %d left seat %s" % [peer_id, seat_id])
+	_host_publish()
+
+
+## Mirrors the snapshot's seat map onto the player node, which is what the
+## seated player's own physics reads. The snapshot stays the single source of
+## truth; this is the replication of it.
+func _host_write_seat(peer_id: int, seat_id: String) -> void:
+	var node: Node = SpawnManager.player_node(peer_id)
+	if node != null:
+		node.set("seated_at", seat_id)
+
+
+## Every seat emptied, on the deck and on the player nodes. Called when a flight
+## ends and when the session resets: a `seated_at` left behind across a level
+## transition would strand a player in a chair that no longer exists.
+func host_clear_all_seats() -> void:
+	var seats: Dictionary = snapshot.get("seats", {})
+	for seat_id in seats.keys():
+		_host_write_seat(int(seats[seat_id]), "")
+	snapshot["seats"] = {}
+
+
+func host_apply_ship_task(peer_id: int, task_id: String) -> void:
+	var done: Dictionary = snapshot["ship_tasks"]
+	done[task_id] = true
+	Logx.info("ship", "peer %d completed %s" % [peer_id, task_id])
+	_host_publish()
+
+
+func host_apply_destination(peer_id: int, mission_id: String) -> void:
+	snapshot["mission_id"] = mission_id
+	# Plotting the course IS the course-plotting station, so setting a
+	# destination ticks that box rather than needing a second interaction.
+	var done: Dictionary = snapshot["ship_tasks"]
+	done[GameConfig.SHIP_TASK_COURSE] = true
+	# The lock layout is per-planet, so it has to be re-derived whenever the
+	# destination changes - otherwise the crew flies to Hallow carrying Nerava's
+	# much easier set of locks.
+	snapshot["crystal_locks"] = MissionRules.locked_crystals(mission_id)
+	snapshot["hazard_online"] = MissionCatalog.hazard(mission_id) != MissionCatalog.HAZARD_NONE
+	Logx.info("ship", "peer %d set course for %s" % [peer_id, mission_id])
+	_host_publish()
+
+
 func host_apply_crystal_pickup(peer_id: int, crystal_id: String) -> void:
 	var in_world: Array = snapshot["crystals_in_world"]
 	in_world.erase(crystal_id)
@@ -396,10 +550,39 @@ func host_apply_star_map_pickup(peer_id: int) -> void:
 	snapshot["star_map_carrier"] = peer_id
 	Logx.info("mission", "peer %d took the Star Map" % peer_id)
 	SpawnManager.host_clear_dropped_star_maps()
-	# Exactly one Sentinel, ever, per descent.
+	# Exactly one guardian, ever, per descent. Taking the map is what wakes the
+	# Warden - the boss and the objective are the same event, which is the whole
+	# point of putting the map on the altar.
 	if not bool(snapshot.get("guardian_spawned", false)):
 		snapshot["guardian_spawned"] = true
-		SpawnManager.host_spawn_guardian()
+		snapshot["boss_phase"] = MissionRules.BOSS_SHIELDED
+		snapshot["boss_health"] = GameConfig.BOSS_MAX_HEALTH
+		snapshot["boss_nodes"] = GameConfig.BOSS_SHIELD_NODE_COUNT
+		SpawnManager.host_spawn_warden()
+	_host_progress_and_publish()
+
+
+## Mirrors the Warden's own state into the snapshot, so the HUD and the mission
+## rules read one source rather than reaching into the boss node - which would
+## not exist on a client that has not spawned it yet.
+func host_set_boss_state(phase: int, health: int, nodes_left: int) -> void:
+	if not _is_host():
+		return
+	snapshot["boss_phase"] = phase
+	snapshot["boss_health"] = health
+	snapshot["boss_nodes"] = nodes_left
+	_host_publish()
+
+
+## The Warden is dead: the way back to the pod opens.
+func host_on_boss_killed() -> void:
+	if not _is_host():
+		return
+	if int(snapshot.get("boss_phase", 0)) != MissionRules.BOSS_DEAD:
+		snapshot["boss_phase"] = MissionRules.BOSS_DEAD
+	Logx.info("mission", "The Warden is down")
+	SpawnManager.host_clear_hostiles()
+	AudioDirector.play(AudioDirector.Cue.WARDEN_DEATH)
 	_host_progress_and_publish()
 
 
@@ -410,7 +593,18 @@ func host_apply_extraction(peer_id: int) -> void:
 	Logx.info("mission", "peer %d extracted with the Star Map" % peer_id)
 	_host_progress_and_publish()
 	if mission_state() == MS.MISSION_COMPLETE:
+		# Record the planet as done, which is what unlocks the next one. Written
+		# before the end screen so a crew that returns to the lobby and starts a
+		# new session still keeps their progress for this session.
+		var completed: Array = snapshot.get("completed_missions", [])
+		var finished := String(snapshot.get("mission_id", ""))
+		if finished != "" and not completed.has(finished):
+			completed.append(finished)
+			snapshot["completed_missions"] = completed
+			Logx.info("mission", "%s complete; %d/%d destinations finished"
+				% [finished, completed.size(), MissionCatalog.ids().size()])
 		SpawnManager.host_clear_hostiles()
+		_host_publish()
 		mission_ended.emit(true)
 		_rpc_mission_ended.rpc(true)
 
@@ -451,7 +645,7 @@ func host_on_player_revived(peer_id: int) -> void:
 func host_evaluate_failure() -> void:
 	if not _is_host():
 		return
-	if not MissionRules.is_nerava_state(mission_state()):
+	if not MissionRules.is_surface_state(mission_state()):
 		return
 	var players: Dictionary = SpawnManager.host_player_liveness()
 	if players.is_empty():
@@ -633,9 +827,17 @@ func _host_drop_star_map(reason: String) -> void:
 ## state, so the caller can then make exactly one validated transition out of it.
 ## This is the single choke point that guarantees a replay starts clean: there is
 ## no path that resets some facts and forgets others.
+## Wipes the facts of ONE descent while keeping the facts of the CAMPAIGN.
+##
+## The destination and the list of finished missions have to survive: retrying a
+## failed landing must put the crew back on the planet they failed on, not on
+## the first one in the catalogue, and it must not un-finish anything they have
+## already completed.
 func _host_reset_facts() -> void:
 	var current := mission_state()
-	snapshot = MissionRules.fresh_snapshot(session_epoch)
+	var destination := String(snapshot.get("mission_id", MissionCatalog.first_id()))
+	var completed: Array = snapshot.get("completed_missions", [])
+	snapshot = MissionRules.fresh_snapshot(session_epoch, destination, completed)
 	snapshot["state"] = current
 
 

@@ -36,6 +36,10 @@ var revive_progress: float = 0.0
 var revive_active: bool = false
 var heat: float = 0.0
 var overheated: bool = false
+## Which seat this player is strapped into, "" for none. HOST-authoritative and
+## replicated on StateSync with the rest of the host-owned state: a client that
+## sets this locally would only lie to itself about where its own camera is.
+var seated_at: String = ""
 
 # --- Local only -----------------------------------------------------------
 var _pitch: float = 0.0
@@ -158,7 +162,7 @@ func _configure_replication() -> void:
 	var state := get_node_or_null("StateSync") as MultiplayerSynchronizer
 	if state != null:
 		var sc := SceneReplicationConfig.new()
-		for prop in ["health", "is_downed", "is_alive", "revive_progress", "revive_active", "heat", "overheated"]:
+		for prop in ["health", "is_downed", "is_alive", "revive_progress", "revive_active", "heat", "overheated", "seated_at"]:
 			var p2 := NodePath(".:" + prop)
 			sc.add_property(p2)
 			sc.property_set_spawn(p2, true)
@@ -218,6 +222,19 @@ func can_act() -> bool:
 	return is_alive and not is_downed
 
 
+func is_seated() -> bool:
+	return seated_at != ""
+
+
+## The seat node this player is in, or null. Resolved through SpawnManager's
+## interactable registry rather than a stored reference, because the seat is a
+## level node and the player outlives level transitions.
+func seat_node() -> Node:
+	if seated_at == "":
+		return null
+	return SpawnManager.find_interactable(seated_at)
+
+
 # ==========================================================================
 # Frame loop
 # ==========================================================================
@@ -235,7 +252,49 @@ func _physics_process(delta: float) -> void:
 	_refresh_downed_visuals()
 
 
+## Sitting. The body is parked on the seat and only the head moves.
+##
+## Movement input is skipped entirely rather than zeroed, so a seated player
+## cannot accumulate velocity and shoot out of the chair the moment they stand.
+## Yaw is clamped relative to the seat's own facing: swivelling to look at the
+## crew beside you is right, spinning to face the back of the chair is not.
+func _seated_physics(delta: float) -> void:
+	var seat := seat_node() as Node3D
+	if seat == null:
+		# The seat went away underneath us - a level transition, or a host that
+		# cleared the seat. Fall back to walking rather than freezing in place.
+		return
+	var anchor: Vector3 = seat.global_position
+	if seat.has_method("sit_position"):
+		anchor = seat.call("sit_position")
+	velocity = Vector3.ZERO
+	global_position = global_position.lerp(anchor, clampf(12.0 * delta, 0.0, 1.0))
+
+	var seat_yaw: float = seat.global_rotation.y
+	if seat.has_method("sit_yaw"):
+		seat_yaw = float(seat.call("sit_yaw"))
+	var offset: float = wrapf(rotation.y - seat_yaw, -PI, PI)
+	rotation.y = seat_yaw + clampf(offset, -SEATED_YAW_LIMIT, SEATED_YAW_LIMIT)
+
+	sync_position = global_position
+	sync_yaw = rotation.y
+	sync_flags = MOTION_GROUNDED
+	_speed_ratio = 0.0
+	_update_first_person_view(delta, true)
+	_update_interaction_focus()
+	_tick_local_actions()
+
+
+## How far a seated player may swivel from the seat's facing, each way.
+## 105 degrees. Written in radians because a const initialiser has to be a
+## constant expression and deg_to_rad() is a function call.
+const SEATED_YAW_LIMIT: float = 1.8326
+
+
 func _local_physics(delta: float) -> void:
+	if is_seated():
+		_seated_physics(delta)
+		return
 	var on_floor := is_on_floor()
 	if not on_floor:
 		velocity.y -= float(ProjectSettings.get_setting("physics/3d/default_gravity", 24.0)) * delta
@@ -501,7 +560,10 @@ func host_process_fire_request(peer_id: int, origin: Vector3, direction: Vector3
 			var collider := hit.get("collider") as Node
 			var guardian := _find_guardian(collider)
 			if guardian != null and guardian.has_method("host_register_hit"):
-				guardian.host_register_hit(peer_id)
+				# The COLLIDER goes through, not just the guardian. The Warden's
+				# shield nodes are separate bodies under it, and without knowing
+				# which one the ray found, its whole shield phase is decorative.
+				guardian.host_register_hit(peer_id, collider)
 
 	_rpc_tracer.rpc(origin, hit_point)
 	return true

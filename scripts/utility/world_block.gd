@@ -17,7 +17,7 @@ class_name WorldBlock
 		size = value
 		_rebuild()
 
-@export_enum("hull", "hull_dark", "floor", "neon", "rock", "rock_dark", "foliage", "sand", "glass", "trim", "panel")
+@export_enum("hull", "hull_dark", "floor", "neon", "rock", "rock_dark", "foliage", "sand", "glass", "trim", "panel", "viewport", "ice", "ash", "basalt")
 var palette: String = "hull":
 	set(value):
 		palette = value
@@ -62,6 +62,10 @@ func _rebuild() -> void:
 
 	_mesh_instance.mesh = MeshFactory.beveled_box(size, _effective_bevel())
 	_mesh_instance.material_override = material_for(palette)
+	# A pane of glass that casts a shadow is a pane of glass that reads as a
+	# wall, which defeats the entire point of putting a window in a spaceship.
+	_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF \
+		if palette == "viewport" else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 	var box_shape := BoxShape3D.new()
 	box_shape.size = size
@@ -99,9 +103,40 @@ static func _texture(name: String) -> Texture2D:
 	return texture
 
 
-static func material_for(name: String) -> ShaderMaterial:
+## GENUINELY transparent glass, for the ship's windows.
+##
+## The older "glass" palette is opaque dark blue with a faint glow - it reads as
+## a screen, and the Wayfinder Station's "window" never actually showed anything
+## behind it. A ship in space has to be able to look out, so this is a separate
+## material rather than a tweak: the surface shader is an opaque triplanar
+## shader with no alpha path, and giving it one would put a blend mode on every
+## wall in the game to serve four panes.
+static func _viewport_material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.42, 0.58, 0.82, 0.13)
+	m.metallic = 0.85
+	m.metallic_specular = 0.9
+	m.roughness = 0.06
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Rim light picks out the edge of the pane so it is legible as glass rather
+	# than as a hole in the hull.
+	m.rim_enabled = true
+	m.rim = 0.55
+	m.rim_tint = 0.4
+	m.emission_enabled = true
+	m.emission = Color(0.20, 0.38, 0.62)
+	m.emission_energy_multiplier = 0.10
+	return m
+
+
+static func material_for(name: String) -> Material:
 	if _materials.has(name):
 		return _materials[name]
+	if name == "viewport":
+		var vm := _viewport_material()
+		_materials[name] = vm
+		return vm
 	if _shader == null:
 		_shader = load("res://shaders/surface.gdshader")
 
@@ -187,6 +222,27 @@ static func material_for(name: String) -> ShaderMaterial:
 			set_name = ""
 			tint = Color(0.05, 0.08, 0.16)
 			mix_amount = 0.0
+		"ice":
+			set_name = "rock"
+			tint = Color(0.74, 0.86, 0.96)
+			rough = 0.75
+			metal = 0.05
+			scale = 0.18
+			# Snow gathers on every upward face, the same way dust does on rock.
+			overlay = "sand"
+		"ash":
+			set_name = "sand"
+			tint = Color(0.34, 0.31, 0.30)
+			rough = 1.1
+			metal = 0.0
+			scale = 0.24
+		"basalt":
+			set_name = "rock"
+			tint = Color(0.22, 0.19, 0.19)
+			rough = 1.15
+			metal = 0.0
+			scale = 0.16
+			overlay = "sand"
 		_:
 			set_name = "hull"
 			tint = Color(0.5, 0.5, 0.5)
@@ -217,9 +273,12 @@ static func material_for(name: String) -> ShaderMaterial:
 		m.set_shader_parameter("overlay_enabled", true)
 		m.set_shader_parameter("overlay_albedo", _texture("%s_albedo" % overlay))
 		m.set_shader_parameter("overlay_normal", _texture("%s_normal" % overlay))
-		m.set_shader_parameter("overlay_tint", Color(0.80, 0.74, 0.60))
+		# The overlay is dust on rock, but snow on ice - same mechanism, and the
+		# only difference that matters is what colour it is.
+		m.set_shader_parameter("overlay_tint",
+			Color(0.92, 0.96, 1.0) if name == "ice" else Color(0.80, 0.74, 0.60))
 		m.set_shader_parameter("overlay_scale", 0.2)
-		m.set_shader_parameter("overlay_amount", 0.7)
+		m.set_shader_parameter("overlay_amount", 0.85 if name == "ice" else 0.7)
 
 	if name == "neon":
 		m.set_shader_parameter("emission_colour", tint)

@@ -27,7 +27,7 @@ func run_async() -> void:
 	LobbyManager.host_add_player(P3, "Third")
 
 	await GameManager.host_start_session()
-	if not check(await _session.await_scene(GameConfig.SCENE_HUB), "the hub mounts"):
+	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts"):
 		_session.stop()
 		return
 	await GameManager.host_start_expedition()
@@ -126,6 +126,14 @@ func _test_duplicate_extraction() -> void:
 	GameManager.snapshot["altar_active"] = true
 	GameManager.snapshot["star_map_state"] = MissionRules.MAP_AVAILABLE
 	GameManager.host_apply_star_map_pickup(GameConfig.HOST_PEER_ID)
+	await wait_frames(2)
+	check_eq(GameManager.mission_state(), MS.BOSS_FIGHT, "taking the map starts the boss fight")
+
+	# This test is about the extraction RACE, not about the boss, so the Warden
+	# is killed through the host entry point rather than shot down. Going
+	# through host_on_boss_killed keeps the state machine honest - it is the
+	# same call the real fight makes.
+	GameManager.host_on_boss_killed()
 	await wait_frames(2)
 	check_eq(GameManager.mission_state(), MS.RETURN_TO_DROP_POD, "the return leg started")
 
