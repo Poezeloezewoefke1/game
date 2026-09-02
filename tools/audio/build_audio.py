@@ -148,6 +148,25 @@ def duck(music, voice, depth=0.42, attack=0.05, release=0.55):
     return music * gain[:, None]
 
 
+# Music level across the film, as (seconds, gain) breakpoints. Without this the
+# opening measured the same loudness as the guardian, which wastes the three
+# seconds of black the film opens on and leaves the hit with nowhere to go. The
+# voice is NOT automated - keeping it flat while the bed drops away is what puts
+# it alone in the dark at the start.
+MUSIC_CURVE = [
+    (0.0, 0.30), (3.0, 0.40), (8.0, 0.54), (13.4, 0.62), (23.4, 0.70),
+    (29.3, 0.72), (41.3, 0.86), (46.6, 1.00), (51.1, 0.95), (54.6, 0.88),
+    (58.6, 1.00), (59.1, 0.70), (63.0, 0.86), (200.0, 0.86),
+]
+
+
+def music_curve(total):
+    t = np.arange(int(total * SR)) / SR
+    xs = np.array([p[0] for p in MUSIC_CURVE])
+    ys = np.array([p[1] for p in MUSIC_CURVE])
+    return np.interp(t, xs, ys)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="captures/audio/mix.wav")
@@ -166,7 +185,7 @@ def main():
     music /= np.abs(music).max() + 1e-9
     voice /= np.abs(voice).max() + 1e-9
 
-    mix = duck(music * 0.62, voice) + voice * 0.86
+    mix = duck(music * music_curve(args.seconds)[:len(music), None], voice) + voice * 0.86
     fade = int(0.5 * SR)
     mix[:fade] *= np.linspace(0, 1, fade)[:, None]
     mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
