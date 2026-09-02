@@ -226,6 +226,36 @@ The images are not committed (`captures/` is ignored); the command above
 reproduces them. This pass is what found defects 27, 29, 30 and 31 - none of
 which any headless test could have seen.
 
+### 10. Recorded trailer
+
+```
+tools/record_trailer.sh <godot> captures/starbound-station-trailer.mp4
+```
+
+**Result: 1200 frames, encoded to a 50-second 1280x720 H.264 file.** A scripted
+camera runs fourteen eased shots across both levels; one PNG is saved per video
+frame and ffmpeg encodes them.
+
+This is the first artefact in the project that shows the game MOVING. Everything
+else here is a still, and a still cannot show a camera arriving somewhere badly -
+which is precisely what it turned out to be doing. Watching it back found defects
+45 and 46.
+
+One wrinkle is specific to this rig. A frame takes about a second to render on a
+software rasteriser, so at wall-clock speed shader `TIME`, the crystal spin and
+the Sentinel's rotation would each advance a full second per rendered frame and
+the result would strobe. `Engine.time_scale` is pinned to 0.045 and the camera is
+driven from an explicit frame counter rather than from delta, so shot timing is
+exact and reproducible however slow the renderer is. The Xvfb and
+software-rasteriser caveats from section 9 apply unchanged.
+
+A `duration-scale` argument shortens every shot for a rehearsal pass, which is
+how both defects below were confirmed fixed without spending another full render
+on a guess.
+
+The video is not committed (`captures/` is ignored); the command above
+reproduces it.
+
 ---
 
 ## What was NOT executed
@@ -235,7 +265,7 @@ Stated plainly. None of the following is claimed to work.
 | Not run | Why | Tracked as |
 |---|---|---|
 | The Windows executable was never launched | No Windows machine | VERIFY-001 |
-| The game running at a screen, in motion, played | Frames ARE now rendered here (section 6), but they are viewpoints, not play: camera feel, bob, aim, timing and the HUD in motion are still unverified. The owner running it for real is what produced defect 24 | VERIFY-002 |
+| The game running at a screen, in motion, played | Motion IS now rendered here (section 10), but a scripted camera is not a player: input feel, head bob, aim, weapon timing and the HUD in motion are still unverified. The owner running it for real is what produced defect 24 | VERIFY-002 |
 | Anything Forward+ only (SSAO, SSIL, SDFGI) | No GPU and no Vulkan driver here, so captures use the Compatibility renderer | VERIFY-002 |
 | Two physical LAN devices | Only loopback available | VERIFY-003 |
 | Internet play through a forwarded port | No such network | VERIFY-003 |
@@ -298,6 +328,8 @@ are recorded because they are the reason the test suite looks the way it does.
 | 42 | **The entire interface had never been seen** | Building `tools/render_ui.sh` | The in-game rig binds its own roots and never mounts the UI, so six screens - half of what a player looks at - were running on the raw Godot default theme. Themed, and the menus now show the game's own sky |
 | 43 | The crosshair was off-centre | The first HUD screenshot | Ticks were positioned from the control's origin, but the control is a 16 px box whose top-left sits eight pixels up and left of screen centre. Anchored to the parent's centre instead |
 | 44 | A tinted `ProgressBar` fill would have tinted every bar in the game | Writing the health colour ramp | The fill stylebox comes from the theme and is shared. Each bar now owns its own |
+| 45 | **Both drop-pod shots framed the ship as an unreadable white slab** | Watching the encoded trailer back | The pod stands at (0, 0, 46); both shots that are about it started roughly two metres from its door, including the one the title card sits on. Reframed to fourteen and eighteen metres down the side of the pad, so the ship, the landing pad and its dressing all read |
+| 46 | Title cards disappeared over pale geometry | The same pass | White text over a `Color(0, 0, 0, 0.9)` outline renders as a grey halo - a blur rather than a contrasting edge. The outline is now opaque and larger, with a gradient scrim behind the caption band that no shot can defeat |
 
 ---
 
