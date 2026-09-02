@@ -32,7 +32,13 @@ const SHOTS: Array = [
 		3.0, "ONE TO FOUR EXPLORERS", false],
 
 	# --- Arrival --------------------------------------------------------
-	["nerava", [Vector3(0, 0, 44), 180.0, -4.0, 66.0], [Vector3(0, 0, 39), 180.0, 2.0, 62.0],
+	# The pod stands at (0, 0, 46). Both pod shots used to start about two metres
+	# from its door, so the "ship" was an unreadable white slab filling the frame -
+	# the reference capture that reads properly sits six metres out. These two are
+	# framed from eight to eighteen metres and swing off the centre-line, which
+	# also puts the pad dressing (floodlights, crates, the antenna mast) between
+	# the lens and the pod instead of nothing at all.
+	["nerava", [Vector3(6.0, 0, 33), 155.0, 3.0, 68.0], [Vector3(2.0, 0, 38), 166.0, -1.0, 60.0],
 		3.5, "", false, true],
 	["nerava", [Vector3(0, 0, 34), 0.0, 6.0, 70.0], [Vector3(0, 0, 24), 0.0, 0.0, 66.0],
 		4.0, "A SIGNAL FROM A DEAD WORLD", false, true],
@@ -56,7 +62,10 @@ const SHOTS: Array = [
 	# --- Extraction -----------------------------------------------------
 	["nerava", [Vector3(0, 0, 30), 180.0, 0.0, 66.0], [Vector3(0, 0, 40), 180.0, 0.0, 62.0],
 		3.5, "GET OFF THE PLANET", false],
-	["nerava", [Vector3(2, 0, 46), 200.0, 4.0, 60.0], [Vector3(-1, 0, 43), 175.0, 2.0, 56.0],
+	# Crane out through the canyon gateway: tight on the pod, then back to the
+	# whole landing pad for the title. Held inside x = +/-8, which is the clear
+	# lane between the canyon walls at x = +/-12.
+	["nerava", [Vector3(2.0, 0, 37.5), 167.0, 0.0, 54.0], [Vector3(2.0, 0, 28.0), 174.0, 3.0, 74.0],
 		5.0, "STARBOUND STATION\nTHE LOST SIGNAL", false, true],
 ]
 
@@ -64,6 +73,8 @@ var _out_dir: String = "captures/trailer"
 var _scene_root: Node
 var _ui_layer: CanvasLayer
 var _card: Label
+var _card_group: Control
+var _card_scrim: TextureRect
 var _letterbox_top: ColorRect
 var _letterbox_bottom: ColorRect
 var _frame: int = 0
@@ -152,6 +163,43 @@ func _build_overlay() -> void:
 	_letterbox_bottom.offset_top = float(-SHOT_SIZE.y) * 0.085
 	_ui_layer.add_child(_letterbox_bottom)
 
+	# Cards live in a wrapper so the scrim behind the text fades with it. Fading
+	# them separately would show a dark band hanging over the shot after the words
+	# had gone.
+	_card_group = Control.new()
+	_card_group.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_card_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card_group.modulate.a = 0.0
+	_ui_layer.add_child(_card_group)
+
+	# A soft dark band under the caption. White text with only an outline behind
+	# it disappeared over pale geometry - "POWER THE ALTAR" was unreadable against
+	# the altar's own stonework, which is the one shot where the word matters.
+	# A gradient scrim fixes it for every shot at once and cannot be defeated by
+	# whatever happens to be on screen.
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+	gradient.colors = PackedColorArray([
+		Color(0, 0, 0, 0.0), Color(0, 0, 0, 0.62), Color(0, 0, 0, 0.0)])
+	var scrim_texture := GradientTexture2D.new()
+	scrim_texture.gradient = gradient
+	scrim_texture.width = 4
+	scrim_texture.height = 160
+	scrim_texture.fill_from = Vector2(0.0, 0.0)
+	scrim_texture.fill_to = Vector2(0.0, 1.0)
+
+	_card_scrim = TextureRect.new()
+	_card_scrim.texture = scrim_texture
+	_card_scrim.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_card_scrim.stretch_mode = TextureRect.STRETCH_SCALE
+	_card_scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card_scrim.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_card_scrim.anchor_left = 0.0
+	_card_scrim.anchor_right = 1.0
+	_card_scrim.offset_top = -246.0
+	_card_scrim.offset_bottom = -90.0
+	_card_group.add_child(_card_scrim)
+
 	_card = Label.new()
 	_card.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_card.anchor_left = 0.0
@@ -162,10 +210,11 @@ func _build_overlay() -> void:
 	_card.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_card.add_theme_font_size_override("font_size", 44)
 	_card.add_theme_color_override("font_color", Color(0.92, 0.96, 1.0))
-	_card.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	_card.add_theme_constant_override("outline_size", 7)
-	_card.modulate.a = 0.0
-	_ui_layer.add_child(_card)
+	# Fully opaque. At alpha 0.9 the outline came out as a grey halo that read as
+	# a blur rather than as a contrasting edge.
+	_card.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1.0))
+	_card.add_theme_constant_override("outline_size", 9)
+	_card_group.add_child(_card)
 
 
 func _record_scene(scene_key: String) -> void:
@@ -218,7 +267,7 @@ func _record_shot(player: Node, shot: Array) -> void:
 			alpha = t / 0.2
 		elif t > 0.8:
 			alpha = (1.0 - t) / 0.2
-		_card.modulate.a = alpha if card != "" else 0.0
+		_card_group.modulate.a = alpha if card != "" else 0.0
 
 		# Two shots at even intervals, so the muzzle flash lands on frames that
 		# are actually rendered rather than between them.
