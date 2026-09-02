@@ -78,7 +78,8 @@ access: builds are published as workflow artifacts, never committed.
   `%APPDATA%\Godot\export_templates\4.5.1.stable\` (Windows).
 * For `tools/run_multiplayer_check.sh`: bash, and enough memory for four to
   five concurrent headless Godot processes (roughly 1.5 GB total).
-* For `tools/capture_screenshots.sh` and `tools/render_models.sh`:
+* For `tools/capture_screenshots.sh`, `tools/render_models.sh`,
+  `tools/render_ui.sh` and `tools/record_trailer.sh`:
   `xvfb-run` and a working OpenGL 3.3
   driver. On a machine with no GPU, Mesa's `llvmpipe` software rasteriser is
   enough - that is what this project's captures were taken with. The script
@@ -97,6 +98,23 @@ Five, all original:
 | `crystal` | Fresnel-driven edge glow with internal flow |
 | `hologram` | Additive, depth-write-off, world-space scanlines |
 | `energy_field` | Hex-cell containment field |
+
+### Recording a trailer
+
+`tools/record_trailer.sh <godot> [out.mp4] [duration-scale]` renders one PNG per
+video frame through a scripted camera path over the real levels, then encodes
+with ffmpeg. A duration scale below 1 shortens every shot, for a fast rehearsal
+before committing to a full take.
+
+The one non-obvious part is time. A software rasteriser takes about a second per
+frame, so leaving the game at wall-clock speed would advance shader `TIME`, the
+crystal spin and the Sentinel's rotation by a whole second per rendered frame and
+the result would be a strobe. `Engine.time_scale` is pinned low and the camera is
+driven from an explicit frame counter rather than from delta, so shot timing is
+exact regardless of how slow the renderer is.
+
+ffmpeg is not assumed to be installed: the script prefers the static binary that
+ships with the `imageio-ffmpeg` PyPI package and falls back to one on `PATH`.
 
 ### Assets
 
