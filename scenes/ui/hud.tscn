@@ -72,7 +72,19 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 17
 
-[node name="StatusBlock" type="VBoxContainer" parent="."]
+[node name="StatusPanel" type="PanelContainer" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -132.0
+offset_right = 330.0
+offset_bottom = -18.0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"HudPanel"
+
+[node name="StatusBlock" type="VBoxContainer" parent="StatusPanel"]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -83,41 +95,41 @@ offset_bottom = -20.0
 grow_vertical = 0
 theme_override_constants/separation = 4
 
-[node name="HealthRow" type="HBoxContainer" parent="StatusBlock"]
+[node name="HealthRow" type="HBoxContainer" parent="StatusPanel/StatusBlock"]
 
-[node name="HealthTag" type="Label" parent="StatusBlock/HealthRow"]
+[node name="HealthTag" type="Label" parent="StatusPanel/StatusBlock/HealthRow"]
 custom_minimum_size = Vector2(56, 0)
 text = "HULL"
 
-[node name="HealthBar" type="ProgressBar" parent="StatusBlock/HealthRow"]
+[node name="HealthBar" type="ProgressBar" parent="StatusPanel/StatusBlock/HealthRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(160, 18)
 max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="HealthText" type="Label" parent="StatusBlock/HealthRow"]
+[node name="HealthText" type="Label" parent="StatusPanel/StatusBlock/HealthRow"]
 unique_name_in_owner = true
 
-[node name="HeatRow" type="HBoxContainer" parent="StatusBlock"]
+[node name="HeatRow" type="HBoxContainer" parent="StatusPanel/StatusBlock"]
 
-[node name="HeatTag" type="Label" parent="StatusBlock/HeatRow"]
+[node name="HeatTag" type="Label" parent="StatusPanel/StatusBlock/HeatRow"]
 custom_minimum_size = Vector2(56, 0)
 text = "HEAT"
 
-[node name="HeatBar" type="ProgressBar" parent="StatusBlock/HeatRow"]
+[node name="HeatBar" type="ProgressBar" parent="StatusPanel/StatusBlock/HeatRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(160, 18)
 max_value = 100.0
 show_percentage = false
 
-[node name="HeatText" type="Label" parent="StatusBlock/HeatRow"]
+[node name="HeatText" type="Label" parent="StatusPanel/StatusBlock/HeatRow"]
 unique_name_in_owner = true
 
-[node name="CrystalLabel" type="Label" parent="StatusBlock"]
+[node name="CrystalLabel" type="Label" parent="StatusPanel/StatusBlock"]
 unique_name_in_owner = true
 
-[node name="StarMapLabel" type="Label" parent="StatusBlock"]
+[node name="StarMapLabel" type="Label" parent="StatusPanel/StatusBlock"]
 unique_name_in_owner = true
 
 [node name="TeamPanel" type="PanelContainer" parent="."]

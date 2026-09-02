@@ -26,7 +26,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 102 checks, 925 assertions, exit code 0, no engine errors.**
+**Result: PASS — 105 checks, 925 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -36,7 +36,7 @@ errors and fails on them. That gate was verified by removing the fix for defect
 fired is not a gate.
 
 ```
-[1/3] Compiling scripts...     67 scripts, 0 failed
+[1/3] Compiling scripts...     70 scripts, 0 failed
 [2/3] Loading scenes...        20 scenes,  0 failed
 [3/3] UNIT tests...
       PASS  test_join_code            (108 assertions)
@@ -55,7 +55,7 @@ fired is not a gate.
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (102 checks passed, 925 assertions)
+ RESULT: PASS   (105 checks passed, 925 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -161,7 +161,21 @@ identically in both workflows, no binaries or build output tracked, no
 assignment-shaped secrets, `.gitignore` covers generated output, all script and
 scene filenames snake_case.
 
-### 6. Rendered sky
+### 6. Rendered interface
+
+```
+tools/render_ui.sh <godot>
+```
+
+**Result: 6 images written** into `captures/ui/`: main menu, lobby, HUD, pause,
+victory and failure. Each screen is mounted on a dark ground so accidental
+transparency is obvious rather than invisible, and the HUD is filled with
+representative mid-mission state - hurt, carrying a crystal, an objective up, a
+teammate down - because the default empty state proves nothing.
+
+This pass is what found defects 42, 43 and 44.
+
+### 7. Rendered sky
 
 ```
 tools/preview_sky.sh <godot>
@@ -173,7 +187,7 @@ session and walking to a viewpoint. This pass is what found that the ring plane
 had been built perpendicular to the line of sight - the rings were being viewed
 exactly edge-on and rendered as nothing at all.
 
-### 7. Rendered model gallery
+### 8. Rendered model gallery
 
 ```
 tools/render_models.sh <godot>
@@ -191,7 +205,7 @@ materials the owning script applies at runtime, rather than a hand-written
 approximation - otherwise it drifts away from the game and stops being
 evidence. This pass is what found defects 32, 34 and 35.
 
-### 8. Rendered screenshots
+### 9. Rendered screenshots
 
 ```
 tools/capture_screenshots.sh <godot>
@@ -281,6 +295,9 @@ are recorded because they are the reason the test suite looks the way it does.
 | 39 | `_set_emission` would have wiped every effect shader in the level | Reading the crystal path after adding the shaders | It replaced whatever material it was handed with a `StandardMaterial3D`, so the first snapshot refresh after a crystal was built would have silently reverted it. It now recognises the effect shaders and drives their parameters |
 | 40 | The whole station looked wet after the texture pass | Hub screenshots | The metallic values predated the textures, and the roughness map's scratches dip to 0.16. Dielectric values for painted panels, and a 0.22 roughness floor |
 | 41 | The detail normal aliased into glitter on every hull surface | Hub screenshots | 2.4 repeats per metre is fine enough to beat against the pixel grid. Softened and pulled in closer to the camera |
+| 42 | **The entire interface had never been seen** | Building `tools/render_ui.sh` | The in-game rig binds its own roots and never mounts the UI, so six screens - half of what a player looks at - were running on the raw Godot default theme. Themed, and the menus now show the game's own sky |
+| 43 | The crosshair was off-centre | The first HUD screenshot | Ticks were positioned from the control's origin, but the control is a 16 px box whose top-left sits eight pixels up and left of screen centre. Anchored to the parent's centre instead |
+| 44 | A tinted `ProgressBar` fill would have tinted every bar in the game | Writing the health colour ramp | The fill stylebox comes from the theme and is shared. Each bar now owns its own |
 
 ---
 

@@ -279,6 +279,17 @@ The sky, via `tools/preview_sky.sh`:
       being uniformly bright.
 - [x] The ringed giant's rings pass behind it, and cast a shadow on its disc.
 - [ ] MANUAL: the sky holds up while the player turns, at a real frame rate.
+
+The interface, via `tools/render_ui.sh`:
+
+- [x] Every screen is styled - no raw Godot default controls anywhere.
+- [x] The menus show the game's sky behind them, and panel text stays readable
+      when the bright part of it drifts past.
+- [x] The health bar is green when healthy and red when nearly down, so it can
+      be read without reading the number.
+- [x] The crosshair is centred, and visible against both dark and bright ground.
+- [ ] MANUAL: the HUD is readable in motion, over a sunlit dune and in a cave.
+- [ ] MANUAL: every button is reachable and operable by keyboard alone.
 - [ ] MANUAL: head bob, sprint FOV and damage shake feel right in motion. A
       still frame cannot show this.
 - [ ] MANUAL: the weapon's heat glow is readable at a glance while firing.

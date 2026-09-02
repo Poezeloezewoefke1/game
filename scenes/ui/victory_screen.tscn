@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/end_screen.gd" id="1_end"]
+[ext_resource type="Script" path="res://scripts/ui/sky_backdrop.gd" id="9_sky"]
 
 [node name="VictoryScreen" type="Control"]
 anchors_preset = 15
@@ -11,13 +12,22 @@ grow_vertical = 2
 script = ExtResource("1_end")
 is_victory = true
 
+[node name="SkyBackdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_sky")
+
 [node name="Dim" type="ColorRect" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.74)
+color = Color(0, 0, 0, 0.45)
 
 [node name="Center" type="CenterContainer" parent="."]
 anchors_preset = 15

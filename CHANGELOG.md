@@ -4,6 +4,53 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-02
+
+### Added
+
+- **A UI theme**, built by `tools/generate_ui_theme.gd` and set as the project's
+  default so every Control picks it up - including screens added later without
+  anyone remembering to assign it. Buttons carry a left accent bar rather than a
+  full outline, inputs get an accent underline on focus, and labels have named
+  variations (`TitleLabel`, `HeadingLabel`, `WarningLabel`...) so a scene says
+  what a label IS instead of repeating a pile of overrides. Every label that
+  sits over the game has a black outline, because white text on a sunlit dune is
+  invisible without one.
+- **The game's own sky behind the menus.** `scripts/ui/sky_backdrop.gd` renders
+  the deep-space shader into a small offscreen viewport that drifts slowly
+  behind the main menu, the lobby and both end screens, under a veil that keeps
+  panel text readable when the galactic core passes behind it. The menus were
+  sitting on a flat dark rectangle while the game already had a starfield and a
+  ringed gas giant written and paid for.
+- **`tools/render_ui.sh`**, which photographs all six screens. The in-game
+  screenshot rig binds its own roots and never mounts the interface, so the
+  menus, the lobby and the HUD had **never been looked at once** - which is half
+  of what a player spends the mission looking at, and it turned out to be the
+  weakest thing in the game by a distance.
+- `hud.gd::preview_state()`, which fills every widget with representative
+  mid-mission state so the HUD can be photographed without a live session. A HUD
+  shot at full health with nothing carried and no objective shows the one state
+  that tells you nothing about whether the HUD works.
+
+### Changed
+
+- **The HUD.** Health and heat are now coloured bars - green through amber to
+  red, with the crossovers at the points where a player's decision actually
+  changes - grouped into a panel instead of floating loose over the bottom-left
+  corner. A bar you have to read the number off is a bar that failed.
+- **The crosshair** is four ticks around a gap rather than a single dot. One
+  pixel disappears over a bright dune and says nothing about where the weapon is
+  pointing.
+
+### Fixed
+
+- The crosshair's ticks were positioned from the control's origin, but the
+  control is a 16 px box whose top-left sits eight pixels up and left of screen
+  centre - so the whole reticle was off-centre. They are anchored to the
+  parent's centre now.
+- Each `ProgressBar` fill is its own `StyleBoxFlat`. Tinting the shared theme
+  resource would have tinted every bar in the game at once.
+
 ## [0.5.0] - 2026-09-02
 
 ### Added

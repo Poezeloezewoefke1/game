@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/ui/sky_backdrop.gd" id="9_sky"]
 
 [node name="MainMenu" type="Control"]
 anchors_preset = 15
@@ -10,13 +11,22 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
+[node name="SkyBackdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_sky")
+
 [node name="Background" type="ColorRect" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0235294, 0.0313726, 0.0627451, 1)
+color = Color(0.0235294, 0.0313726, 0.0627451, 0)
 
 [node name="Center" type="CenterContainer" parent="."]
 anchors_preset = 15

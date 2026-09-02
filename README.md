@@ -19,7 +19,7 @@ Concretely, and separating what has been *proven* from what has not:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 67 scripts / 20 scenes |
+| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 70 scripts / 20 scenes |
 | Mission rules, state machine, name hygiene, rate limiting | Verified | 143 unit assertions |
 | Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
 | Join codes: round trip, typos, transpositions, confusable letters | Verified | 108 assertions in `tests/unit/test_join_code.gd` |
@@ -41,6 +41,7 @@ Concretely, and separating what has been *proven* from what has not:
 | **Two physical LAN devices** | **NOT verified** | Only loopback was available |
 | Geometry, lighting and materials on screen | Verified by screenshot | `tools/capture_screenshots.sh` renders 15 in-game viewpoints under a software rasteriser |
 | Every individual model | Verified by screenshot | `tools/render_models.sh` photographs all 13 gallery subjects alone on a studio sweep |
+| Every interface screen | Verified by screenshot | `tools/render_ui.sh` renders all six, with the HUD in representative mid-mission state |
 | **The game in motion — camera feel, aim, timing, HUD while playing** | **NOT verified** | Captures are still viewpoints, not play |
 | **Forward+ only effects (SSAO, SSIL, SDFGI)** | **NOT verified** | No GPU or Vulkan driver here, so captures use the Compatibility renderer |
 

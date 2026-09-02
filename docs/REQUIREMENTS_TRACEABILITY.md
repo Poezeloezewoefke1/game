@@ -131,6 +131,9 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | ART-008 | Proper textures on level geometry — owner request | `tools/generate_textures.gd`, `shaders/surface.gdshader`, `world_block.gd` | `captures/` screenshots | MANUAL (visual) |
 | ART-009 | The map must be filled with detail rather than empty — owner request | `scripts/utility/set_dressing.gd`, 56 placements across two levels | `test_level_reachability :: corridors clear` | AUTO (clearance) / MANUAL (visual) |
 | ART-010 | Set dressing must never block an objective | dressing parented inside `NavigationRegion3D` | `test_level_reachability`, `run_multiplayer_check.sh` | AUTO |
+| UI-010 | One consistent visual identity across every screen | `resources/ui_theme.tres` as the project default theme | `captures/ui/` (6 images) | MANUAL (visual) |
+| UI-011 | Menus must look like the game, not like a settings dialog | `scripts/ui/sky_backdrop.gd` | `captures/ui/01-main-menu.png` | MANUAL (visual) |
+| UI-012 | Health and heat must be readable without reading the numbers | `hud.gd::_tint_health`, `_tint_heat` | `captures/ui/03-hud.png` | MANUAL (visual) |
 | PLR-002 | Walk, sprint, jump, mouse look, pitch clamp | `player.gd:_local_physics`, `_unhandled_input` | MANUAL | MANUAL |
 | PLR-003 | Remote players are smoothed, and snapped on large jumps | `_remote_physics` | STATIC | STATIC |
 | PLR-004 | Host authority over health | `StateSync` authority = 1 | `test_combat_and_revive` | AUTO |
