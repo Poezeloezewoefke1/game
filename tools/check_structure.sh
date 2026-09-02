@@ -13,7 +13,7 @@ fail() { echo "  FAIL  $*"; FAILURES=$((FAILURES + 1)); }
 ok()   { echo "  ok    $*"; }
 
 echo "== required directories =="
-for d in assets docs resources scenes scripts tests .github/workflows .github/ISSUE_TEMPLATE tools; do
+for d in assets assets/textures docs resources scenes scripts shaders tests .github/workflows .github/ISSUE_TEMPLATE tools; do
   if [ -d "$d" ]; then ok "$d"; else fail "missing directory: $d"; fi
 done
 
@@ -26,7 +26,8 @@ for f in project.godot export_presets.cfg main.tscn main.gd .gitignore LICENSE R
          .github/workflows/validate.yml .github/workflows/build-windows.yml \
          docs/ARCHITECTURE.md docs/NETWORK_RULES.md docs/TECH_STACK.md docs/QA_REPORT.md \
          docs/TEST_CHECKLIST.md docs/KNOWN_LIMITATIONS.md docs/REQUIREMENTS_TRACEABILITY.md \
-         docs/BUILD_MANIFEST.md docs/RELEASE_CHECKLIST.md docs/REPOSITORY_SETUP.md; do
+         docs/BUILD_MANIFEST.md docs/RELEASE_CHECKLIST.md docs/REPOSITORY_SETUP.md \
+         docs/ASSET_PROVENANCE.md; do
   if [ -f "$f" ]; then ok "$f"; else fail "missing file: $f"; fi
 done
 

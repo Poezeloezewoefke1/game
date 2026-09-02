@@ -4,6 +4,73 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-02
+
+### Added
+
+- **A deep-space sky.** `shaders/deep_space_sky.gdshader` draws a four-layer
+  starfield with a realistic magnitude skew and stellar colour classes, the
+  galactic band with dust lanes and a brightened core, two nebulae, and the
+  system's star.
+- **Planets that are actually spheres.** Each body is intersected with the view
+  ray per pixel, so it has a real terminator, limb darkening, an atmospheric rim
+  that only lights where it is edge-on, banded cloud belts with a storm oval, an
+  ocean world with coastlines and its own cloud deck, a cratered moon, and a
+  ring system whose far half passes BEHIND the planet and which casts a curved
+  shadow across the disc that moves with the light. A billboard cannot do any of
+  that.
+- **Real photographs are a drop-in.** Every planet has an `albedo` slot and a
+  `use_photo` flag; assigning an equirectangular map replaces the generated
+  surface and keeps the same lighting, terminator and rings. See
+  `docs/ASSET_PROVENANCE.md`.
+- **A generated PBR texture set**, `tools/generate_textures.gd`: seamless
+  albedo, normal and roughness maps for rock, sand, hull and moss, a metallic
+  map for hull, and a shared detail normal. The hull map has panel seams,
+  rivets, scratches and rust creeping out of the joins.
+- **`shaders/surface.gdshader`**, which every piece of level geometry now uses:
+  world-space triplanar projection so texture is continuous ACROSS blocks
+  rather than restarting at each one, a slope-driven second material so dust
+  collects on upward faces, a detail normal faded in close to the camera, and
+  macro tint variation to break up repeats.
+- **Three effect shaders.** A crystal that is brighter at its edges than through
+  its middle, which is a Fresnel term no emissive material reproduces; a
+  hologram that is additive, depth-write-off and scanlined in world space so
+  the lines stay put as the armillary turns; and a hex-cell energy field for
+  the pedestal beams and the altar shield.
+- **`scripts/utility/set_dressing.gd`** - seventeen kinds of hand-placed
+  clutter: crate stacks, barrels, pipe runs, floodlights, antenna masts, cable
+  spools, lockers, consoles, hazard barriers, wreckage, pallets, vent stacks,
+  banners, broken pillars, rubble, braziers and carved stelae. **56 pieces**
+  placed across the two levels.
+- The hub's window now looks out at the real sky. The painted backdrop and its
+  four fake stars were removed - they were what stood in front of it.
+
+### Fixed
+
+- **A brazier placed on the grove corridor's centre-line stopped clients ever
+  reaching the Grove Crystal.** Found by the multi-process check, which walks
+  the authored routes as a player does.
+- Set dressing with collision was parented outside `NavigationRegion3D`, so the
+  navigation mesh was baked as though the corridors were empty: pathfinding and
+  the reachability test both believed a blocked route was clear. Dressing now
+  lives inside the region and bakes into the mesh, so collision and navigation
+  agree and the Sentinel paths around props.
+- `test_level_reachability` gained a corridor-clearance check, because **"a path
+  exists" and "the corridor is clear" are different claims** and only the second
+  describes what a player does. The grove corridor is 12 m wide, so a navmesh
+  path simply routed around the obstruction while a player walked into it. The
+  new check names the offending prop when it fails.
+- `_set_emission` replaced any material it was handed with a `StandardMaterial3D`,
+  which would have silently undone every crystal and hologram in the level the
+  first time its state refreshed. It now recognises the effect shaders and
+  drives their parameters instead.
+- Hull surfaces came back from the texture pass looking wet: the metallic values
+  predated the textures and the roughness map's scratches dip to 0.16. Metallic
+  dropped to dielectric values for painted panels, and roughness is clamped at
+  0.22 - nothing in this game is a mirror.
+- The detail normal at 2.4 repeats per metre aliased into glitter over every
+  hull surface. Softened and pulled in closer.
+
 ## [0.4.0] - 2026-09-01
 
 ### Added

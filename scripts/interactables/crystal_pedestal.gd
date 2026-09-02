@@ -20,6 +20,15 @@ func _ready() -> void:
 	PropBuilder.build_pedestal(self, _socket, PowerCrystal.crystal_colour(accepts_crystal_id))
 	_crystal_mesh.mesh = MeshFactory.crystal(0.8, 0.22, 6)
 	_crystal_mesh.position = Vector3(0.0, 1.72, 0.0)
+	# The beam is a containment field, and the placed crystal is a crystal.
+	var beam := get_node_or_null("Beam") as MeshInstance3D
+	if beam != null:
+		_apply_effect_shader(beam, "res://shaders/energy_field.gdshader",
+			PowerCrystal.crystal_colour(accepts_crystal_id), 1.2)
+	if _crystal_mesh != null:
+		_apply_effect_shader(_crystal_mesh, "res://shaders/crystal.gdshader",
+			PowerCrystal.crystal_colour(accepts_crystal_id), 1.0)
+
 
 
 func get_interaction_prompt(player: Node) -> String:

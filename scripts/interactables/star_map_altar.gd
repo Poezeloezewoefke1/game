@@ -20,6 +20,12 @@ func _ready() -> void:
 	super()
 	PropBuilder.build_altar(self, _base)
 	PropBuilder.build_star_map(_map_mesh, Color(1.0, 0.87, 0.42))
+	_apply_effect_shader(_map_mesh, "res://shaders/hologram.gdshader",
+		Color(1.0, 0.87, 0.42), 1.5)
+	var shield := get_node_or_null("Shield") as MeshInstance3D
+	if shield != null:
+		_apply_effect_shader(shield, "res://shaders/energy_field.gdshader",
+			Color(0.40, 0.85, 1.0), 1.3)
 	_map_mesh.position = Vector3(0.0, 2.05, 0.0)
 
 

@@ -270,6 +270,15 @@ Each model is also checked alone, via `tools/render_models.sh`:
 - [x] The Sentinel's sensor head clearly faces one way, so a player can tell
       whether it has seen them.
 - [x] No two kinds of set dressing read as the same shape in different colours.
+
+The sky, via `tools/preview_sky.sh`:
+
+- [x] Stars vary in brightness AND colour, and crowd towards the galactic band.
+- [x] The galactic band has a dust lane cutting through it, not just a gradient.
+- [x] Each planet has a terminator - a lit side and an unlit side - rather than
+      being uniformly bright.
+- [x] The ringed giant's rings pass behind it, and cast a shadow on its disc.
+- [ ] MANUAL: the sky holds up while the player turns, at a real frame rate.
 - [ ] MANUAL: head bob, sprint FOV and damage shake feel right in motion. A
       still frame cannot show this.
 - [ ] MANUAL: the weapon's heat glow is readable at a glance while firing.

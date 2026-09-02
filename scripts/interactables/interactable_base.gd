@@ -88,6 +88,14 @@ func refresh_visual_state() -> void:
 func _set_emission(mesh: MeshInstance3D, colour: Color, energy: float) -> void:
 	if mesh == null:
 		return
+	# A mesh already carrying one of the effect shaders keeps it: those shaders
+	# take the same two values through named parameters, and quietly replacing
+	# them with a StandardMaterial3D here would silently undo every crystal and
+	# hologram in the level the first time its state refreshed.
+	var shaded := mesh.material_override as ShaderMaterial
+	if shaded != null:
+		_set_shader_glow(shaded, colour, energy)
+		return
 	var mat := mesh.material_override as StandardMaterial3D
 	if mat == null:
 		mat = StandardMaterial3D.new()
@@ -96,3 +104,31 @@ func _set_emission(mesh: MeshInstance3D, colour: Color, energy: float) -> void:
 	mat.emission_enabled = energy > 0.0
 	mat.emission = colour
 	mat.emission_energy_multiplier = energy
+
+
+## Applies a colour and an energy to whichever effect shader a mesh is using.
+## Each of them names its own parameters, so the mapping lives here rather than
+## being repeated at every call site.
+func _set_shader_glow(material: ShaderMaterial, colour: Color, energy: float) -> void:
+	var shader_path: String = material.shader.resource_path if material.shader != null else ""
+	if shader_path.ends_with("crystal.gdshader"):
+		material.set_shader_parameter("core_colour", colour)
+		material.set_shader_parameter("edge_colour", colour.lightened(0.55))
+		material.set_shader_parameter("emission_energy", energy)
+	elif shader_path.ends_with("hologram.gdshader") \
+			or shader_path.ends_with("energy_field.gdshader"):
+		material.set_shader_parameter("colour", colour)
+		material.set_shader_parameter("energy", energy)
+
+
+## Gives a mesh one of the effect shaders. Returns the material so the caller
+## can set anything else it needs.
+func _apply_effect_shader(mesh: MeshInstance3D, shader_path: String,
+		colour: Color, energy: float) -> ShaderMaterial:
+	if mesh == null:
+		return null
+	var material := ShaderMaterial.new()
+	material.shader = load(shader_path)
+	mesh.material_override = material
+	_set_shader_glow(material, colour, energy)
+	return material

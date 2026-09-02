@@ -40,16 +40,18 @@ func _ready() -> void:
 	for i in 4:
 		var angle := TAU * float(i) / 4.0 + rng.randf_range(-0.4, 0.4)
 		var radius := rng.randf_range(0.32, 0.46)
-		var shard := ModelKit.emissive(self,
+		var shard := ModelKit.part(self,
 			MeshFactory.crystal(rng.randf_range(0.3, 0.55), rng.randf_range(0.09, 0.14), 5),
-			Vector3(cos(angle) * radius, 0.36, sin(angle) * radius), colour, 0.7,
+			Vector3(cos(angle) * radius, 0.36, sin(angle) * radius), colour, 0.1, 0.2,
 			Vector3(rng.randf_range(-22.0, 22.0), rng.randf_range(0.0, 360.0),
 				rng.randf_range(-22.0, 22.0)))
+		_apply_effect_shader(shard, "res://shaders/crystal.gdshader", colour, 0.75)
 		shard.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	# Emission of 1.4 clipped every channel and the crystal rendered as a white
-	# blob with no colour left in it; the light below does the glowing.
-	_set_emission(_mesh, colour, 0.85)
+	# The crystal shader, not a plain emissive material: a crystal reads as
+	# crystal because it is brighter at its EDGES than through its middle, and
+	# that is a Fresnel term no amount of emission tuning reproduces.
+	_apply_effect_shader(_mesh, "res://shaders/crystal.gdshader", colour, 1.05)
 	if _glow != null:
 		# The crystal lights its own alcove, in its own colour. Each dead end
 		# then reads differently from a distance, and the reward at the end of a

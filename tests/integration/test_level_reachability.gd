@@ -59,6 +59,8 @@ func run_async() -> void:
 		_session.stop()
 		return
 
+	_check_corridors_clear(stage)
+
 	# Ask the map a real question rather than trusting the iteration counter -
 	# see NavUtil for why the counter lies on a second visit to a level.
 	var synced: bool = await NavUtil.await_map_usable(tree, map, KEY_POINTS["drop pod"], 300)
@@ -84,6 +86,60 @@ func run_async() -> void:
 
 	_session.stop()
 	await tree.process_frame
+
+
+## The three authored routes to the crystals, matching tests/net_probe.gd. The
+## probe WALKS these as straight legs, and so does a player heading for an
+## objective without thinking about it.
+const CORRIDOR_ROUTES := {
+	"ruins": [Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4),
+		Vector3(-10, 0, 0), Vector3(-42, 0, 0)],
+	"cave": [Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4),
+		Vector3(10, 0, 0), Vector3(42, 0, 0)],
+	"grove": [Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4),
+		Vector3(0, 0, -18), Vector3(0, 0, -42)],
+}
+
+
+## Walks each corridor's centre-line and asserts nothing solid stands in it.
+##
+## THIS IS NOT THE SAME PROPERTY AS REACHABILITY, and the difference is what let
+## a bug through: set dressing placed in the middle of the grove corridor left
+## the navigation mesh perfectly happy - the corridor is 12 m wide, so a path
+## simply routed around the obstacle - while a client walking the authored route
+## in a straight line drove into a brazier and never reached the crystal. A path
+## existing and a corridor being clear are different claims, and only the second
+## one describes what a player actually does.
+func _check_corridors_clear(stage: Node) -> void:
+	var space := (stage as Node3D).get_world_3d().direct_space_state
+	if not check(space != null, "the physics space is available"):
+		return
+	# Chest height: low enough to catch a crate, high enough to ignore the
+	# ground itself and the shallow lips the player walks over.
+	var eye := Vector3(0.0, 1.1, 0.0)
+	for name in CORRIDOR_ROUTES:
+		var route: Array = CORRIDOR_ROUTES[name]
+		var blocked_at := ""
+		for i in range(route.size() - 1):
+			var from: Vector3 = (route[i] as Vector3) + eye
+			var to: Vector3 = (route[i + 1] as Vector3) + eye
+			var query := PhysicsRayQueryParameters3D.create(from, to)
+			query.collision_mask = GameConfig.LAYER_WORLD
+			query.collide_with_areas = false
+			var hit := space.intersect_ray(query)
+			if not hit.is_empty():
+				var node := hit.get("collider") as Node
+				var who: String = node.name if node != null else "?"
+				# Walk up to the dressing node, whose name says which piece it
+				# is - the collider itself is an anonymous hull.
+				var parent := node.get_parent() if node != null else null
+				if parent != null and parent is SetDressing:
+					who = parent.name
+				blocked_at = "%s -> %s by %s" % [str(route[i]), str(route[i + 1]), who]
+				break
+		check(blocked_at.is_empty(),
+			"the %s corridor is walkable in a straight line%s"
+			% [name, "" if blocked_at.is_empty() else " (blocked " + blocked_at + ")"])
 
 
 func _check_reachable(map: RID, from: Vector3, to: Vector3, label: String) -> void:

@@ -126,6 +126,11 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | ART-003 | No builder may return an empty mesh, at any scale | `mesh_factory.gd::_add_polygon`, `_commit` | `test_mesh_factory :: test_small_shapes_are_not_silently_empty` | AUTO |
 | ART-004 | Hollow shapes must actually be hollow | `mesh_factory.gd::tube` | `test_mesh_factory :: test_a_hollow_shape_really_is_hollow` | AUTO |
 | ART-005 | Every model is inspectable alone, not only in situ | `tools/model_gallery.gd`, `tools/render_models.sh` | `captures/models/` (13 images) | MANUAL (visual) |
+| ART-006 | A detailed sky with stars and planets — owner request, 2026-09-02 | `shaders/deep_space_sky.gdshader`, `resources/sky_*.tres` | `captures/sky/` (6 images) | MANUAL (visual) |
+| ART-007 | Real photographs must be droppable in without code changes | `deep_space_sky.gdshader` `planetN_photo` / `planetN_use_photo` | `docs/ASSET_PROVENANCE.md` | MANUAL |
+| ART-008 | Proper textures on level geometry — owner request | `tools/generate_textures.gd`, `shaders/surface.gdshader`, `world_block.gd` | `captures/` screenshots | MANUAL (visual) |
+| ART-009 | The map must be filled with detail rather than empty — owner request | `scripts/utility/set_dressing.gd`, 56 placements across two levels | `test_level_reachability :: corridors clear` | AUTO (clearance) / MANUAL (visual) |
+| ART-010 | Set dressing must never block an objective | dressing parented inside `NavigationRegion3D` | `test_level_reachability`, `run_multiplayer_check.sh` | AUTO |
 | PLR-002 | Walk, sprint, jump, mouse look, pitch clamp | `player.gd:_local_physics`, `_unhandled_input` | MANUAL | MANUAL |
 | PLR-003 | Remote players are smoothed, and snapped on large jumps | `_remote_physics` | STATIC | STATIC |
 | PLR-004 | Host authority over health | `StateSync` authority = 1 | `test_combat_and_revive` | AUTO |

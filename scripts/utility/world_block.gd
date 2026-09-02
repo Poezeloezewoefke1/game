@@ -41,8 +41,6 @@ var palette: String = "hull":
 var _mesh_instance: MeshInstance3D
 var _shape: CollisionShape3D
 
-static var _materials: Dictionary = {}
-
 
 func _ready() -> void:
 	collision_layer = GameConfig.LAYER_WORLD if solid else 0
@@ -82,68 +80,153 @@ func _effective_bevel() -> float:
 
 
 ## Shared materials - a level has ~80 blocks and they must not each allocate.
-static func material_for(name: String) -> StandardMaterial3D:
+##
+## Every palette is now a ShaderMaterial on `surface.gdshader`: world-space
+## triplanar textures, a slope-driven overlay, a detail normal and macro
+## variation. The palette colour survives as the shader's `tint`, so the level
+## files and the art direction are untouched - what changed is that a wall now
+## has grain, panel seams and wear instead of being one flat value.
+static var _materials: Dictionary = {}
+static var _shader: Shader = null
+static var _textures: Dictionary = {}
+
+
+static func _texture(name: String) -> Texture2D:
+	if _textures.has(name):
+		return _textures[name]
+	var texture: Texture2D = load("res://assets/textures/%s.png" % name)
+	_textures[name] = texture
+	return texture
+
+
+static func material_for(name: String) -> ShaderMaterial:
 	if _materials.has(name):
 		return _materials[name]
-	var m := StandardMaterial3D.new()
-	# A note on `metallic`, learned the hard way from a screenshot: a metal
-	# surface has no diffuse response at all - everything you see on it is
-	# reflected environment. The hub is a sealed room lit by a flat background
-	# colour, so there IS no environment to reflect, and every wall at
-	# metallic 0.45+ rendered as a near-black slab no matter how much ambient
-	# light was added. These are painted hull panels rather than bare metal,
-	# and painted metal is dielectric, so the values below are both more
-	# correct and the reason the room is now readable. Specular and roughness
-	# carry the "this is metal" impression instead.
+	if _shader == null:
+		_shader = load("res://shaders/surface.gdshader")
+
+	var m := ShaderMaterial.new()
+	m.shader = _shader
+	m.set_shader_parameter("detail_normal_map", _texture("detail_normal"))
+
+	# set: which texture family the palette draws from.
+	# tint: the palette colour, unchanged from before the textures existed.
+	var set_name := "hull"
+	var tint := Color(0.5, 0.5, 0.5)
+	var rough := 1.0
+	var metal := 1.0
+	var scale := 0.28
+	var mix_amount := 0.85
+	var overlay := ""
+
 	match name:
 		"hull":
-			m.albedo_color = Color(0.40, 0.45, 0.54)
-			m.metallic = 0.12
-			m.roughness = 0.5
+			set_name = "hull"
+			tint = Color(0.62, 0.66, 0.74)
+			rough = 1.35
+			metal = 0.18
+			scale = 0.22
 		"hull_dark":
-			m.albedo_color = Color(0.19, 0.22, 0.28)
-			m.metallic = 0.16
-			m.roughness = 0.45
+			set_name = "hull"
+			tint = Color(0.30, 0.33, 0.40)
+			rough = 1.4
+			metal = 0.2
+			scale = 0.22
 		"panel":
-			m.albedo_color = Color(0.30, 0.35, 0.43)
-			m.metallic = 0.14
-			m.roughness = 0.4
+			set_name = "hull"
+			tint = Color(0.46, 0.51, 0.60)
+			rough = 1.25
+			metal = 0.2
+			scale = 0.34
 		"trim":
-			# The one genuinely bare-metal surface, kept low enough to stay lit.
-			m.albedo_color = Color(0.66, 0.70, 0.76)
-			m.metallic = 0.3
-			m.roughness = 0.3
-			m.metallic_specular = 0.75
+			set_name = "hull"
+			tint = Color(0.86, 0.90, 0.96)
+			rough = 0.95
+			metal = 0.4
+			scale = 0.5
 		"floor":
-			m.albedo_color = Color(0.26, 0.29, 0.36)
-			m.metallic = 0.06
-			m.roughness = 0.6
-		"neon":
-			# Kept deliberately modest. At 2.2 the floor strip was brighter than
-			# everything else combined and the tonemapper crushed the rest of
-			# the room to near-black around it.
-			m.albedo_color = Color(0.24, 0.82, 1.0)
-			m.emission_enabled = true
-			m.emission = Color(0.24, 0.82, 1.0)
-			m.emission_energy_multiplier = 0.85
+			set_name = "hull"
+			tint = Color(0.40, 0.44, 0.52)
+			rough = 1.45
+			metal = 0.08
+			scale = 0.17
 		"rock":
-			m.albedo_color = Color(0.42, 0.38, 0.34)
-			m.roughness = 0.92
+			set_name = "rock"
+			tint = Color(0.72, 0.66, 0.58)
+			rough = 1.0
+			metal = 0.0
+			scale = 0.15
+			# Dust collects on the upward faces of every outcrop.
+			overlay = "sand"
 		"rock_dark":
-			m.albedo_color = Color(0.24, 0.22, 0.21)
-			m.roughness = 0.96
-		"foliage":
-			m.albedo_color = Color(0.20, 0.44, 0.26)
-			m.roughness = 0.88
+			set_name = "rock"
+			tint = Color(0.40, 0.37, 0.35)
+			rough = 1.05
+			metal = 0.0
+			scale = 0.15
+			overlay = "sand"
 		"sand":
-			m.albedo_color = Color(0.52, 0.46, 0.35)
-			m.roughness = 0.95
+			set_name = "sand"
+			tint = Color(0.86, 0.80, 0.66)
+			rough = 1.0
+			metal = 0.0
+			scale = 0.22
+		"foliage":
+			set_name = "moss"
+			tint = Color(0.72, 0.92, 0.70)
+			rough = 1.0
+			metal = 0.0
+			scale = 0.3
+		"neon":
+			# Emissive strips carry no texture at all: a light source with
+			# panel seams on it reads as a printed sticker.
+			set_name = ""
+			tint = Color(0.24, 0.82, 1.0)
+			mix_amount = 0.0
 		"glass":
-			m.albedo_color = Color(0.05, 0.08, 0.16, 0.55)
-			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			m.metallic = 0.9
-			m.roughness = 0.1
+			set_name = ""
+			tint = Color(0.05, 0.08, 0.16)
+			mix_amount = 0.0
 		_:
-			m.albedo_color = Color(0.5, 0.5, 0.5)
+			set_name = "hull"
+			tint = Color(0.5, 0.5, 0.5)
+
+	m.set_shader_parameter("tint", tint)
+	m.set_shader_parameter("texture_scale", scale)
+	m.set_shader_parameter("roughness_scale", rough)
+	m.set_shader_parameter("metallic_scale", metal)
+	m.set_shader_parameter("albedo_texture_mix", mix_amount)
+
+	if set_name != "":
+		m.set_shader_parameter("albedo_map", _texture("%s_albedo" % set_name))
+		m.set_shader_parameter("normal_map", _texture("%s_normal" % set_name))
+		m.set_shader_parameter("roughness_map", _texture("%s_roughness" % set_name))
+		if set_name == "hull":
+			m.set_shader_parameter("metallic_map", _texture("hull_metallic"))
+		# 0.6 at 2.4 repeats/metre put a bright speckle over every hull surface:
+		# the detail normal was fine enough to alias against the pixel grid and
+		# read as glitter rather than as texture.
+		m.set_shader_parameter("detail_strength", 0.28)
+		m.set_shader_parameter("detail_scale", 0.9)
+		m.set_shader_parameter("detail_distance", 9.0)
+	else:
+		m.set_shader_parameter("detail_strength", 0.0)
+		m.set_shader_parameter("normal_strength", 0.0)
+
+	if overlay != "":
+		m.set_shader_parameter("overlay_enabled", true)
+		m.set_shader_parameter("overlay_albedo", _texture("%s_albedo" % overlay))
+		m.set_shader_parameter("overlay_normal", _texture("%s_normal" % overlay))
+		m.set_shader_parameter("overlay_tint", Color(0.80, 0.74, 0.60))
+		m.set_shader_parameter("overlay_scale", 0.2)
+		m.set_shader_parameter("overlay_amount", 0.7)
+
+	if name == "neon":
+		m.set_shader_parameter("emission_colour", tint)
+		m.set_shader_parameter("emission_energy", 0.85)
+	if name == "glass":
+		m.set_shader_parameter("emission_colour", Color(0.1, 0.2, 0.4))
+		m.set_shader_parameter("emission_energy", 0.15)
+
 	_materials[name] = m
 	return m

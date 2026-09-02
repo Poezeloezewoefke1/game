@@ -19,7 +19,7 @@ Concretely, and separating what has been *proven* from what has not:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 64 scripts / 20 scenes |
+| Scripts compile, scenes instantiate | Verified | `tests/run_tests.gd` phases 1-2, 67 scripts / 20 scenes |
 | Mission rules, state machine, name hygiene, rate limiting | Verified | 143 unit assertions |
 | Simultaneous requests (crystal race, revive race, double extraction) | Verified | `tests/integration/test_concurrency.gd` |
 | Join codes: round trip, typos, transpositions, confusable letters | Verified | 108 assertions in `tests/unit/test_join_code.gd` |
@@ -30,9 +30,11 @@ Concretely, and separating what has been *proven* from what has not:
 | App shell: boot, host, mouse capture, pause, return to lobby | Verified | `tests/integration/test_app_shell.gd` |
 | First person: no spring arm, camera at eye height, viewmodel, own body hidden | Verified | `tests/integration/test_app_shell.gd :: first person` |
 | Generated meshes are sane, non-empty and wound the way Godot requires | Verified | `tests/unit/test_mesh_factory.gd`, 157 assertions, convention read off Godot's own primitives |
+| Every authored corridor is clear of clutter in a straight line | Verified | `tests/integration/test_level_reachability.gd` - a separate claim from "a path exists" |
 | Replay leaves no stale state (x3) | Verified | `tests/integration/test_session_reset.gd` |
 | Every objective is physically reachable | Verified | `tests/integration/test_level_reachability.gd` (navmesh path queries) |
 | 4-player session over real ENet, hostile-client probes | Verified | `tools/run_multiplayer_check.sh`, 5 OS processes, 78 assertions |
+| No downloaded, paid or third-party assets | Verified | `docs/ASSET_PROVENANCE.md` - everything is output of this repo's own code |
 | Windows export produces a real PE32+ executable | Verified | locally; `.github/workflows/build-windows.yml` is `workflow_dispatch` and has not been triggered |
 | CI runs the same gate a developer runs | Verified | `validate.yml`, 8 green runs, latest on `949c95f` |
 | **The Windows executable launches and plays** | **NOT verified** | No Windows machine was available - see `docs/KNOWN_LIMITATIONS.md` |

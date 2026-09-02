@@ -18,7 +18,10 @@ func _ready() -> void:
 	add_to_group(GameConfig.GROUP_SESSION_BOUND)
 	global_position = spawn_position
 	PropBuilder.build_star_map(_mesh, Color(1.0, 0.87, 0.42))
-	_set_emission(_mesh, Color(1.0, 0.87, 0.42), 1.0)
+	# The core of the armillary is a projection, so it gets the hologram
+	# shader; the gimbal rings around it stay solid gold.
+	_apply_effect_shader(_mesh, "res://shaders/hologram.gdshader",
+		Color(1.0, 0.87, 0.42), 1.5)
 
 
 func _process(delta: float) -> void:

@@ -86,8 +86,27 @@ access: builds are published as workflow artifacts, never committed.
   exactly that reason; it does not change what the shipped game uses, which is
   Forward+.
 
+### Shaders
+
+Five, all original:
+
+| Shader | Does |
+| --- | --- |
+| `deep_space_sky` | Starfield, galactic band, nebulae, and planets intersected as real spheres with terminators, atmospheres and rings |
+| `surface` | World-space triplanar level geometry with slope blending, detail normals and macro variation |
+| `crystal` | Fresnel-driven edge glow with internal flow |
+| `hologram` | Additive, depth-write-off, world-space scanlines |
+| `energy_field` | Hex-cell containment field |
+
+### Assets
+
 No paid assets, paid plugins, downloaded model packs, or external services are
-used. Every model in the repository is generated at runtime by
+used - and this was tested rather than assumed. `docs/ASSET_PROVENANCE.md`
+records which hosts are reachable from the build environment, which are blocked,
+and why the planet textures that ARE reachable were rejected on licence grounds.
+
+Every texture is produced by `tools/generate_textures.gd`, and every model is
+generated at runtime by
 `scripts/utility/mesh_factory.gd` and its builders. The primitives are chamfered
 boxes, faceted spheres, capsules, tubes with a real bore, wedges, tori, faceted
 crystals, irregular rocks and tapered columns; those are assembled by

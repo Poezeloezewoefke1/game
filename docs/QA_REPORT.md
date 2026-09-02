@@ -26,7 +26,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 99 checks, 921 assertions, exit code 0, no engine errors.**
+**Result: PASS — 102 checks, 925 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -36,7 +36,7 @@ errors and fails on them. That gate was verified by removing the fix for defect
 fired is not a gate.
 
 ```
-[1/3] Compiling scripts...     64 scripts, 0 failed
+[1/3] Compiling scripts...     67 scripts, 0 failed
 [2/3] Loading scenes...        20 scenes,  0 failed
 [3/3] UNIT tests...
       PASS  test_join_code            (108 assertions)
@@ -50,12 +50,12 @@ fired is not a gate.
       PASS  test_combat_and_revive    (62 assertions)
       PASS  test_concurrency          (17 assertions)
       PASS  test_lan_discovery        (23 assertions)
-      PASS  test_level_reachability   (50 assertions)
+      PASS  test_level_reachability   (54 assertions)
       PASS  test_mission_flow         (60 assertions)
       PASS  test_scene_integrity      (137 assertions)
       PASS  test_sentinel             (28 assertions)
       PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (99 checks passed, 921 assertions)
+ RESULT: PASS   (102 checks passed, 925 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -143,7 +143,7 @@ godot --headless --path . --export-release "Windows Desktop" build/windows/Starb
 ```
 StarboundStation.exe: PE32+ executable (GUI) x86-64 (stripped to external PDB),
                       for MS Windows, 13 sections
-StarboundStation.pck: 224K
+StarboundStation.pck: 14M (the generated texture set)
 ```
 
 Leak check on the shipped pack: no test source, no `NETCHECK`, no
@@ -161,7 +161,19 @@ identically in both workflows, no binaries or build output tracked, no
 assignment-shaped secrets, `.gitignore` covers generated output, all script and
 scene filenames snake_case.
 
-### 6. Rendered model gallery
+### 6. Rendered sky
+
+```
+tools/preview_sky.sh <godot>
+```
+
+**Result: 6 images written** into `captures/sky/`. The sky shader is rendered on
+its own, aimed at each body in turn, so it can be iterated on without hosting a
+session and walking to a viewpoint. This pass is what found that the ring plane
+had been built perpendicular to the line of sight - the rings were being viewed
+exactly edge-on and rendered as nothing at all.
+
+### 7. Rendered model gallery
 
 ```
 tools/render_models.sh <godot>
@@ -179,7 +191,7 @@ materials the owning script applies at runtime, rather than a hand-written
 approximation - otherwise it drifts away from the game and stops being
 evidence. This pass is what found defects 32, 34 and 35.
 
-### 7. Rendered screenshots
+### 8. Rendered screenshots
 
 ```
 tools/capture_screenshots.sh <godot>
@@ -263,6 +275,12 @@ are recorded because they are the reason the test suite looks the way it does.
 | 33 | The mesh winding test asserted something false for hollow shapes | Adding `tube` and `torus` | "Normals point away from the origin" assumes star-shaped geometry. A bore and a torus's inner surface legitimately face inward; asserting otherwise would force the barrel to be built solid. That half is now opt-out, the winding half still applies to everything |
 | 34 | **The power crystal sat buried in its own bedrock** | The model gallery photographed a squat cluster with no visible spike | `_process` assigned an ABSOLUTE `position.y`, throwing away the rest height its scene set. Fixed by naming the rest height and animating relative to it |
 | 35 | The power crystal's glow light had no colour | Same gallery shot - the crystal rendered white | The scene set no `light_color`, so a white lamp washed out the crystal it belongs to until the first snapshot refresh. Colour is a function of `crystal_id`, which never changes, so it is now set once at build time |
+| 36 | **A brazier on the grove corridor's centre-line stopped clients ever reaching the Grove Crystal** | The multi-process check, which WALKS the authored routes as a player does | Set dressing placed at (0, 0, -34), squarely in the only route to the grove. Moved off the centre-line |
+| 37 | **Collision and navigation disagreed about the level** | Investigating 36 | Dressing with collision was parented outside `NavigationRegion3D`, so the navmesh was baked as though the corridors were empty - pathfinding and `test_level_reachability` both believed a blocked route was clear. Dressing now lives inside the region and bakes into the mesh |
+| 38 | The reachability test could not have caught 36 | Gate-checking the fix | "A path exists" and "the corridor is clear" are different claims: the grove corridor is 12 m wide, so a navmesh path routed around the obstruction while a player walked into it. A straight-line corridor-clearance check was added, and verified by reintroducing the brazier - it fails and names the prop |
+| 39 | `_set_emission` would have wiped every effect shader in the level | Reading the crystal path after adding the shaders | It replaced whatever material it was handed with a `StandardMaterial3D`, so the first snapshot refresh after a crystal was built would have silently reverted it. It now recognises the effect shaders and drives their parameters |
+| 40 | The whole station looked wet after the texture pass | Hub screenshots | The metallic values predated the textures, and the roughness map's scratches dip to 0.16. Dielectric values for painted panels, and a 0.22 roughness floor |
+| 41 | The detail normal aliased into glitter on every hull surface | Hub screenshots | 2.4 repeats per metre is fine enough to beat against the pixel grid. Softened and pulled in closer to the camera |
 
 ---
 
