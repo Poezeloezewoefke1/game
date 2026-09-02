@@ -79,6 +79,12 @@ var _letterbox_top: ColorRect
 var _letterbox_bottom: ColorRect
 var _frame: int = 0
 var _duration_scale: float = 1.0
+## When set, only these shot indices are rendered. The frame counter still
+## advances across the skipped ones, so the PNGs written land on exactly the
+## numbers they would have had in a full run and drop straight into a sequence
+## already on disk. Re-shooting one shot costs a couple of minutes instead of
+## an hour of software rasterising.
+var _only_shots: PackedInt32Array = PackedInt32Array()
 
 
 func _ready() -> void:
@@ -89,6 +95,9 @@ func _ready() -> void:
 			# Shortens every shot, for a fast end-to-end rehearsal before
 			# committing twenty minutes of software rasterising to a full take.
 			_duration_scale = maxf(String(arg).split("=", true, 1)[1].to_float(), 0.02)
+		elif String(arg).begins_with("--shots="):
+			for piece in String(arg).split("=", true, 1)[1].split(",", false):
+				_only_shots.append(int(piece))
 	DirAccess.make_dir_recursive_absolute(_out_dir)
 	_run.call_deferred()
 
@@ -222,20 +231,35 @@ func _record_scene(scene_key: String) -> void:
 	if player == null:
 		push_error("no player to record from in '%s'" % scene_key)
 		return
-	for shot in SHOTS:
+	# Indexed rather than iterated, because a shot's index is what --shots names
+	# and what decides whether the last card holds.
+	for index in SHOTS.size():
+		var shot: Array = SHOTS[index]
 		if String(shot[0]) != scene_key:
 			continue
-		await _record_shot(player, shot)
+		if _only_shots.size() > 0 and not _only_shots.has(index):
+			_frame += _shot_frame_count(shot)
+			continue
+		await _record_shot(player, shot, index)
 
 
-func _record_shot(player: Node, shot: Array) -> void:
+## Frames this shot occupies. Read both when recording a shot and when skipping
+## one, so the two can never disagree about where the next shot starts.
+func _shot_frame_count(shot: Array) -> int:
+	return maxi(int(float(shot[3]) * _duration_scale * float(FPS)), 1)
+
+
+func _record_shot(player: Node, shot: Array, index: int) -> void:
 	var from: Array = shot[1]
 	var to: Array = shot[2]
-	var seconds: float = float(shot[3])
 	var card: String = String(shot[4])
 	var firing: bool = bool(shot[5])
 	var hide_weapon: bool = shot.size() > 6 and bool(shot[6])
-	var count: int = maxi(int(seconds * _duration_scale * float(FPS)), 1)
+	var count: int = _shot_frame_count(shot)
+	# The last card is the film's title and it holds to the end. Fading it out
+	# left the trailer's final second showing gameplay with no title on it -
+	# which is the frame most likely to end up as somebody's thumbnail.
+	var holds: bool = index == SHOTS.size() - 1
 
 	var body := player as Node3D
 	var pivot := body.get_node_or_null("CameraPivot") as Node3D
@@ -265,7 +289,7 @@ func _record_shot(player: Node, shot: Array) -> void:
 		var alpha: float = 1.0
 		if t < 0.2:
 			alpha = t / 0.2
-		elif t > 0.8:
+		elif t > 0.8 and not holds:
 			alpha = (1.0 - t) / 0.2
 		_card_group.modulate.a = alpha if card != "" else 0.0
 
