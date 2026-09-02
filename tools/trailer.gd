@@ -19,54 +19,72 @@ const SHOT_SIZE := Vector2i(1280, 720)
 const TIME_SCALE := 0.045
 
 ## scene, start [pos, yaw, pitch, fov], end [pos, yaw, pitch, fov], seconds,
-## card text (empty for none), fire the blaster, hide the weapon.
+## card text (empty for none), fire the blaster, hide the weapon, blackout.
+##
+## HOW THE YAWS WERE PICKED. A Node3D with rotation.y == 0 faces -Z, so the
+## facing direction is (-sin(yaw), 0, -cos(yaw)) and aiming at a target means
+## yaw = atan2(-d.x, -d.z). Every shot below that is ABOUT an object was
+## computed that way from the object's real position in the scene file, because
+## eyeballing it does not work: the first cut's ruins shot carried the caption
+## "FIND THREE POWER CRYSTALS" while pointing 180 degrees away from the crystal,
+## at a blank rock wall, and nothing in the pipeline noticed for two renders.
+##
+## Positions of note - DropPod (0, 0, 46), CrystalRuins (-44, 0, 0),
+## CrystalCave (44, 0, 0), CrystalGrove (0, 0, -44), StarMapAltar (0, 0, -2),
+## MissionTerminal in the hub (0, 0, -11.5).
 const SHOTS: Array = [
-	# --- Opening: the station -------------------------------------------
-	["hub", [Vector3(-2, 0, 13), 0.0, 4.0, 70.0], [Vector3(-2, 0, 6), 0.0, 2.0, 66.0],
-		4.0, "STARBOUND STATION", false, true],
-	["hub", [Vector3(-9, 0, 2), 75.0, 2.0, 62.0], [Vector3(-9, 0, -4), 95.0, 0.0, 62.0],
-		3.0, "THE LOST SIGNAL", false, true],
-	["hub", [Vector3(6, 0, -2), 250.0, 0.0, 60.0], [Vector3(2, 0, -7), 200.0, -3.0, 60.0],
-		3.0, "", false],
-	["hub", [Vector3(0, 0, -3), 0.0, -1.0, 58.0], [Vector3(0, 0, -8), 0.0, 0.0, 54.0],
-		3.0, "ONE TO FOUR EXPLORERS", false],
+	# --- Act I: the station ---------------------------------------------
+	# Opens on black under the voice. Three seconds of nothing is a long time
+	# to hold, and that is the point.
+	["hub", [Vector3(-2, 0, 14), 355.5, 2.0, 68.0], [Vector3(-2, 0, 14), 355.5, 2.0, 68.0],
+		3.0, "", false, true, true],
+	["hub", [Vector3(-2, 0, 14), 355.5, 2.0, 68.0], [Vector3(-2, 0, 9), 354.4, 0.0, 64.0],
+		5.0, "", false, true],
+	["hub", [Vector3(-9, 0, 3), 75.0, 2.0, 62.0], [Vector3(-9, 0, -3), 95.0, 0.0, 60.0],
+		5.0, "SOMETHING IS STILL TRANSMITTING", false, true],
+	["hub", [Vector3(-9, 0, -3), 95.0, 0.0, 60.0], [Vector3(-9, 0, -3), 95.0, 0.0, 60.0],
+		0.4, "", false, true, true],
 
-	# --- Arrival --------------------------------------------------------
-	# The pod stands at (0, 0, 46). Both pod shots used to start about two metres
-	# from its door, so the "ship" was an unreadable white slab filling the frame -
-	# the reference capture that reads properly sits six metres out. These two are
-	# framed from eight to eighteen metres and swing off the centre-line, which
-	# also puts the pad dressing (floodlights, crates, the antenna mast) between
-	# the lens and the pod instead of nothing at all.
-	["nerava", [Vector3(6.0, 0, 33), 155.0, 3.0, 68.0], [Vector3(2.0, 0, 38), 166.0, -1.0, 60.0],
-		3.5, "", false, true],
-	["nerava", [Vector3(0, 0, 34), 0.0, 6.0, 70.0], [Vector3(0, 0, 24), 0.0, 0.0, 66.0],
-		4.0, "A SIGNAL FROM A DEAD WORLD", false, true],
-	["nerava", [Vector3(-6, 0, 18), 20.0, 8.0, 64.0], [Vector3(-2, 0, 12), 0.0, 0.0, 62.0],
-		3.5, "", false],
+	# --- Act II: the descent ---------------------------------------------
+	["nerava", [Vector3(6.0, 0, 33), 155.2, 3.0, 68.0], [Vector3(2.0, 0, 38), 166.0, -1.0, 60.0],
+		5.0, "", false, true],
+	["nerava", [Vector3(0, 0, 34), 0.0, 6.0, 70.0], [Vector3(0, 0, 24), 0.0, 0.0, 64.0],
+		5.0, "", false, true],
+	["nerava", [Vector3(-6, 0, 18), 343.3, 8.0, 64.0], [Vector3(-2, 0, 12), 351.9, 0.0, 60.0],
+		5.5, "", false],
+	["nerava", [Vector3(-2, 0, 12), 351.9, 0.0, 60.0], [Vector3(-2, 0, 12), 351.9, 0.0, 60.0],
+		0.4, "", false, false, true],
 
-	# --- The objective --------------------------------------------------
-	["nerava", [Vector3(-30, 0, 2), 250.0, 0.0, 62.0], [Vector3(-36, 0, 0), 268.0, -4.0, 58.0],
-		3.5, "FIND THREE POWER CRYSTALS", false],
-	["nerava", [Vector3(0, 0, -30), 0.0, 0.0, 62.0], [Vector3(0, 0, -38), 0.0, -3.0, 56.0],
-		3.5, "", false],
+	# --- Act III: the crystals -------------------------------------------
+	["nerava", [Vector3(-34, 0, 4), 68.2, 2.0, 64.0], [Vector3(-39, 0, 1), 78.7, -2.0, 58.0],
+		4.0, "", false],
+	["nerava", [Vector3(34, 0, -4), 248.2, 2.0, 64.0], [Vector3(39, 0, -1), 258.7, -2.0, 58.0],
+		4.0, "", false],
+	["nerava", [Vector3(0, 0, -32), 0.0, 1.0, 64.0], [Vector3(0, 0, -38), 0.0, -3.0, 58.0],
+		4.0, "", false],
 	["nerava", [Vector3(0, 0, 9), 0.0, 2.0, 66.0], [Vector3(0, 0, 3), 0.0, 4.0, 58.0],
-		4.0, "POWER THE ALTAR", false],
+		5.0, "", false],
+	["nerava", [Vector3(0, 0, 3), 0.0, 4.0, 58.0], [Vector3(0, 0, 3), 0.0, 4.0, 58.0],
+		0.4, "", false, false, true],
 
-	# --- The guardian ---------------------------------------------------
+	# --- Act IV: the guardian --------------------------------------------
 	["nerava", [Vector3(0, 0, -3), 0.0, 12.0, 62.0], [Vector3(0, 0, -6.5), 0.0, 9.0, 52.0],
-		3.5, "SOMETHING IS GUARDING IT", false],
+		4.5, "", false],
 	["nerava", [Vector3(0, 0, -5), 0.0, 10.0, 56.0], [Vector3(0, 0, -6.5), 5.0, 9.0, 54.0],
-		3.0, "", true],
-
-	# --- Extraction -----------------------------------------------------
+		3.5, "", true],
 	["nerava", [Vector3(0, 0, 30), 180.0, 0.0, 66.0], [Vector3(0, 0, 40), 180.0, 0.0, 62.0],
-		3.5, "GET OFF THE PLANET", false],
-	# Crane out through the canyon gateway: tight on the pod, then back to the
-	# whole landing pad for the title. Held inside x = +/-8, which is the clear
-	# lane between the canyon walls at x = +/-12.
-	["nerava", [Vector3(2.0, 0, 37.5), 167.0, 0.0, 54.0], [Vector3(2.0, 0, 28.0), 174.0, 3.0, 74.0],
-		5.0, "STARBOUND STATION\nTHE LOST SIGNAL", false, true],
+		4.0, "ONE TO FOUR EXPLORERS", false],
+	["nerava", [Vector3(0, 0, 40), 180.0, 0.0, 62.0], [Vector3(0, 0, 40), 180.0, 0.0, 62.0],
+		0.4, "", false, false, true],
+
+	# --- Act V: the title -------------------------------------------------
+	# The crane-out is split in two so the title can fade up partway through it
+	# rather than at the cut; the second shot starts exactly where the first
+	# ended, so the move is continuous across them.
+	["nerava", [Vector3(2.0, 0, 37.5), 166.8, 0.0, 54.0], [Vector3(2.0, 0, 28.0), 173.7, 3.0, 74.0],
+		4.0, "", false, true],
+	["nerava", [Vector3(2.0, 0, 28.0), 173.7, 3.0, 74.0], [Vector3(2.0, 0, 25.5), 174.4, 3.5, 76.0],
+		6.0, "STARBOUND STATION\nTHE LOST SIGNAL", false, true],
 ]
 
 var _out_dir: String = "captures/trailer"
@@ -74,6 +92,7 @@ var _scene_root: Node
 var _ui_layer: CanvasLayer
 var _card: Label
 var _card_group: Control
+var _blackout: ColorRect
 var _card_scrim: TextureRect
 var _letterbox_top: ColorRect
 var _letterbox_bottom: ColorRect
@@ -209,6 +228,16 @@ func _build_overlay() -> void:
 	_card_scrim.offset_bottom = -90.0
 	_card_group.add_child(_card_scrim)
 
+	# Full-frame black, under the cards so a card can still sit on it. Cutting to
+	# black between acts is most of what makes an edit feel deliberate rather
+	# than like footage running past; it also gives the sound somewhere to land.
+	_blackout = ColorRect.new()
+	_blackout.color = Color(0, 0, 0)
+	_blackout.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blackout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blackout.visible = false
+	_ui_layer.add_child(_blackout)
+
 	_card = Label.new()
 	_card.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_card.anchor_left = 0.0
@@ -255,6 +284,8 @@ func _record_shot(player: Node, shot: Array, index: int) -> void:
 	var card: String = String(shot[4])
 	var firing: bool = bool(shot[5])
 	var hide_weapon: bool = shot.size() > 6 and bool(shot[6])
+	var blackout: bool = shot.size() > 7 and bool(shot[7])
+	_blackout.visible = blackout
 	var count: int = _shot_frame_count(shot)
 	# The last card is the film's title and it holds to the end. Fading it out
 	# left the trailer's final second showing gameplay with no title on it -
