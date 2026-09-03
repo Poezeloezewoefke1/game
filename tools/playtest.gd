@@ -14,6 +14,21 @@ extends Node
 ## the way a person does. That means a change to sensitivity, to the pitch
 ## clamp or to the look code cannot silently invalidate the driver.
 ##
+## Three rules that the aiming code paid for the hard way, and that anything
+## touching it should keep:
+##
+##   1. Aim is only correct when the interact ray is on the object we WANT.
+##      "Some prompt appeared" put the driver in the wrong chair on a bridge
+##      with four in a row, and reported success.
+##   2. Every search returns to where it started. A scan of offsets that do not
+##      sum to zero is a random walk, and it walked the camera into the -75
+##      degree clamp with the target dead ahead.
+##   3. Never trust a value read back in the same frame as the input that
+##      changed it. `Input.parse_input_event` is handled in `_unhandled_input`
+##      on the IDLE frame, so a pitch read after only a physics frame is the
+##      OLD pitch - and an open-loop correction applied twice runs to the
+##      opposite clamp. Loop until it lands.
+##
 ##   tools/run_playtest.sh <godot> [--strategy=cautious|aggressive|explorer]
 ##
 ## Everything it does is recorded as a structured event line, so the run is
@@ -44,6 +59,10 @@ var _trace: Array = []
 ## The prompt seen at the moment of the last interaction. Read after the fact,
 ## the prompt is already gone - the press moves the aim on.
 var _last_prompt: String = ""
+## What the last aim attempt did, for the failure report. A camera that is
+## pointing the wrong way is the single most common reason a prompt does not
+## appear, and "no prompt" on its own never says so.
+var _last_aim: String = ""
 
 
 func _ready() -> void:
@@ -632,9 +651,23 @@ func _look_at_object(object_id: String) -> void:
 	var player := _player() as Node3D
 	if player == null:
 		return
-	var aim: Vector3 = (node as Node3D).global_position + Vector3(0.0, 0.9, 0.0)
+	var aim: Vector3 = _aim_point(node as Node3D)
 	await _look_at_point(aim)
 	await _pitch_towards(aim, object_id)
+
+
+## Where to point at an interactable: the centre of its collision shape when it
+## has one, since that is the thing the interact ray must actually hit.
+##
+## The fallback of "origin plus 0.9 m" is a guess that suits a waist-high
+## console and misses both a floor-level cradle and a tall pillar. Asking the
+## shape works for all three, and stays right when a prop is redesigned.
+func _aim_point(node: Node3D) -> Vector3:
+	for child in node.find_children("*", "CollisionShape3D", true, false):
+		var shape := child as CollisionShape3D
+		if shape != null and shape.shape != null:
+			return shape.global_position
+	return node.global_position + Vector3(0.0, 0.9, 0.0)
 
 
 ## Drive the camera pitch to look at a world point, then micro-scan around it
@@ -654,32 +687,74 @@ func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 	if pivot == null:
 		return
 	var sens: float = SettingsManager.effective_mouse_sensitivity()
+	var started_at: float = pivot.rotation.x
+	var wanted: float = 0.0
+	var converged := false
+	# Converge GEOMETRICALLY FIRST, even when the ray already reports the
+	# target. Returning early on "the prompt is showing" left the camera
+	# wherever the previous aim had put it - once at the -75 degree clamp, with
+	# the ray grazing the very bottom edge of a flight seat 1.2 m away. The
+	# prompt was there, so the driver called it aimed; the press then lost the
+	# seat on the first frame and read the floor. Grazing an object is not
+	# looking at it, and a player who walks up to a chair looks at the chair.
 	for _i in 60:
-		if _aimed_at(wanted_id):
-			return
 		var eye: Vector3 = pivot.global_position
 		var to_target: Vector3 = target - eye
 		var flat: float = Vector2(to_target.x, to_target.z).length()
-		var wanted: float = atan2(to_target.y, maxf(flat, 0.01))
+		wanted = atan2(to_target.y, maxf(flat, 0.01))
 		var error: float = wanted - pivot.rotation.x
 		if absf(error) < deg_to_rad(1.0):
+			converged = true
 			break
 		# _pitch = _pitch - relative.y * sens, so a POSITIVE error (look up)
 		# needs a NEGATIVE relative.y.
 		var ev := InputEventMouseMotion.new()
 		ev.relative = Vector2(0.0, clampf(-error / sens, -400.0, 400.0))
 		Input.parse_input_event(ev)
+		await get_tree().process_frame
 		await get_tree().physics_frame
 
 	# On target geometrically but still no prompt: scan a few degrees either
 	# side, because the ray is a line and the object has a finite hitbox.
-	for step in [4.0, -8.0, 12.0, -16.0, 20.0]:
+	#
+	# The scan RETURNS TO CENTRE afterwards. It used to walk away: the offsets
+	# summed to -12 degrees, so every failed scan left the camera a further 12
+	# degrees below the target and three attempts in a row pinned the pitch at
+	# the -75 degree clamp, staring at the floor with the object dead ahead.
+	var centre: float = pivot.rotation.x
+	for step in [4.0, -4.0, 8.0, -8.0, 12.0, -12.0]:
 		if _aimed_at(wanted_id):
 			return
-		var ev2 := InputEventMouseMotion.new()
-		ev2.relative = Vector2(0.0, deg_to_rad(step) / sens)
-		Input.parse_input_event(ev2)
+		await _set_pitch(pivot, centre + deg_to_rad(step), sens)
 		await get_tree().physics_frame
+	if not _aimed_at(wanted_id):
+		await _set_pitch(pivot, centre, sens)
+	_last_aim = "pitch %.0f -> wanted %.0f, settled %.0f%s" % [
+		rad_to_deg(started_at), rad_to_deg(wanted), rad_to_deg(pivot.rotation.x),
+		"" if converged else " (never converged)"]
+
+
+## Drive the camera to an absolute pitch, closed-loop.
+##
+## Absolute rather than relative, because a scan that never returns to where it
+## started is a random walk - that is how the camera ended up pinned at the -75
+## degree clamp with the target dead ahead.
+##
+## Closed-loop rather than one nudge, because `Input.parse_input_event` is not
+## applied by the time the next physics frame ends: the player handles motion in
+## `_unhandled_input`, which runs on the idle frame. Reading `rotation.x` back
+## too early returns the OLD pitch, so an open-loop nudge applies its full
+## correction twice and runs to the opposite clamp. Re-reading until it lands
+## makes the staleness harmless instead of fatal.
+func _set_pitch(pivot: Node3D, wanted: float, sens: float) -> void:
+	for _i in 8:
+		var error: float = wanted - pivot.rotation.x
+		if absf(error) < deg_to_rad(0.5):
+			return
+		var ev := InputEventMouseMotion.new()
+		ev.relative = Vector2(0.0, clampf(-error / sens, -400.0, 400.0))
+		Input.parse_input_event(ev)
+		await get_tree().process_frame
 		await get_tree().physics_frame
 
 
@@ -878,9 +953,9 @@ func _approach_and_use(object_id: String, what: String = "",
 				var n: Node = hit["collider"]
 				seen = "%s (oid='%s') at %.2f m" % [_describe(n), _object_id_of(n),
 					eye.distance_to(hit["position"])]
-		_fail("%s never showed a prompt (closed to %.1f m; player at %s, camera pitch %.0f deg, ray found %s)"
+		_fail("%s never showed a prompt (closed to %.1f m; player at %s, camera pitch %.0f deg, aim: %s, ray found %s)"
 			% [label, gap, str(player.global_position.snapped(Vector3.ONE * 0.1)),
-				rad_to_deg(pivot.rotation.x) if pivot != null else 0.0, seen])
+				rad_to_deg(pivot.rotation.x) if pivot != null else 0.0, _last_aim, seen])
 		return false
 	var hovered_id := _hovered_id()
 	_last_prompt = prompt
@@ -997,17 +1072,26 @@ func _finish() -> void:
 			Input.action_release(action)
 
 	_event("playtest.end", "%d failure(s)" % _failures.size())
-	print("")
-	print("PLAYTEST %s strategy=%s failures=%d duration=%.1fs walked=%.0fm downs=%d"
+	var summary := "PLAYTEST %s strategy=%s failures=%d duration=%.1fs walked=%.0fm downs=%d shots=%d" \
 		% ["FAIL" if not _failures.is_empty() else "PASS",
-			_strategy, _failures.size(), _now(), _distance_walked, _downs])
+			_strategy, _failures.size(), _now(), _distance_walked, _downs, _shots]
+	print("")
+	print(summary)
 	for f in _failures:
 		print("  x %s" % f)
 
+	# The summary goes in the LOG as well as on stdout. CI uploads the log and
+	# nothing else, so a verdict that only ever reached the terminal is a
+	# verdict nobody reading the artifact can see.
 	if _out_path != "":
+		var lines: Array = _events.duplicate()
+		lines.append("")
+		lines.append(summary)
+		for f in _failures:
+			lines.append("  x %s" % f)
 		var file := FileAccess.open(_out_path, FileAccess.WRITE)
 		if file != null:
-			file.store_string("\n".join(_events) + "\n")
+			file.store_string("\n".join(lines) + "\n")
 			file.close()
 
 	NetworkManager.shutdown()

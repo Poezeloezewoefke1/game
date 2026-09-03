@@ -281,6 +281,39 @@ in `docs/KNOWN_LIMITATIONS.md`. What was measured:
 | The cuts to black are black | file size and inspection of a graded frame | ~8 KB vs ~300 KB for a picture frame |
 | Cue-to-picture alignment | frame counts per shot vs. line cue times | "the ruins" / "the cave" / "the grove" each land inside their own crystal shot |
 
+### 12. Automated playtest - the game driven by simulated input
+
+```
+tools/run_playtest.sh <godot> cautious
+```
+
+This is the only check in the project that asks whether the game can be
+PLAYED. Sections 1-3 drive the game through its own API - `request_interact()`,
+`host_spawn_*()` - which proves the rules are right and says nothing about
+whether a player can reach the thing the rules are about. `tools/playtest.gd`
+boots the shipped shell (`main.tscn`, main menu, lobby, `UIRoot`, HUD) and then
+moves a player with `Input.action_press()` and `InputEventMouseMotion`: the
+same code path a keyboard and mouse drive. Both work headless, which is what
+makes this possible at all.
+
+It runs in `validate.yml` alongside the other gates.
+
+What it asserts, in the order a player meets them: the menu accepts a name and
+hosts; the lobby starts; the crew deck mounts; every pre-flight station can be
+walked to and worked; the launch lever refuses while anyone is standing and
+SAYS SO; a seat can be taken and cannot be walked out of; a strapped-in pilot
+can launch; the flight lands on the destination; the temple is discovered by
+walking into the clearing; sealed crystals refuse until unsealed; each crystal
+can be fetched and placed; the Star Map wakes the Warden; the Warden can be
+killed by aiming and firing; and the crew can extract.
+
+Every prompt is recorded at the moment it is read, which is what makes a
+failure legible - "pressed E and nothing happened" and "the prompt said Hands
+full" are different bugs with different fixes.
+
+**Defects 52-59 were all found by this, in a build where 1468 assertions
+passed.** One of them, defect 58, made the game impossible to finish.
+
 ---
 
 ## What was NOT executed
@@ -385,6 +418,9 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I4 | An absolute `--out` path was silently rewritten | The log everyone was tailing never appeared | `run_playtest.sh` joined the path to the project directory unconditionally, so `/tmp/x.log` became `/home/user/game/tmp/x.log`. Absolute paths are now taken as given |
 | I5 | The lane gate first asked the wrong question | It failed on three pieces of deliberate scenery | Relaxed to "at least one lane is clear", which the playtest then proved too weak by walking into one of those pieces (defect 57). Now strict again, with the level fixed to satisfy it - the gate and the level agreeing is the point, and only one of the two was allowed to move |
 | I6 | The surface act aimed from wherever walking stopped | "pressing E on the coupling did not pick it up (prompt '')" | `_walk_to` stops within 2.6 m of a waypoint and the interact ray is 3.2 m, so aiming from there missed. The whole surface act now goes through `_approach_and_use`, which closes the gap step by step and, on failure, reports what the ray actually found |
+| I7 | **The aim scan walked the camera into the floor** | A seated pilot with the launch console 2.4 m dead ahead, camera pitch pinned at -75 - the clamp - and the diagnostic ray finding the lever perfectly | When the geometric aim found no prompt, the driver micro-scanned pitch offsets of +4, -8, +12, -16, +20 degrees. Those sum to -12 and it never returned to centre, so every failed scan left the camera 12 degrees lower than it started and three attempts in a row hit the clamp. The scan is now absolute about a remembered centre and returns to it, and the failure report says what the aim tried: start pitch, wanted pitch, where it settled, and whether it ever converged |
+| I8 | Any prompt counted as being aimed at the target | On a bridge with four chairs in a row the driver stopped 3 m short with the ray on the chair NEXT to the one it wanted, and reported arrival | Both the approach loop and the aim scan tested `prompt != ""`. They now test that the interact ray is latched onto the object being used |
+| I9 | Fixing I7 sent the camera to the OTHER clamp | Every station prompt appeared, then the press missed with pitch pinned at +65 and the ray on the ceiling | `Input.parse_input_event` is handled in `_unhandled_input`, which runs on the IDLE frame; reading `rotation.x` back after only a physics frame returns the old pitch, so an open-loop nudge applies its full correction twice. The setter is now closed-loop over both frames, which makes the staleness harmless rather than fatal |
 
 ## Open defects
 
