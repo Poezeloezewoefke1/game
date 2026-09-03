@@ -55,6 +55,9 @@ var _failures: Array[String] = []
 var _distance_walked: float = 0.0
 var _downs: int = 0
 var _shots: int = 0
+## Which way the driver is side-stepping in a fight. Flipped every volley, so it
+## weaves rather than running in one direction into the scenery.
+var _strafe: int = 1
 var _trace: Array = []
 ## The prompt seen at the moment of the last interaction. Read after the fact,
 ## the prompt is already gone - the press moves the aim on.
@@ -407,7 +410,16 @@ func _play_the_surface() -> bool:
 			return false
 		_event("crystal.taken", "%s in %.1fs" % [crystal_id, _now() - t_start])
 
-		for leg in [Vector3(0, 0, 4), pedestals[crystal_id]]:
+		# Retrace the corridor rather than cutting the diagonal home. The route
+		# out has a dog-leg at (14, 0, 0) that misses the cave stalagmite; a
+		# straight line from the crystal to (0, 0, 4) walks into it, and the
+		# driver was stopped dead at (29.2, 0, 2.1) against exactly that. The
+		# corridor is not blocked - the shortcut is.
+		var home: Array = (routes[crystal_id] as Array).duplicate()
+		home.reverse()
+		home.remove_at(0)
+		home.append(pedestals[crystal_id])
+		for leg in home:
 			if not await _walk_to(leg, "carry %s home" % crystal_id):
 				_fail("carrying %s home is blocked at %s" % [crystal_id, str(leg)])
 		if not await _approach_and_use(
@@ -639,13 +651,38 @@ func _fight_the_warden() -> bool:
 				aim_at = node
 		await _aim_at_point((aim_at as Node3D).global_position)
 
-		# Cautious backs off between volleys; aggressive stands and shoots.
-		if _strategy == "cautious" and _player() != null:
-			var player := _player() as Node3D
+		# Break away when it enrages. An enraged Warden moves at 6.4 m/s and does
+		# 18 contact damage a second; a walking player does 5.0 and cannot get
+		# away, but a SPRINTING player does 8.5 and can. That is the design - the
+		# enrage is what turns the fight from a shooting gallery into a
+		# retreat - and a driver that never sprints simply gets run down, which
+		# is what kept happening. It is not a boss that is too strong; it is a
+		# driver that would not run.
+		var player := _player() as Node3D
+		if player != null:
 			var gap: float = player.global_position.distance_to((warden as Node3D).global_position)
-			if gap < 9.0:
+			var enraged := phase == MissionRules.BOSS_ENRAGED
+			if enraged and gap < 14.0:
+				Input.action_press("sprint")
+				await _hold("move_back", 0.8)
+				Input.action_release("sprint")
+				await _aim_at_point((warden as Node3D).global_position)
+			elif _strategy == "cautious" and gap < 9.0:
 				await _hold("move_back", 0.5)
+
+		# KEEP MOVING WHILE FIRING. The Warden throws three projectiles doing 33
+		# damage each at a player with 100 health, and they take the best part of
+		# a second to cross the gap - the fight is built around strafing out of
+		# the way, and standing still is death by the third volley. The driver
+		# used to stand still, went down every time, and made a fight that is
+		# merely demanding look unwinnable. Anything read off a driver that does
+		# not play the way the fight is designed to be played is a measurement
+		# of the driver.
+		_strafe = -_strafe
+		var strafe_action := "move_left" if _strafe > 0 else "move_right"
+		Input.action_press(strafe_action)
 		await _hold("fire", 0.55)
+		Input.action_release(strafe_action)
 		_shots += 1
 		await _frames(2)
 		# A fight that is not progressing has to say so before the 180 s
