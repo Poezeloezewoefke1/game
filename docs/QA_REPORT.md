@@ -281,6 +281,17 @@ in `docs/KNOWN_LIMITATIONS.md`. What was measured:
 | The cuts to black are black | file size and inspection of a graded frame | ~8 KB vs ~300 KB for a picture frame |
 | Cue-to-picture alignment | frame counts per shot vs. line cue times | "the ruins" / "the cave" / "the grove" each land inside their own crystal shot |
 
+### 11b. Multi-process multiplayer check
+
+```
+tools/run_multiplayer_check.sh <godot> 7800 3
+```
+
+**Result: PASS - 81 assertions across 5 real OS processes**, a host plus three
+clients plus a fifth that is correctly refused, over real ENet on loopback.
+The refusal names the true cause ("The session is full (4/4 players)") rather
+than a generic message, which is defect 10 staying fixed.
+
 ### 12. Automated playtest - the game driven by simulated input
 
 ```
@@ -421,6 +432,7 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I7 | **The aim scan walked the camera into the floor** | A seated pilot with the launch console 2.4 m dead ahead, camera pitch pinned at -75 - the clamp - and the diagnostic ray finding the lever perfectly | When the geometric aim found no prompt, the driver micro-scanned pitch offsets of +4, -8, +12, -16, +20 degrees. Those sum to -12 and it never returned to centre, so every failed scan left the camera 12 degrees lower than it started and three attempts in a row hit the clamp. The scan is now absolute about a remembered centre and returns to it, and the failure report says what the aim tried: start pitch, wanted pitch, where it settled, and whether it ever converged |
 | I8 | Any prompt counted as being aimed at the target | On a bridge with four chairs in a row the driver stopped 3 m short with the ray on the chair NEXT to the one it wanted, and reported arrival | Both the approach loop and the aim scan tested `prompt != ""`. They now test that the interact ray is latched onto the object being used |
 | I9 | Fixing I7 sent the camera to the OTHER clamp | Every station prompt appeared, then the press missed with pitch pinned at +65 and the ray on the ceiling | `Input.parse_input_event` is handled in `_unhandled_input`, which runs on the IDLE frame; reading `rotation.x` back after only a physics frame returns the old pitch, so an open-loop nudge applies its full correction twice. The setter is now closed-loop over both frames, which makes the staleness harmless rather than fatal |
+| I10 | **The driver's model of mouse sensitivity was wrong by a factor of twenty** | The root cause under I7 and I9. A probe that sent a known nudge to the real player and measured the result: 2 px moved the camera 5.04 degrees, 5 px moved it 12.61, 20 px moved it 50.42 - dead linear at 2.52 deg/px, against the 0.126 deg/px the sensitivity constant implies | Every correction was computed as `-error / MOUSE_SENSITIVITY` and then applied twenty times too hard, so the closed loop had a gain of 20 and oscillated into whichever clamp it was heading for. The header had always claimed the steering was closed-loop so that a sensitivity change could not invalidate it; the STEP SIZE was still computed from the constant, which is the half of it that was open loop. The driver now measures radians-per-pixel against the live player at the start of a run and uses that, and takes 60% of each correction so a measurement error cannot turn the loop into an oscillator |
 
 ## Open defects
 

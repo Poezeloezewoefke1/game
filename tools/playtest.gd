@@ -63,6 +63,9 @@ var _last_prompt: String = ""
 ## pointing the wrong way is the single most common reason a prompt does not
 ## appear, and "no prompt" on its own never says so.
 var _last_aim: String = ""
+## Radians of camera rotation per pixel of synthetic mouse motion, MEASURED
+## rather than taken from the sensitivity setting. See _look_gain().
+var _rad_per_px: float = 0.0
 
 
 func _ready() -> void:
@@ -72,6 +75,15 @@ func _ready() -> void:
 			_strategy = a.split("=", true, 1)[1]
 		elif a.begins_with("--out="):
 			_out_path = a.split("=", true, 1)[1]
+	# Godot ACCUMULATES mouse motion by default: several events parsed within
+	# one frame are merged into one before they reach `_unhandled_input`. For a
+	# person that is a smoothing feature. For a driver that nudges the mouse and
+	# re-reads the result, it means a correction can arrive late, arrive merged
+	# with the next one, or appear not to have arrived at all - which is how the
+	# camera kept ending up pinned at a pitch clamp with the target dead ahead.
+	# Turning it off makes each parsed event dispatch on its own, so what the
+	# driver sends is what the player gets.
+	Input.set_use_accumulated_input(false)
 	_t0 = Time.get_ticks_msec()
 	_run.call_deferred()
 
@@ -277,12 +289,27 @@ func _play_the_ship() -> bool:
 	_event("seat.taken", String(player.get("seated_at")))
 
 	# Seated, the player must not be able to walk away.
+	#
+	# Let the body settle into the chair FIRST. Sitting lerps the player onto
+	# the seat anchor, so measuring from where they were standing counts the
+	# snap into the seat as drift - it read 1.14 m on a run where the player had
+	# not moved at all, which is a false failure against the game.
+	await _frames(30)
+	var seat_node: Node3D = _player().call("seat_node") as Node3D \
+		if _player().has_method("seat_node") else null
+	var anchor: Vector3 = (seat_node.call("sit_position") as Vector3) \
+		if seat_node != null and seat_node.has_method("sit_position") \
+		else (player as Node3D).global_position
 	var before: Vector3 = (player as Node3D).global_position
 	await _hold("move_forward", 1.2)
-	var drift: float = before.distance_to((player as Node3D).global_position)
-	_event("seat.drift", "%.2f m while holding forward" % drift)
-	if drift > 1.0:
-		_fail("a seated player walked %.2f m out of the chair" % drift)
+	var here: Vector3 = (player as Node3D).global_position
+	var drift: float = before.distance_to(here)
+	var off_anchor: float = anchor.distance_to(here)
+	_event("seat.drift", "%.2f m while holding forward, %.2f m from the seat anchor"
+		% [drift, off_anchor])
+	if drift > 0.5 or off_anchor > 0.5:
+		_fail("a seated player moved %.2f m while holding forward and ended %.2f m from the chair"
+			% [drift, off_anchor])
 
 	# Strapped in, the pilot pulls the lever. This used to call
 	# GameManager.host_begin_launch() directly, with a comment explaining that
@@ -435,6 +462,65 @@ func _carrying() -> String:
 ## missing property returns null, and `String(null)` is not a constructor -
 ## it raised a SCRIPT ERROR inside the failure report, which killed the very
 ## diagnostic that was trying to explain the failure.
+## How far the camera actually turns per pixel of synthetic mouse motion.
+##
+## The obvious answer is `SettingsManager.effective_mouse_sensitivity()`, and
+## the obvious answer is wrong: measured against the real player, one pixel
+## moves the camera TWENTY times as far as that constant says. The driver's
+## whole steering approach is closed loop precisely so that it does not have to
+## trust a number like this - but the size of each correction was still computed
+## from it, so every nudge overshot by 20x, the loop had a gain far above one,
+## and it oscillated straight into whichever pitch clamp it was heading for.
+## That is what pinned the camera at -75 and +65 with the target dead ahead.
+##
+## So: nudge by a known amount once, see what happened, and use that. It costs
+## two frames at the start of a run and makes the driver correct for any
+## sensitivity, any engine version, and any input quirk, which is what the
+## closed loop was supposed to buy in the first place.
+func _look_gain() -> float:
+	if _rad_per_px > 0.0:
+		return _rad_per_px
+	var fallback: float = SettingsManager.effective_mouse_sensitivity()
+	var player := _player() as Node3D
+	if player == null:
+		return fallback
+	var pivot := player.get_node_or_null("CameraPivot") as Node3D
+	if pivot == null:
+		return fallback
+	const PROBE_PX := 2.0
+	var before: float = pivot.rotation.x
+	await _send_mouse(Vector2(0.0, PROBE_PX))
+	var moved: float = pivot.rotation.x - before
+	await _send_mouse(Vector2(0.0, -PROBE_PX))
+	# A measurement taken against a clamp is truncated and would read low, so
+	# only believe one that actually moved a sensible amount.
+	if absf(moved) < deg_to_rad(0.2):
+		return fallback
+	_rad_per_px = absf(moved) / PROBE_PX
+	_event("look.calibrated", "%.5f rad/px measured (setting says %.5f, ratio %.1fx)"
+		% [_rad_per_px, fallback, _rad_per_px / maxf(fallback, 0.000001)])
+	return _rad_per_px
+
+
+## Send one mouse motion and let it land. Both frames matter: the event is
+## handled in `_unhandled_input`, which runs on the idle frame, so a value read
+## back after only a physics frame is the value from before the nudge.
+func _send_mouse(relative: Vector2) -> void:
+	var ev := InputEventMouseMotion.new()
+	ev.relative = relative
+	Input.parse_input_event(ev)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+
+## Record what the last aim attempt did, for the failure report and the prompt
+## line. A camera pointing the wrong way is the commonest reason a prompt does
+## not appear, and "no prompt" never says so on its own.
+func _note_aim(started: float, wanted: float, settled: float, converged: bool) -> void:
+	_last_aim = "%.0f -> want %.0f -> %.0f%s" % [rad_to_deg(started),
+		rad_to_deg(wanted), rad_to_deg(settled), "" if converged else " NOCONV"]
+
+
 ## Is the ray on the thing we are trying to use? With no id given, any prompt
 ## counts, which is what the free-aim callers want.
 func _aimed_at(wanted_id: String) -> bool:
@@ -627,14 +713,13 @@ func _look_at_point(target: Vector3, tolerance_deg: float = 2.0) -> void:
 		var error: float = wrapf(wanted - player.rotation.y, -PI, PI)
 		if absf(error) < deg_to_rad(tolerance_deg):
 			break
-		# rotation.y -= relative.x * sens, so a POSITIVE error needs a NEGATIVE
-		# relative.x. The step is capped so the loop cannot overshoot forever.
-		var sens: float = SettingsManager.effective_mouse_sensitivity()
-		var relative: float = clampf(-error / sens, -600.0, 600.0)
-		var ev := InputEventMouseMotion.new()
-		ev.relative = Vector2(relative, 0.0)
-		Input.parse_input_event(ev)
-		await get_tree().process_frame
+		# rotation.y -= relative.x * gain, so a POSITIVE error needs a NEGATIVE
+		# relative.x. The step is capped so the loop cannot overshoot forever,
+		# and takes 60% of the correction so a small measurement error cannot
+		# turn the loop into an oscillator.
+		var gain: float = await _look_gain()
+		var relative: float = clampf(-(error * 0.6) / gain, -600.0, 600.0)
+		await _send_mouse(Vector2(relative, 0.0))
 
 
 ## Point the camera at an interactable so the interact ray finds it.
@@ -686,7 +771,7 @@ func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 	var pivot := player.get_node_or_null("CameraPivot") as Node3D
 	if pivot == null:
 		return
-	var sens: float = SettingsManager.effective_mouse_sensitivity()
+	var sens: float = await _look_gain()
 	var started_at: float = pivot.rotation.x
 	var wanted: float = 0.0
 	var converged := false
@@ -706,13 +791,14 @@ func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 		if absf(error) < deg_to_rad(1.0):
 			converged = true
 			break
-		# _pitch = _pitch - relative.y * sens, so a POSITIVE error (look up)
+		if _aimed_at(wanted_id) and absf(error) < deg_to_rad(12.0):
+			# Close enough AND the ray is on it: stop rather than chase the last
+			# few degrees, which can only shake the aim loose.
+			converged = true
+			break
+		# _pitch = _pitch - relative.y * gain, so a POSITIVE error (look up)
 		# needs a NEGATIVE relative.y.
-		var ev := InputEventMouseMotion.new()
-		ev.relative = Vector2(0.0, clampf(-error / sens, -400.0, 400.0))
-		Input.parse_input_event(ev)
-		await get_tree().process_frame
-		await get_tree().physics_frame
+		await _send_mouse(Vector2(0.0, clampf(-(error * 0.6) / sens, -400.0, 400.0)))
 
 	# On target geometrically but still no prompt: scan a few degrees either
 	# side, because the ray is a line and the object has a finite hitbox.
@@ -729,9 +815,7 @@ func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 		await get_tree().physics_frame
 	if not _aimed_at(wanted_id):
 		await _set_pitch(pivot, centre, sens)
-	_last_aim = "pitch %.0f -> wanted %.0f, settled %.0f%s" % [
-		rad_to_deg(started_at), rad_to_deg(wanted), rad_to_deg(pivot.rotation.x),
-		"" if converged else " (never converged)"]
+	_note_aim(started_at, wanted, pivot.rotation.x, converged)
 
 
 ## Drive the camera to an absolute pitch, closed-loop.
@@ -747,15 +831,11 @@ func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 ## correction twice and runs to the opposite clamp. Re-reading until it lands
 ## makes the staleness harmless instead of fatal.
 func _set_pitch(pivot: Node3D, wanted: float, sens: float) -> void:
-	for _i in 8:
+	for _i in 10:
 		var error: float = wanted - pivot.rotation.x
 		if absf(error) < deg_to_rad(0.5):
 			return
-		var ev := InputEventMouseMotion.new()
-		ev.relative = Vector2(0.0, clampf(-error / sens, -400.0, 400.0))
-		Input.parse_input_event(ev)
-		await get_tree().process_frame
-		await get_tree().physics_frame
+		await _send_mouse(Vector2(0.0, clampf(-(error * 0.6) / sens, -400.0, 400.0)))
 
 
 ## Walk to a point with WASD. Returns false if the player gets stuck or the leg
@@ -959,7 +1039,10 @@ func _approach_and_use(object_id: String, what: String = "",
 		return false
 	var hovered_id := _hovered_id()
 	_last_prompt = prompt
-	_event("prompt", "%s -> '%s' (ray on '%s')" % [label, prompt, hovered_id])
+	var piv0 := (_player() as Node3D).get_node_or_null("CameraPivot") as Node3D
+	_event("prompt", "%s -> '%s' (ray on '%s', pitch %.0f, aim: %s)"
+		% [label, prompt, hovered_id,
+			rad_to_deg(piv0.rotation.x) if piv0 != null else 999.0, _last_aim])
 	if hovered_id != object_id:
 		_fail("%s: the prompt showed but the interact ray is on '%s'"
 			% [label, hovered_id])
