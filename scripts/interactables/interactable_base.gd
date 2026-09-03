@@ -25,12 +25,29 @@ class_name Interactable
 var _registered_id: String = ""
 
 
+## Is this node part of a mounted level, as opposed to a prefab someone loaded
+## on its own to look at? SceneManager owns the level root; anything under it is
+## in the game, anything else is being inspected.
+func _is_in_a_level() -> bool:
+	var root: Node = SceneManager.scene_root if SceneManager != null else null
+	if root == null or not is_instance_valid(root):
+		return false
+	return root.is_ancestor_of(self)
+
+
 func _ready() -> void:
 	add_to_group(GameConfig.GROUP_INTERACTABLE)
 	collision_layer = GameConfig.LAYER_INTERACTABLE
 	collision_mask = 0
 	if object_id.is_empty():
-		Logx.error("interactable", "%s has no object_id" % get_path())
+		# An interactable PREFAB has no id until a level places it and sets one;
+		# instantiating the .tscn on its own is exactly what the scene-integrity
+		# check does, and it did it twice on every validation run. An error that
+		# always fires is an error people learn to scroll past, which is worse
+		# than no error at all - so this only complains when the node is inside
+		# a mounted level, where a missing id really is a broken interactable.
+		if _is_in_a_level():
+			Logx.error("interactable", "%s has no object_id" % get_path())
 	else:
 		_registered_id = object_id
 		SpawnManager.register_interactable(_registered_id, self)

@@ -10,6 +10,44 @@ renders for real under Xvfb with a software rasteriser.
 
 ---
 
+## Verdict
+
+**The game is complete and playable end to end, and it was not when this pass
+started.** Two defects made it impossible to finish and neither was visible to
+1468 passing assertions:
+
+* **58** - the launch lever sat 3.9 m behind the nearest flight seat and 168
+  degrees round from it, against a 3.2 m interact ray and a 105 degree seated
+  swivel. The lever refuses to fire while any crew member is standing. So once
+  the crew strapped in, nobody could reach the only control that starts the
+  flight, at any crew size. The ship could not leave.
+* **60/61** - the Warden was tuned for four players. Solo, four complete runs
+  gave one win and three losses, every loss identical: downed in the exposed
+  phase with the boss around 275 of 450. The README offers 1-4 players.
+
+Both are fixed, both are gated, and four consecutive complete runs across three
+playing styles now finish the game with no deaths.
+
+**What is NOT claimed.** Nobody has played it. There is no GPU, no audio device
+and no person at a screen here, so every judgement in this document about how
+the game FEELS is an inference from timings, distances, prompts and death
+counts - clearly separated below, and recorded as VERIFY-002, VERIFY-007 and
+VERIFY-008 in `docs/KNOWN_LIMITATIONS.md`. What IS claimed is that the game can
+be played from the main menu to extraction using nothing but a keyboard and a
+mouse, because that was measured, repeatedly, on the shipped build.
+
+| Gate | Result |
+|---|---|
+| Repository structure | PASS |
+| Import, compile, scene load | PASS, no script errors |
+| Automated suite | PASS - 133 checks, 1516 assertions, no engine errors |
+| Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
+| Automated playtest x4, 3 strategies | PASS - 0 failures, 0 deaths |
+| Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
+| Played by a person | NOT DONE (VERIFY-008) |
+
+---
+
 ## What was actually executed
 
 ### 1. Project import
@@ -26,7 +64,7 @@ godot --headless --path . --import
 tools/run_validation.sh <godot>
 ```
 
-**Result: PASS — 105 checks, 925 assertions, exit code 0, no engine errors.**
+**Result: PASS — 133 checks, 1516 assertions, exit code 0, no engine errors.**
 
 The wrapper matters. GDScript cannot hook the engine's error stream, so a
 `SCRIPT ERROR` raised *inside* a test is printed by the engine while the suite
@@ -36,26 +74,27 @@ errors and fails on them. That gate was verified by removing the fix for defect
 fired is not a gate.
 
 ```
-[1/3] Compiling scripts...     70 scripts, 0 failed
-[2/3] Loading scenes...        20 scenes,  0 failed
+[1/3] Compiling scripts...     84 scripts, 0 failed
+[2/3] Loading scenes...        27 scenes,  0 failed
 [3/3] UNIT tests...
-      PASS  test_join_code            (108 assertions)
-      PASS  test_mesh_factory         (157 assertions)
-      PASS  test_mission_rules        (41 assertions)
-      PASS  test_name_sanitizer       (23 assertions)
-      PASS  test_rate_limiter         (13 assertions)
-      PASS  test_state_machine        (66 assertions)
+      PASS  test_interact_press                (16 assertions)
+      PASS  test_join_code                     (108 assertions)
+      PASS  test_mesh_factory                  (157 assertions)
+      PASS  test_mission_rules                 (76 assertions)
+      PASS  test_name_sanitizer                (27 assertions)
+      PASS  test_rate_limiter                  (13 assertions)
+      PASS  test_state_machine                 (80 assertions)
       INTEGRATION tests...
-      PASS  test_app_shell            (44 assertions)
-      PASS  test_combat_and_revive    (62 assertions)
-      PASS  test_concurrency          (17 assertions)
-      PASS  test_lan_discovery        (23 assertions)
-      PASS  test_level_reachability   (54 assertions)
-      PASS  test_mission_flow         (60 assertions)
-      PASS  test_scene_integrity      (137 assertions)
-      PASS  test_sentinel             (28 assertions)
-      PASS  test_session_reset        (92 assertions)
- RESULT: PASS   (105 checks passed, 925 assertions)
+      PASS  test_app_shell                     (44 assertions)
+      PASS  test_combat_and_revive             (62 assertions)
+      PASS  test_concurrency                   (18 assertions)
+      PASS  test_lan_discovery                 (23 assertions)
+      PASS  test_level_reachability            (126 assertions)
+      PASS  test_mission_flow                  (101 assertions)
+      PASS  test_scene_integrity               (542 assertions)
+      PASS  test_sentinel                      (28 assertions)
+      PASS  test_session_reset                 (95 assertions)
+ RESULT: PASS   (133 checks passed, 1516 assertions)
 RESULT: PASS - validation clean, no engine errors
 ```
 
@@ -335,10 +374,20 @@ starting work.
 |---|---|---|---|---|---|
 | cautious | **PASS** | 158.2 s | 489 m | 0 | 35 |
 | aggressive | **PASS** | 113.9 s | 490 m | 0 | 34 |
+| explorer | **PASS** | 167.9 s | 538 m | 0 | 35 |
+| cautious (repeat) | **PASS** | 156.1 s | 489 m | 0 | 32 |
 
-Before the volley scaling of defect 61 the same three strategies gave one win
-and three losses, every loss identical in shape. The table above is the same
-route after it.
+Before the volley scaling of defect 61 the same strategies gave one win and
+three losses, every loss identical in shape - downed in the exposed phase with
+the Warden around 275 of 450. The table above is the same route afterwards:
+four consecutive complete runs, no deaths, and a boss that still takes about
+25 seconds and three phases to bring down.
+
+That spread is also the strongest evidence available here that the fight has
+some depth: `aggressive` finishes 45 seconds faster than `explorer` by sprinting
+between objectives, and before the rebalance it was the first to die for
+standing its ground. Different play produces different results, which is what a
+fight is for.
 
 Menu, name, host, lobby, crew deck, course, three stations, a refused lever,
 the pilot's seat, launch from the chair, flight, landing, the temple, the
@@ -564,6 +613,26 @@ nothing and save the least patient player their first minute.
 **5. Nobody has heard the game or seen it in motion at a real frame rate.** The
 gap that everything above is written around. See VERIFY-002, VERIFY-007 and
 VERIFY-008 in `docs/KNOWN_LIMITATIONS.md`.
+
+## Next steps
+
+In the order they would pay off.
+
+1. **Play it.** Everything this document cannot say is waiting on one person
+   with a Windows build and half an hour. `docs/TEST_CHECKLIST.md` has the
+   ordered walkthrough, rewritten for the ship-and-flight structure.
+2. **Run the Windows build workflow.** `build-windows.yml` is
+   `workflow_dispatch` only and has never been triggered (VERIFY-001).
+3. **Take recommendation 1 or 2** above - the crystal hunt is the weakest
+   measured part of the mission, and both fixes use mechanisms that already
+   exist.
+4. **Scale the Sentinel to crew size**, as the Warden now is. Same argument,
+   same mechanism, and it applies on Cinder and Hallow where a guarded crystal
+   is one of the three locks.
+5. **Play the campaign through to Hallow.** Every automated run here flies
+   Nerava, because it is the only mission unlocked on a fresh save. Cinder and
+   Hallow are covered by the reachability and scene gates but no playthrough
+   has ever reached them.
 
 ## Open defects
 
