@@ -239,6 +239,7 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-008 | Taking the Star Map wakes the Warden exactly once | `game_manager.gd:guardian_spawned` | `test_mission_flow` | AUTO |
 | MIS-009 | The Warden is invulnerable until all three shield nodes are down | `MissionRules.boss_is_vulnerable`, `warden.gd` | `test_mission_rules` | AUTO |
 | MIS-010 | The Warden enrages below a health fraction and hunts the map carrier | `warden.gd` | `test_mission_rules` (phase function) | AUTO |
+| MIS-011 | **The Warden is sized to the crew, so a solo player can finish the game** | `MissionRules.boss_scale`, `game_manager.gd`, `warden.gd` | `test_mission_rules`, playtest | AUTO + PLAY |
 
 ## Quality gates (QA)
 

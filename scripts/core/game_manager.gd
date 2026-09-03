@@ -620,9 +620,13 @@ func host_apply_star_map_pickup(peer_id: int) -> void:
 	# Warden - the boss and the objective are the same event, which is the whole
 	# point of putting the map on the altar.
 	if not bool(snapshot.get("guardian_spawned", false)):
+		# Sized to the crew that is actually here. See MissionRules.boss_scale.
+		var crew: int = maxi(LobbyManager.sorted_peer_ids().size(), 1)
 		snapshot["guardian_spawned"] = true
+		snapshot["boss_crew"] = crew
 		snapshot["boss_phase"] = MissionRules.BOSS_SHIELDED
-		snapshot["boss_health"] = GameConfig.BOSS_MAX_HEALTH
+		snapshot["boss_health"] = int(round(
+			float(GameConfig.BOSS_MAX_HEALTH) * MissionRules.boss_scale(crew)))
 		snapshot["boss_nodes"] = GameConfig.BOSS_SHIELD_NODE_COUNT
 		SpawnManager.host_spawn_warden()
 	_host_progress_and_publish()

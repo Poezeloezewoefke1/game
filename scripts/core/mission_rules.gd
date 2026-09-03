@@ -593,6 +593,37 @@ static func boss_takes_damage(snap: Dictionary) -> bool:
 	return phase == BOSS_VOLLEY or phase == BOSS_ENRAGED
 
 
+## How the Warden is sized to the crew it is actually fighting.
+##
+## This game is 1-4 players, and the Warden was tuned for 4. Measured against a
+## solo run of the shipped build: the crew reaches the boss with 100 health and
+## no one to revive them, faces a three-projectile volley every 2.6 s, and has
+## to land 51 hits through a blaster that overheats after twelve. The automated
+## playtest broke every shield node, took the boss to 525 of 900, and was
+## downed - which alone is the end of the mission. A supported player count that
+## cannot finish the game is the same class of defect as a launch lever nobody
+## can reach; it is just less absolute.
+##
+## So the fight keeps its shape at every crew size and only changes its size:
+## health and shield nodes scale down, and volleys come further apart, for a
+## smaller crew. Nothing is removed - a solo player still has to break three
+## nodes before the body can be hurt, which is the whole point of the phase.
+const BOSS_CREW_SCALE: Array = [0.5, 0.7, 0.85, 1.0]
+
+
+static func boss_scale(crew: int) -> float:
+	var index: int = clampi(crew, 1, BOSS_CREW_SCALE.size()) - 1
+	return float(BOSS_CREW_SCALE[index])
+
+
+## Volleys come further apart against a smaller crew: one player cannot dodge
+## four players' worth of incoming and has nobody to draw fire.
+static func boss_volley_interval(crew: int, enraged: bool) -> float:
+	var base: float = GameConfig.BOSS_ENRAGED_VOLLEY_INTERVAL if enraged \
+		else GameConfig.BOSS_VOLLEY_INTERVAL
+	return base * (2.0 - boss_scale(crew))
+
+
 ## The phase the Warden should be in for a given health fraction, given that its
 ## shield is already down. Kept separate from the node so the ladder is testable
 ## without spawning anything.

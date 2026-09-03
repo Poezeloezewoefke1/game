@@ -637,7 +637,7 @@ func _fight_the_warden() -> bool:
 			var node := _live_shield_node(warden)
 			if node != null:
 				aim_at = node
-		await _look_at_point((aim_at as Node3D).global_position)
+		await _aim_at_point((aim_at as Node3D).global_position)
 
 		# Cautious backs off between volleys; aggressive stands and shoots.
 		if _strategy == "cautious" and _player() != null:
@@ -648,6 +648,17 @@ func _fight_the_warden() -> bool:
 		await _hold("fire", 0.55)
 		_shots += 1
 		await _frames(2)
+		# A fight that is not progressing has to say so before the 180 s
+		# deadline, or the only evidence is "the boss did not die".
+		if _shots % 12 == 0:
+			var pl := _player() as Node3D
+			_event("warden.pressing", "%d volleys, phase=%d health=%d nodes=%d, %.1f m away, pitch %.0f"
+				% [_shots, phase, int(GameManager.snapshot.get("boss_health", 0)),
+					int(GameManager.snapshot.get("boss_nodes", 0)),
+					pl.global_position.distance_to((warden as Node3D).global_position)
+						if pl != null else -1.0,
+					rad_to_deg((pl.get_node_or_null("CameraPivot") as Node3D).rotation.x)
+						if pl != null and pl.get_node_or_null("CameraPivot") != null else 999.0])
 		if bool(_player().get("is_downed")):
 			_downs += 1
 			_event("player.downed", "during the Warden fight")
@@ -656,8 +667,17 @@ func _fight_the_warden() -> bool:
 
 	var final_phase := int(GameManager.snapshot.get("boss_phase", 0))
 	if final_phase != MissionRules.BOSS_DEAD:
-		_fail("the Warden was not killed within 180 s (phase=%d, health=%d)"
-			% [final_phase, int(GameManager.snapshot.get("boss_health", 0))])
+		# Say WHY. This reported "not killed within 180 s" on a fight that ended
+		# after 23 because the player was downed, which sent the reader looking
+		# for a damage bug instead of a survivability one.
+		var pl := _player()
+		var reason := "the 180 s limit ran out"
+		if pl != null and is_instance_valid(pl) and bool(pl.get("is_downed")):
+			reason = "the player was downed and, alone, could not be revived"
+		elif not is_instance_valid(warden):
+			reason = "the Warden node disappeared"
+		_fail("the Warden was not killed - %s (phase=%d, health=%d, %d volleys fired)"
+			% [reason, final_phase, int(GameManager.snapshot.get("boss_health", 0)), _shots])
 		return false
 	_event("warden.killed", "at %.1fs" % _now())
 	return true
@@ -753,6 +773,30 @@ func _aim_point(node: Node3D) -> Vector3:
 		if shape != null and shape.shape != null:
 			return shape.global_position
 	return node.global_position + Vector3(0.0, 0.9, 0.0)
+
+
+## Aim at a point in the world, yaw AND pitch.
+##
+## `_look_at_point` only turns the body. That is enough for walking, and it was
+## wrong for the boss: the Warden hovers 6.4 m above the temple floor, the fight
+## aimed with yaw alone, and every shot went under it. A fight the driver cannot
+## win looks exactly like a boss that cannot be killed.
+func _aim_at_point(target: Vector3) -> void:
+	await _look_at_point(target)
+	var player := _player() as Node3D
+	if player == null:
+		return
+	var pivot := player.get_node_or_null("CameraPivot") as Node3D
+	if pivot == null:
+		return
+	var sens: float = await _look_gain()
+	for _i in 12:
+		var to_target: Vector3 = target - pivot.global_position
+		var flat: float = Vector2(to_target.x, to_target.z).length()
+		var error: float = atan2(to_target.y, maxf(flat, 0.01)) - pivot.rotation.x
+		if absf(error) < deg_to_rad(1.0):
+			return
+		await _send_mouse(Vector2(0.0, clampf(-(error * 0.6) / sens, -400.0, 400.0)))
 
 
 ## Drive the camera pitch to look at a world point, then micro-scan around it

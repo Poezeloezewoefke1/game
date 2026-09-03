@@ -176,6 +176,8 @@ The flight is three host-clock states rendered identically on every peer;
 | 26ah | The boss enrages below the configured health fraction | [A] |
 | 26ai | Killing the Warden clears the way to extraction | [A] / [P] |
 | 26aj | A wipe during the fight fails the mission | [A] |
+| 26ak | **The Warden is sized to the crew, so one player can finish the game** | [A] `test_mission_rules` / [P] |
+| 26al | A player joining or leaving mid-fight does not resize the boss | [A] (crew recorded in the snapshot at spawn) |
 
 ## Nerava mission
 

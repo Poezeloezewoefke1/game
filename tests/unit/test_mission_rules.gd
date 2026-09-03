@@ -263,3 +263,44 @@ func test_disconnected_players_do_not_wedge_failure() -> void:
 	# standing player disconnects, the remaining downed players must fail.
 	check(MissionRules.should_fail({2: {"downed": true}}),
 		"the last standing player leaving completes the failure condition")
+
+
+# --- The Warden, sized to the crew ----------------------------------------
+
+## Pins the property that made the game unfinishable for one player: the boss
+## was tuned for four, and a solo crew reaches it with 100 health, no revive,
+## and 51 hits to land through a blaster that overheats after twelve. The
+## automated playtest broke every shield node, took the body to 525 of 900, and
+## went down - which alone ends the mission.
+##
+## What matters is not the exact numbers but the shape: strictly increasing with
+## crew size, exactly 1.0 at the full crew of four, never zero or negative, and
+## the same answer for a nonsense crew size as for a legal one, because a boss
+## that divides by a bad crew count is worse than one that is mistuned.
+func test_boss_scales_with_crew() -> void:
+	check_eq(MissionRules.boss_scale(4), 1.0, "a full crew fights the boss at full strength")
+	var previous := 0.0
+	for crew in [1, 2, 3, 4]:
+		var scale: float = MissionRules.boss_scale(crew)
+		check(scale > previous, "crew %d faces a bigger Warden than crew %d" % [crew, crew - 1])
+		check(scale > 0.0 and scale <= 1.0, "crew %d scale %.2f is in range" % [crew, scale])
+		previous = scale
+
+	# Out-of-range crew sizes clamp rather than misbehave. Nothing should ever
+	# pass 0 or 9 here, and if something does the fight must still be winnable.
+	check_eq(MissionRules.boss_scale(0), MissionRules.boss_scale(1), "crew 0 is treated as solo")
+	check_eq(MissionRules.boss_scale(-3), MissionRules.boss_scale(1), "a negative crew is treated as solo")
+	check_eq(MissionRules.boss_scale(9), MissionRules.boss_scale(4), "a crew above four clamps to four")
+
+
+func test_boss_volleys_come_slower_for_a_smaller_crew() -> void:
+	var solo: float = MissionRules.boss_volley_interval(1, false)
+	var full: float = MissionRules.boss_volley_interval(4, false)
+	check(solo > full, "a solo player gets longer between volleys (%.2f s vs %.2f s)" % [solo, full])
+	check_eq(full, GameConfig.BOSS_VOLLEY_INTERVAL,
+		"a full crew faces the configured volley interval unchanged")
+	check(MissionRules.boss_volley_interval(1, true) < solo,
+		"an enraged Warden still volleys faster than a calm one, at every crew size")
+	for crew in [1, 2, 3, 4]:
+		check(MissionRules.boss_volley_interval(crew, false) > 0.0,
+			"crew %d has a positive volley interval" % crew)

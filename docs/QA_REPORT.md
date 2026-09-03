@@ -325,6 +325,38 @@ full" are different bugs with different fixes.
 **Defects 52-59 were all found by this, in a build where 1468 assertions
 passed.** One of them, defect 58, made the game impossible to finish.
 
+### 13. What the mission actually costs, in seconds
+
+Taken from a complete solo run of the shipped build (`ci-logs/playtest-*.log`),
+driven by simulated input. These are the game's timings, not a human's: the
+driver walks optimal routes, never stops to look at anything, and reads no
+text. A person will be slower everywhere and much slower on a first run.
+
+| Beat | Elapsed | Cost |
+|---|---|---|
+| Menu, name, host, lobby, deck mounted | 0.7 s | - |
+| Course set at the nav console | 2.3 s | 1.6 s |
+| Three pre-flight stations worked | 10.7 s | 8.4 s |
+| Walk back, lever refuses (nobody seated) | 20.1 s | 9.4 s |
+| Seated in the pilot's chair | 21.1 s | 1.0 s |
+| Launch pulled from the chair | 22.5 s | 1.4 s |
+| Landed on Nerava | 41.1 s | 18.6 s of flight |
+| Temple clearing found | 46.6 s | 5.4 s |
+| Coupling fetched and fitted | 59.4 s | 12.8 s |
+| Ruins Crystal fetched and placed | 83.9 s | 24.5 s |
+| Cave Crystal fetched and placed | 102.2 s | 18.3 s |
+| Grove Crystal fetched and placed | 122.8 s | 20.6 s |
+| Star Map taken, the Warden wakes | 123.7 s | 0.9 s |
+
+Two things this measures that are hard to see any other way. The pre-flight act
+is **22 seconds** for one player - dense, not a trudge, and it parallelises
+across a crew of four. And the crystal hunt is **64 seconds of the 124**, split
+into three structurally identical round trips of roughly 20 s each: walk out,
+press E, walk back, press E. That repetition is the weakest shape in the
+mission, and it is exactly what the crystal locks exist to break up - but on
+Nerava only one of the three is locked, so two of those trips are plain fetches.
+See the recommendations.
+
 ---
 
 ## What was NOT executed
@@ -412,6 +444,7 @@ are recorded because they are the reason the test suite looks the way it does.
 | 57 | **A ruin pillar stood in the only route back from the coupling socket** | The automated playtest walked the errand and was stopped dead at (12.4, 0, 2.5), pressed against `D21_ruin_pillar` | Same class as defect 36, and the reason the corridor gate had to grow again: the earlier check swept only the corridor's centre-line, and a player returning from an objective cuts the corner rather than walking down the middle. The gate now sweeps three lanes (x = -2.5, 0, +2.5) and fails if ANY of them is blocked; `D20_ruin_pillar`, `D21_ruin_pillar` and `GroveTree1` were moved clear |
 | 58 | **The ship could not be launched by playing the game** | The automated playtest's own source: it launched by calling `GameManager.host_begin_launch()` directly, with a comment saying the lever was out of reach from the seat. That is not a note about the harness, it is the bug report | The launch lever refuses while any crew member is standing, and it stood at (6.4, 0, -16.4) - 3.90 m from the nearest chair and 168 degrees round from it, against a 3.2 m interact ray and a 105 degree seated swivel. Measured from all four seats: every one out of reach, so no crew of any size could ever leave. The launch control now sits on the pilot's console 2.4 m dead ahead of `CrewSeat1`, that seat is flagged `is_pilot_seat`, and the other bridge seats tell the host which chair has the control. `test_level_reachability` now asserts the lever is inside both the ray and the swivel limit from the pilot's seat, and the playtest pulls it from the chair instead of reaching past it |
 | 59 | **A 5 m rock stood four metres in front of a spawn point, across the line to the objective** | The playtest walked into `CanyonSpire1` on one run and past it on the next | The spawn-exit gate swept straight -Z and the capsule cleared the rock's corner by 0.1 m, so it passed. A player does not leave a landing pad on a laser line: the gate now sweeps spawn -> temple clearing at three lateral offsets 0.9 m apart, and both canyon spires were moved clear |
+| 60 | **A solo player could not finish the game: the Warden was tuned for four** | The automated playtest reached the boss alone, broke all three shield nodes, took the body from 900 to 525 - and was downed, which with nobody to revive you is the end of the mission | The README offers 1-4 players and the fight assumed 4. Solo you arrive with 100 health, face a three-projectile volley every 2.6 s, and have to land 51 hits through a blaster that overheats after twelve. The Warden is now sized to the crew that woke it (`MissionRules.boss_scale`): health and shield-node health scale down and volleys come further apart for a smaller crew, recorded in the snapshot at spawn so a join or a disconnect cannot resize the boss mid-fight. Nothing is removed - a solo player still has to break all three nodes before the body can be hurt. Pinned by `test_mission_rules`, which asserts the shape (strictly increasing, exactly 1.0 at four, clamped for nonsense inputs) rather than the numbers |
 
 ---
 
@@ -433,6 +466,79 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I8 | Any prompt counted as being aimed at the target | On a bridge with four chairs in a row the driver stopped 3 m short with the ray on the chair NEXT to the one it wanted, and reported arrival | Both the approach loop and the aim scan tested `prompt != ""`. They now test that the interact ray is latched onto the object being used |
 | I9 | Fixing I7 sent the camera to the OTHER clamp | Every station prompt appeared, then the press missed with pitch pinned at +65 and the ray on the ceiling | `Input.parse_input_event` is handled in `_unhandled_input`, which runs on the IDLE frame; reading `rotation.x` back after only a physics frame returns the old pitch, so an open-loop nudge applies its full correction twice. The setter is now closed-loop over both frames, which makes the staleness harmless rather than fatal |
 | I10 | **The driver's model of mouse sensitivity was wrong by a factor of twenty** | The root cause under I7 and I9. A probe that sent a known nudge to the real player and measured the result: 2 px moved the camera 5.04 degrees, 5 px moved it 12.61, 20 px moved it 50.42 - dead linear at 2.52 deg/px, against the 0.126 deg/px the sensitivity constant implies | Every correction was computed as `-error / MOUSE_SENSITIVITY` and then applied twenty times too hard, so the closed loop had a gain of 20 and oscillated into whichever clamp it was heading for. The header had always claimed the steering was closed-loop so that a sensitivity change could not invalidate it; the STEP SIZE was still computed from the constant, which is the half of it that was open loop. The driver now measures radians-per-pixel against the live player at the start of a run and uses that, and takes 60% of each correction so a measurement error cannot turn the loop into an oscillator |
+| I11 | The boss fight aimed with yaw only | The Warden woke, the driver fired for a minute, and its health never moved off 900 | The Warden hovers 6.4 m above the temple floor and the fight steered with `_look_at_point`, which turns the body and not the head, so every shot went under it. A fight the driver cannot win is indistinguishable from a boss that cannot be killed. The fight now aims in three dimensions, and reports its own progress every twelve volleys - phase, health, nodes left, range and pitch - so a stall says why before the deadline rather than after it |
+
+## Design observations from the measured runs
+
+These are judgements, not measurements, and they are separated from the rest of
+this document for that reason. Each names the evidence it rests on. Nobody has
+played this game - see VERIFY-008 in `docs/KNOWN_LIMITATIONS.md` - so treat
+these as hypotheses for the first human playtest, not as findings.
+
+**The pre-flight act is the right length.** 22 seconds solo for a course, three
+stations, a refused lever, a seat and a launch. It has a shape - set up, be
+told no, fix the reason, go - and the refusal is what gives it one. With a crew
+of four the four tasks parallelise, so it gets shorter rather than longer with
+more players, which is the correct direction for a co-op opening.
+
+**The crystal hunt is the weakest part, and the fix already exists.** 64 of the
+124 seconds to the boss are three structurally identical round trips: walk out,
+press E, walk back, press E. The crystal locks - a coupling to fetch, a guard
+to kill, a hazard to shut off - are exactly the mechanism that breaks that
+repetition, and `MissionRules` already supports all three on any mission. But
+Nerava, the mission every player sees first, applies only the coupling, so two
+of its three trips are plain fetches. The first mission is the one that decides
+whether a player keeps going.
+
+**The coupling errand is the most interesting thing in the mission** because it
+is the only one with a constraint: it fills the same single inventory slot a
+crystal does, so it cannot be combined with anything. That is a real decision
+in a four-player crew - who breaks off - and it costs one player 13 seconds.
+
+**The Warden's numbers are tuned for a crew, not for one player.** 900 health
+plus three 120-health shield nodes, against a blaster doing 25 a shot on a 0.22
+s cadence that overheats after about twelve shots, is 51 hits and roughly 25
+seconds of trigger time even before dodging. Solo, under a three-projectile
+volley every 2.6 seconds, that is a long time to stay alive with 100 health and
+nobody to revive you. Nothing scales the boss to crew size.
+
+## Recommendations
+
+Ranked by what the evidence supports, with the reasoning stated so a designer
+can disagree with it on the merits.
+
+**1. Put a second lock on Nerava.** `MissionRules.locked_crystals` gives Nerava
+only the coupling, with the comment "Nerava is the tutorial", which is a real
+reason. But the measured consequence is that the first mission any player sees
+is one interesting errand followed by two identical fetch-and-carry trips, and
+the first mission is the one that decides whether they play a second. The
+`LOCK_GUARD` shape already exists, the level already has a `GuardianAnchor`,
+and the Sentinel already works. Putting the guard on the Ruins Crystal would
+leave exactly one plain fetch, which is enough to teach the base move.
+NOT DONE: this changes first-run difficulty, and it is a design call rather
+than a defect.
+
+**2. Give the crystal trips different shapes, not just different locks.** All
+three run out and back along a corridor at about 20 s each. The locks vary what
+you do at the far end; they do not vary the journey. The one that already reads
+differently is the coupling, because it makes you give up your inventory slot -
+a constraint that follows you the whole way rather than sitting at the
+destination.
+
+**3. Scale the Sentinel to crew size too.** The Warden now does this (defect
+60), and the Sentinel that guards a crystal on Cinder and Hallow does not:
+`GUARD_HITS_TO_KILL` is a flat 14. The same argument applies, and the mechanism
+is already written.
+
+**4. Say what the pre-flight tasks are before the player has walked the deck.**
+The objective line reads "Ready the ship for launch." and the checklist lives
+in the HUD, which is correct, but a first-time player learns the deck by
+walking all 41 m of it. A one-line hint naming the four stations would cost
+nothing and save the least patient player their first minute.
+
+**5. Nobody has heard the game or seen it in motion at a real frame rate.** The
+gap that everything above is written around. See VERIFY-002, VERIFY-007 and
+VERIFY-008 in `docs/KNOWN_LIMITATIONS.md`.
 
 ## Open defects
 

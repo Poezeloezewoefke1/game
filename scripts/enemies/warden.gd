@@ -65,14 +65,34 @@ func _ready() -> void:
 	PropBuilder.build_warden(self, _hull, _eye, _shield, _ring)
 	_configure_replication()
 	if _is_host():
+		# Sized to the crew, like the body's health. See MissionRules.boss_scale:
+		# a solo player still has to break all three nodes, they are just not
+		# four players' worth of health each.
 		_node_health.resize(3)
-		_node_health.fill(GameConfig.BOSS_SHIELD_NODE_HEALTH)
+		_node_health.fill(int(round(
+			float(GameConfig.BOSS_SHIELD_NODE_HEALTH) * _crew_scale())))
+		sync_health = int(GameManager.snapshot.get("boss_health", GameConfig.BOSS_MAX_HEALTH))
 		global_position = spawn_position
 		sync_position = spawn_position
 		_publish_to_snapshot()
 	else:
 		global_position = sync_position
 	_refresh_visuals()
+
+
+## The crew this fight was sized for, recorded in the snapshot when the Warden
+## woke so that a player joining or leaving mid-fight cannot resize the boss
+## underneath everyone.
+func _crew() -> int:
+	return maxi(int(GameManager.snapshot.get("boss_crew", 1)), 1)
+
+
+func _crew_scale() -> float:
+	return MissionRules.boss_scale(_crew())
+
+
+func _scaled_max_health() -> float:
+	return float(GameConfig.BOSS_MAX_HEALTH) * _crew_scale()
 
 
 func _configure_replication() -> void:
@@ -179,8 +199,8 @@ func _host_fire(delta: float) -> void:
 	_volley_timer -= delta
 	if _volley_timer > 0.0 or _target == null or not is_instance_valid(_target):
 		return
-	_volley_timer = GameConfig.BOSS_ENRAGED_VOLLEY_INTERVAL \
-		if sync_phase == MissionRules.BOSS_ENRAGED else GameConfig.BOSS_VOLLEY_INTERVAL
+	_volley_timer = MissionRules.boss_volley_interval(
+		_crew(), sync_phase == MissionRules.BOSS_ENRAGED)
 	var origin: Vector3 = _muzzle.global_position
 	var aim: Vector3 = (_target.global_position + Vector3(0.0, 1.0, 0.0) - origin).normalized()
 	# A spread rather than a single shot: one projectile is dodgeable by walking,
@@ -264,7 +284,7 @@ func _alive_node_count() -> int:
 
 
 func _host_update_phase() -> void:
-	var fraction := float(sync_health) / float(GameConfig.BOSS_MAX_HEALTH)
+	var fraction := health_fraction()
 	var next := MissionRules.boss_phase_for(fraction, _alive_node_count())
 	if next != sync_phase:
 		sync_phase = next
@@ -314,4 +334,4 @@ func _refresh_visuals() -> void:
 
 
 func health_fraction() -> float:
-	return float(sync_health) / float(GameConfig.BOSS_MAX_HEALTH)
+	return float(sync_health) / maxf(_scaled_max_health(), 1.0)
