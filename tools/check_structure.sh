@@ -21,6 +21,7 @@ echo "== required files =="
 for f in project.godot export_presets.cfg main.tscn main.gd .gitignore LICENSE README.md CHANGELOG.md \
          tests/run_tests.gd tests/test_runner.tscn \
          tools/run_validation.sh tools/run_multiplayer_check.sh tools/check_structure.sh \
+         tools/run_playtest.sh tools/playtest.gd tools/playtest.tscn \
          .github/PULL_REQUEST_TEMPLATE.md \
          .github/ISSUE_TEMPLATE/bug_report.md .github/ISSUE_TEMPLATE/task.md \
          .github/workflows/validate.yml .github/workflows/build-windows.yml \

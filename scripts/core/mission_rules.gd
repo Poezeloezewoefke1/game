@@ -227,6 +227,7 @@ static func fresh_snapshot(epoch: int, mission_id: String = "",
 		"crystal_locks": locked_crystals(mid),   # crystal_id -> lock kind
 		"hazard_online": MissionCatalog.hazard(mid) != MissionCatalog.HAZARD_NONE,
 		"guards_down": [],             # crystal_id whose guard has been killed
+		"coupling_taken": false,       # the power coupling has left its cradle
 		# --- boss ---------------------------------------------------------
 		"boss_phase": BOSS_ASLEEP,
 		"boss_health": 0,
@@ -293,6 +294,12 @@ static func can_pick_up_crystal(snap: Dictionary, peer_id: int, crystal_id: Stri
 	var in_world: Array = snap.get("crystals_in_world", [])
 	if not in_world.has(crystal_id):
 		return _deny("crystal_not_available")
+	# The lock is checked HERE, in the authoritative gate, not in the crystal's
+	# own can_interact(). A client that patched its prompt to say the crystal is
+	# free would still be refused by the host.
+	var lock := crystal_lock(snap, crystal_id)
+	if lock != "":
+		return _deny("crystal_locked_" + lock)
 	var carried: Dictionary = snap.get("crystals_carried", {})
 	if carried.has(peer_id):
 		return _deny("inventory_full")
@@ -524,6 +531,30 @@ static func crystal_lock(snap: Dictionary, crystal_id: String) -> String:
 
 
 ## Fitting the power coupling clears the coupling lock on that crystal.
+## Picking the coupling up. It takes the one inventory slot, which is the whole
+## cost of the fetch: you cannot carry a crystal and the coupling at once.
+static func can_take_coupling(snap: Dictionary, peer_id: int, actor: Dictionary) -> Dictionary:
+	var gate := actor_can_act(actor)
+	if not bool(gate["ok"]):
+		return gate
+	if not is_surface_state(int(snap.get("state", -1))):
+		return _deny("wrong_mission_state")
+	var carried: Dictionary = snap.get("crystals_carried", {})
+	if carried.has(peer_id):
+		return _deny("inventory_full")
+	if bool(snap.get("coupling_taken", false)):
+		return _deny("coupling_already_taken")
+	# Nothing to fetch it for: every coupling lock on this mission is cleared.
+	var locks: Dictionary = snap.get("crystal_locks", {})
+	var needed := false
+	for cid in locks:
+		if crystal_lock(snap, String(cid)) == LOCK_COUPLING:
+			needed = true
+	if not needed:
+		return _deny("nothing_needs_a_coupling")
+	return _allow()
+
+
 static func can_fit_coupling(snap: Dictionary, peer_id: int, crystal_id: String,
 		actor: Dictionary) -> Dictionary:
 	var gate := actor_can_act(actor)

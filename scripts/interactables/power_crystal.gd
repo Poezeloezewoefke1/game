@@ -78,11 +78,22 @@ func get_interaction_prompt(player: Node) -> String:
 		return "Inventory Full - Place Your Current Crystal First"
 	if player != null and bool(player.get("is_downed")):
 		return ""
-	return "Press E to Pick Up Crystal"
+	# A crystal you cannot take has to say WHY, and say what to do about it.
+	# "Press E" on something that then refuses is the worst version of this.
+	match MissionRules.crystal_lock(GameManager.snapshot, crystal_id):
+		MissionRules.LOCK_COUPLING:
+			return "Sealed - fit the Power Coupling to the socket"
+		MissionRules.LOCK_GUARD:
+			return "Guarded - destroy the Sentinel"
+		MissionRules.LOCK_HAZARD:
+			return "Too hot to approach - seal the vent"
+	return "Press E to Pick Up %s" % MissionCatalog.crystal_label(
+		String(GameManager.snapshot.get("mission_id", "")), crystal_id)
 
 
 func can_interact(player: Node) -> bool:
 	return GameManager.is_crystal_in_world(crystal_id) \
+		and MissionRules.crystal_lock(GameManager.snapshot, crystal_id) == "" \
 		and GameManager.carried_crystal_of(NetworkManager.local_peer_id()).is_empty() \
 		and player != null and not bool(player.get("is_downed"))
 

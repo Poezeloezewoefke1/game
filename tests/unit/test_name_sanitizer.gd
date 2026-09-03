@@ -64,3 +64,21 @@ func test_is_acceptable_matches_sanitize() -> void:
 	check_false(NameSanitizer.is_acceptable(""), "an empty name is not acceptable")
 	check_false(NameSanitizer.is_acceptable("a"), "a one-character name is not acceptable")
 	check_false(NameSanitizer.is_acceptable("Nova" + String.chr(0x202E)), "a spoofing name is not acceptable")
+
+
+## The shipped defaults have to be usable without editing anything.
+##
+## A brand-new install prefills the menu's name field from
+## SettingsManager.display_name and the Host button refuses a name the sanitizer
+## rejects. When that default was "", the first press of the primary button on
+## the primary screen failed - so the default is now part of the contract.
+func test_the_default_display_name_can_host() -> void:
+	var default_name: String = SettingsManager.display_name
+	check(not default_name.is_empty(), "the shipped default display name is not empty")
+	var safe := NameSanitizer.sanitize(default_name, 0)
+	check(not safe.is_empty(),
+		"the shipped default survives sanitising (got '%s' from '%s')" % [safe, default_name])
+	check(safe.length() >= GameConfig.NAME_MIN_LENGTH,
+		"the shipped default is at least NAME_MIN_LENGTH")
+	check(safe.length() <= GameConfig.NAME_MAX_LENGTH,
+		"the shipped default is at most NAME_MAX_LENGTH")

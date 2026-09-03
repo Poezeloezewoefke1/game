@@ -93,7 +93,37 @@ func _process(_delta: float) -> void:
 		_prompt.text = String(player.hovered_prompt())
 
 	var carried := GameManager.carried_crystal_of(me)
-	_crystal_label.text = "Crystal: %s" % (_pretty_crystal(carried) if not carried.is_empty() else "none")
+	_crystal_label.text = "Carrying: %s" % (_pretty_carried(carried) if not carried.is_empty() else "nothing")
+
+	# Aboard the ship the Star Map line is meaningless and the checklist is the
+	# only thing that matters, so the same row does both jobs rather than adding
+	# a panel that is empty for most of the mission.
+	if MissionRules.is_ship_state(GameManager.mission_state()):
+		var remaining: Array = MissionRules.ship_tasks_remaining(GameManager.snapshot)
+		var destination := String(GameManager.snapshot.get("mission_id", ""))
+		_crystal_label.text = "Course: %s" % MissionCatalog.display_name(destination)
+		if remaining.is_empty():
+			_starmap_label.text = "All stations green - take your seat"
+		else:
+			_starmap_label.text = "Next: %s (%d left)" % [
+				GameConfig.SHIP_TASK_LABELS.get(remaining[0], remaining[0]),
+				remaining.size()]
+		_refresh_team(me)
+		return
+	if GameManager.mission_state() == MissionRules.MissionState.BOSS_FIGHT:
+		var phase := int(GameManager.snapshot.get("boss_phase", 0))
+		var nodes := int(GameManager.snapshot.get("boss_nodes", 0))
+		var hp := int(GameManager.snapshot.get("boss_health", 0))
+		if phase == MissionRules.BOSS_SHIELDED:
+			_starmap_label.text = "WARDEN SHIELDED - %d nodes left" % nodes
+		elif phase == MissionRules.BOSS_DEAD:
+			_starmap_label.text = "WARDEN DOWN"
+		else:
+			_starmap_label.text = "WARDEN %d%%%s" % [
+				int(float(hp) / float(GameConfig.BOSS_MAX_HEALTH) * 100.0),
+				"  ENRAGED" if phase == MissionRules.BOSS_ENRAGED else ""]
+		_refresh_team(me)
+		return
 
 	var map_state := GameManager.star_map_state()
 	var carrier := GameManager.star_map_carrier()
@@ -159,12 +189,13 @@ func _on_snapshot_changed(_snap: Dictionary) -> void:
 	_objective.text = GameManager.objective_text()
 
 
-static func _pretty_crystal(id: String) -> String:
-	match id:
-		GameConfig.CRYSTAL_RUINS: return "Ruins Crystal"
-		GameConfig.CRYSTAL_CAVE: return "Cave Crystal"
-		GameConfig.CRYSTAL_GROVE: return "Grove Crystal"
-		_: return id
+## What is in the one inventory slot. The crystal names are per-mission now, and
+## the slot can also hold the power coupling, which is not a crystal at all.
+static func _pretty_carried(id: String) -> String:
+	if id == GameConfig.ITEM_COUPLING:
+		return "Power Coupling"
+	return MissionCatalog.crystal_label(
+		String(GameManager.snapshot.get("mission_id", "")), id)
 
 
 ## A bar you have to read the number off is a bar that failed. Green through
@@ -248,7 +279,7 @@ func preview_state() -> void:
 	_tint_health(0.67)
 	_tint_heat(0.74, false)
 
-	_crystal_label.text = "CARRYING: Cave Crystal"
+	_crystal_label.text = "Carrying: Cave Crystal"
 	_starmap_label.text = "STAR MAP: LOCKED"
 	_net_label.text = "42 ms"
 

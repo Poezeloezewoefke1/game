@@ -4,8 +4,9 @@ name: Validate
 # multi-process multiplayer check.
 #
 # What this workflow CAN prove: the project imports, every script compiles,
-# every scene instantiates, the automated tests pass, and a host plus three
-# clients complete a session over real ENet.
+# every scene instantiates, the automated tests pass, a host plus three clients
+# complete a session over real ENet, and one player can walk the whole game
+# from the main menu to extraction using nothing but simulated input.
 # What it CANNOT prove: that the game looks or feels right, or that a Windows
 # build launches. Those stay manual - see docs/TEST_CHECKLIST.md.
 
@@ -80,6 +81,18 @@ jobs:
 
       - name: Multi-process multiplayer check
         run: tools/run_multiplayer_check.sh "${GODOT_BIN}" 7700 3
+
+      # The only check here that asks whether the game can be PLAYED. Everything
+      # above drives the game through its own API, which proves the rules are
+      # right and says nothing about whether a player can walk to the thing the
+      # rules are about. This boots the shipped shell and moves a player with
+      # Input.action_press() and a synthetic mouse, start to finish. It has
+      # already caught a prop standing in the only route back from an objective,
+      # a swallowed first press of E, and an interact ray that reported nothing
+      # while the player stood inside the console - none of which the 1470
+      # assertions above could see.
+      - name: Automated playtest (simulated keyboard and mouse)
+        run: tools/run_playtest.sh "${GODOT_BIN}" cautious
 
       - name: Upload logs
         # Logs are most valuable exactly when something failed.

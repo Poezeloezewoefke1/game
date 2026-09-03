@@ -34,6 +34,9 @@ const PEDESTAL_FOR_CRYSTAL := {
 	"crystal_cave": "nerava_pedestal_b",
 	"crystal_grove": "nerava_pedestal_c",
 }
+## The coupling and the socket that unseals the cave crystal.
+const COUPLING_SPOT := Vector3(-4, 0, 24)
+const SOCKET_SPOT := Vector3(34, 0, -3)
 const ALTAR_SPOT := Vector3(0, 0, 1)
 const DROP_POD_SPOT := Vector3(0, 0, 43)
 
@@ -55,6 +58,7 @@ func run_async() -> void:
 	await _phase_preflight()
 	await _phase_descent()
 	await _phase_temple()
+	await _phase_coupling()
 	await _phase_crystals()
 	await _phase_altar()
 	await _phase_boss()
@@ -186,6 +190,57 @@ func _phase_temple() -> void:
 	check(await _session.await_mission_state(MS.FIND_CRYSTALS, 5.0),
 		"walking into the clearing discovers the Temple")
 	check(bool(GameManager.snapshot.get("temple_discovered", false)), "the snapshot records the discovery")
+
+
+## The coupling lock, end to end: the cave crystal is sealed, the coupling is
+## across the map, it takes the one inventory slot, and fitting it opens the
+## seal. Everything goes through request_interact, so the host's own gate is
+## what refuses the early attempts - not the prompt.
+func _phase_coupling() -> void:
+	set_current("coupling")
+	check_eq(MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_CAVE),
+		MissionRules.LOCK_COUPLING, "the cave crystal starts sealed")
+
+	# Taking it while sealed must be refused by the host.
+	await _session.move_host_player_to(CRYSTAL_SPOTS["nerava_crystal_cave"])
+	GameManager.request_interact("nerava_crystal_cave")
+	await tree.process_frame
+	check_eq(GameManager.carried_crystal_of(GameConfig.HOST_PEER_ID), "",
+		"a sealed crystal cannot be taken")
+	check(GameManager.is_crystal_in_world(GameConfig.CRYSTAL_CAVE),
+		"and it stays in the world")
+
+	# Fitting nothing must be refused too.
+	await _session.move_host_player_to(SOCKET_SPOT)
+	GameManager.request_interact("nerava_coupling_socket")
+	await tree.process_frame
+	check_eq(MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_CAVE),
+		MissionRules.LOCK_COUPLING, "the socket refuses an empty hand")
+
+	# Fetch it.
+	await _session.move_host_player_to(COUPLING_SPOT)
+	GameManager.request_interact("nerava_power_coupling")
+	await tree.process_frame
+	check_eq(GameManager.carried_crystal_of(GameConfig.HOST_PEER_ID),
+		GameConfig.ITEM_COUPLING, "the coupling is carried")
+	check(bool(GameManager.snapshot.get("coupling_taken", false)),
+		"the snapshot records the coupling as lifted")
+
+	# It occupies the crystal slot: a crystal cannot be picked up while holding it.
+	await _session.move_host_player_to(CRYSTAL_SPOTS["nerava_crystal_ruins"])
+	GameManager.request_interact("nerava_crystal_ruins")
+	await tree.process_frame
+	check_eq(GameManager.carried_crystal_of(GameConfig.HOST_PEER_ID),
+		GameConfig.ITEM_COUPLING, "the coupling blocks the inventory slot")
+
+	# Fit it, and the seal opens.
+	await _session.move_host_player_to(SOCKET_SPOT)
+	GameManager.request_interact("nerava_coupling_socket")
+	await tree.process_frame
+	check_eq(MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_CAVE), "",
+		"fitting the coupling unseals the cave crystal")
+	check_eq(GameManager.carried_crystal_of(GameConfig.HOST_PEER_ID), "",
+		"fitting the coupling empties the hands again")
 
 
 func _phase_crystals() -> void:

@@ -9,7 +9,15 @@ extends Node
 const SETTINGS_PATH: String = "user://settings.cfg"
 const SECTION: String = "player"
 
-var display_name: String = ""
+## The name a brand-new install starts with.
+##
+## This used to be "". The main menu prefills the name field from it and the
+## Host button refuses an empty name, so the very first thing a first-time
+## player does - press the big button - failed with an error. The error was
+## correct and specific, but making the primary action of the primary screen
+## fail on first press is not a good opening move. A valid default means Host
+## works immediately and renaming stays entirely optional.
+var display_name: String = "Explorer"
 ## The name this machine advertises when hosting on a LAN.
 var session_name: String = ""
 var last_host_address: String = "127.0.0.1"

@@ -647,3 +647,82 @@ static func build_warden(root: Node3D, hull: MeshInstance3D, eye: MeshInstance3D
 		ModelKit.emissive(ring, MeshFactory.beveled_box(Vector3(0.07, 0.07, 4.0), 0.02),
 			Vector3(sin(a) * 2.2, 0.4, cos(a) * 2.2), Color(0.3, 0.7, 1.0), 0.9,
 			Vector3(0.0, rad_to_deg(a), 0.0))
+
+
+## The power coupling in its cradle: a heavy plug with contact pins and a handle.
+## The pins are what say "this goes into something" rather than "this is a box".
+static func build_power_coupling(root: Node3D, cradle: MeshInstance3D,
+		part: MeshInstance3D) -> void:
+	cradle.mesh = MeshFactory.beveled_box(Vector3(1.10, 0.30, 0.86), 0.05)
+	cradle.position = Vector3(0.0, 0.15, 0.0)
+	ModelKit.set_albedo(cradle, METAL_DARK)
+
+	part.mesh = MeshFactory.beveled_box(Vector3(0.52, 0.44, 0.40), 0.06)
+	part.position = Vector3(0.0, 0.52, 0.0)
+	ModelKit.set_albedo(part, Color(0.72, 0.58, 0.22))
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(1.24, 0.10, 0.98), 0.03),
+		Vector3(0.0, 0.05, 0.0), METAL, 0.7, 0.4)
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.09, 0.34, 0.09), 0.02),
+			Vector3(sx * 0.5, 0.30, 0.0), TRIM, 0.8, 0.3)
+	# Three contact pins on the underside, and a carry handle over the top.
+	for i in 3:
+		ModelKit.part(root, MeshFactory.tube(0.16, 0.045, 0.028, 8),
+			Vector3(-0.14 + i * 0.14, 0.34, 0.0), TRIM, 0.85, 0.25)
+	ModelKit.part(root, MeshFactory.torus(0.17, 0.035, 10, 6),
+		Vector3(0.0, 0.80, 0.0), METAL_DARK, 0.6, 0.45, Vector3(0.0, 90.0, 0.0))
+
+
+## The socket the coupling goes into: a housing, a recessed slot, and a status
+## bar that is red until it is fed.
+static func build_coupling_socket(root: Node3D, housing: MeshInstance3D,
+		slot: MeshInstance3D) -> void:
+	housing.mesh = MeshFactory.beveled_box(Vector3(1.20, 1.60, 0.70), 0.06)
+	housing.position = Vector3(0.0, 0.80, 0.0)
+	ModelKit.set_albedo(housing, STONE_DARK)
+
+	slot.mesh = MeshFactory.beveled_box(Vector3(0.56, 0.48, 0.06), 0.02)
+	slot.position = Vector3(0.0, 1.02, -0.34)
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(1.44, 0.16, 0.94), 0.04),
+		Vector3(0.0, 0.08, 0.0), STONE, 0.1, 0.85)
+	# A recessed frame around the slot, so it reads as a hole rather than a
+	# panel stuck to the front.
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.72, 0.64, 0.10), 0.02),
+		Vector3(0.0, 1.02, -0.30), METAL_DARK, 0.6, 0.4)
+	for sx in [-1.0, 1.0]:
+		ModelKit.part(root, MeshFactory.tube(1.30, 0.09, 0.06, 8),
+			Vector3(sx * 0.52, 0.80, -0.10), METAL, 0.75, 0.35)
+	# Conduit running away into the ground: the socket powers something.
+	ModelKit.part(root, MeshFactory.tube(1.80, 0.10, 0.07, 8),
+		Vector3(0.0, 0.14, 0.70), METAL, 0.7, 0.4, Vector3(90.0, 0.0, 0.0))
+
+
+## The vent valve: a wheel on a stack, with hazard striping.
+static func build_hazard_control(root: Node3D, housing: MeshInstance3D,
+		wheel: MeshInstance3D) -> void:
+	housing.mesh = MeshFactory.beveled_box(Vector3(1.00, 1.30, 0.80), 0.05)
+	housing.position = Vector3(0.0, 0.65, 0.0)
+	ModelKit.set_albedo(housing, METAL_DARK)
+
+	wheel.mesh = MeshFactory.torus(0.34, 0.06, 14, 6)
+	wheel.position = Vector3(0.0, 1.20, -0.40)
+	wheel.rotation_degrees = Vector3(0.0, 0.0, 0.0)
+
+	ModelKit.part(root, MeshFactory.beveled_box(Vector3(1.24, 0.12, 1.04), 0.03),
+		Vector3(0.0, 0.06, 0.0), METAL, 0.7, 0.4)
+	# Spokes, so the wheel is a wheel and not a ring floating in the air.
+	for i in 4:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.05, 0.62, 0.05), 0.012),
+			Vector3(0.0, 1.20, -0.40), TRIM, 0.8, 0.3,
+			Vector3(0.0, 0.0, 45.0 + i * 45.0))
+	ModelKit.part(root, MeshFactory.tube(0.30, 0.09, 0.05, 8),
+		Vector3(0.0, 1.20, -0.30), TRIM, 0.85, 0.25, Vector3(90.0, 0.0, 0.0))
+	# A stack venting upwards, and stripes on the housing.
+	ModelKit.part(root, MeshFactory.tube(2.20, 0.24, 0.17, 10),
+		Vector3(0.0, 2.10, 0.22), METAL, 0.7, 0.42)
+	for i in 3:
+		ModelKit.part(root, MeshFactory.beveled_box(Vector3(0.15, 0.36, 0.02), 0.006),
+			Vector3(-0.28 + i * 0.28, 0.34, -0.41), Color(0.86, 0.62, 0.16), 0.2, 0.7,
+			Vector3(0.0, 0.0, 24.0))

@@ -28,7 +28,17 @@ const CRYSTAL_FOR_SLOT := [
 ## somewhere unpredictable.
 const ROUTE_FOR_SLOT := [
 	[Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4), Vector3(-10, 0, 0), Vector3(-42, 0, 0)],
-	[Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4), Vector3(10, 0, 0), Vector3(42, 0, 0)],
+	# The cave crystal is SEALED. Slot 1 collects the power coupling in the
+	# canyon on its way past and fits it at the socket in the cave mouth, so the
+	# lock is exercised across real processes and not only in-process by
+	# test_mission_flow. Nerava is the tutorial: its coupling sits ON the route
+	# everyone already walks. Cinder and Hallow put theirs on the far side of
+	# the map, which is where the errand is meant to cost something.
+	# The dog-leg to z = -3 clears the cave stalagmite at (28, 1.2, 3), which the
+	# straight line walked into: the probe WALKS, so a prop in the way stops it
+	# short of its target and the interaction is refused for being out of range.
+	[Vector3(0, 0, 34), Vector3(-5, 0, 25), Vector3(0, 0, 14), Vector3(0, 0, 4),
+		Vector3(14, 0, 0), Vector3(24, 0, -2), Vector3(34, 0, -3), Vector3(42, 0, 0)],
 	[Vector3(0, 0, 30), Vector3(0, 0, 14), Vector3(0, 0, 4), Vector3(0, 0, -18), Vector3(0, 0, -42)],
 ]
 
@@ -161,9 +171,14 @@ func _run_host() -> void:
 		return
 
 	# Wait for the clients to run their scripted actions.
+	# 90 s, not 45: slot 1's route now detours the length of the grove corridor
+	# for the power coupling and back to the cave. The host used to finish its
+	# own script and shut the session down while that client was still walking,
+	# which failed three of the client's assertions for a reason that had
+	# nothing to do with what they were testing.
 	var expected := mini(expect_peers, CRYSTAL_FOR_SLOT.size())
 	var picked: bool = await _until(func() -> bool:
-		return _carried_count() >= expected, 45.0)
+		return _carried_count() >= expected, 90.0)
 	_report("clients picked up %d crystals through host validation" % expected, picked,
 		"carried=%d" % _carried_count())
 
@@ -173,6 +188,8 @@ func _run_host() -> void:
 	var duplicated := false
 	for peer_id in carried:
 		var cid := String(carried[peer_id])
+		if cid == GameConfig.ITEM_COUPLING:
+			continue
 		if distinct.has(cid):
 			duplicated = true
 		distinct[cid] = true
@@ -212,9 +229,16 @@ func _run_host() -> void:
 	await _sleep(0.5)
 
 
+## Real CRYSTALS in crew hands. The power coupling shares the same inventory
+## slot, so counting the dictionary's size counted the coupling as a crystal and
+## let the host's "clients picked up N crystals" pass for the wrong reason.
 func _carried_count() -> int:
 	var carried: Dictionary = GameManager.snapshot.get("crystals_carried", {})
-	return carried.size()
+	var n := 0
+	for peer_id in carried:
+		if GameConfig.ALL_CRYSTAL_IDS.has(String(carried[peer_id])):
+			n += 1
+	return n
 
 
 # ==========================================================================
@@ -299,10 +323,29 @@ func _run_client() -> void:
 	# this is legitimate movement - and it follows the authored corridors in
 	# plausible steps, because the host rejects teleporting (see the anti-cheat
 	# probe below) and walls would otherwise displace the character body.
-	for waypoint in route:
-		await _walk_to(SpawnManager.player_node(me), waypoint)
+	for i in route.size():
+		await _walk_to(SpawnManager.player_node(me), route[i])
+		# On the coupling leg, stop and do the errand. Indices rather than
+		# positions, so moving a waypoint cannot silently skip the pickup.
+		if crystal_id == GameConfig.CRYSTAL_CAVE:
+			if i == 1:
+				_report("a sealed crystal is refused even in range",
+					GameManager.carried_crystal_of(me).is_empty())
+				GameManager.request_interact("nerava_power_coupling")
+				var lifted: bool = await _until(func() -> bool:
+					return GameManager.carried_crystal_of(me) == GameConfig.ITEM_COUPLING, 12.0)
+				_report("a client can take the power coupling", lifted,
+					"carrying='%s'" % GameManager.carried_crystal_of(me))
+			elif i == 6:
+				GameManager.request_interact("nerava_coupling_socket")
+				var fitted: bool = await _until(func() -> bool:
+					return MissionRules.crystal_lock(
+						GameManager.snapshot, GameConfig.CRYSTAL_CAVE) == "", 12.0)
+				_report("fitting the coupling unseals the crystal for everyone", fitted)
 	await _sleep(1.0)
 
+	# Slot 1 is standing at the cave crystal having walked past the coupling and
+	# the socket on the way. Its detour work happens inside _walk_route below.
 	GameManager.request_interact(object_id)
 	var got: bool = await _until(func() -> bool:
 		return GameManager.carried_crystal_of(me) == crystal_id, 20.0)

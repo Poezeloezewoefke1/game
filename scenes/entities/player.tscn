@@ -47,6 +47,7 @@ script = ExtResource("3_view")
 [node name="InteractRay" type="RayCast3D" parent="CameraPivot"]
 target_position = Vector3(0, 0, -3.2)
 collision_mask = 7
+hit_from_inside = true
 
 [node name="Muzzle" type="Node3D" parent="CameraPivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, -0.13, -0.72)

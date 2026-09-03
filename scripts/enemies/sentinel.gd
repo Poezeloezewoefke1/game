@@ -21,6 +21,15 @@ enum State { IDLE, CHASE, SHOOT, STAGGERED }
 
 var spawn_position: Vector3 = Vector3.ZERO
 
+## When set, this Sentinel is a crystal's GUARD rather than the temple's roving
+## defender: it can be destroyed, and destroying it unseals that crystal.
+##
+## The temple Sentinel was never destructible - it staggers on the tenth hit and
+## recovers, forever - and that is still right for a hazard you are meant to
+## flee. A lock you cannot remove is not a lock, so a guard needs a death.
+var guards_crystal_id: String = ""
+var _guard_hits: int = 0
+
 # --- Replicated (host authority) ------------------------------------------
 var sync_position: Vector3 = Vector3.ZERO
 var sync_yaw: float = 0.0
@@ -300,6 +309,9 @@ func _publish_transform() -> void:
 ## `part` is unused here - the Sentinel is one body - but the signature has to
 ## match the Warden's, because the host's fire path calls whichever it hit.
 func host_register_hit(from_peer: int, _part: Node = null) -> void:
+	if guards_crystal_id != "":
+		_host_register_guard_hit()
+		return
 	if not _is_host():
 		return
 	if sync_state == State.STAGGERED or GameManager.is_mission_over():
@@ -412,3 +424,16 @@ func _apply_materials() -> void:
 	eye.emission = Color(1.0, 0.3, 0.24)
 	eye.emission_energy_multiplier = 1.8
 	_eye.material_override = eye
+
+
+## A guard dies on GUARD_HITS_TO_KILL, unseals its crystal, and removes itself.
+func _host_register_guard_hit() -> void:
+	if not _is_host():
+		return
+	_guard_hits += 1
+	AudioDirector.play(AudioDirector.Cue.SENTINEL_PROJECTILE)
+	if _guard_hits < GameConfig.GUARD_HITS_TO_KILL:
+		return
+	Logx.info("sentinel", "guard on %s destroyed" % guards_crystal_id)
+	GameManager.host_apply_guard_killed(guards_crystal_id)
+	queue_free()

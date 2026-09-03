@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/game_level.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/utility/world_block.gd" id="2_block"]
@@ -11,6 +11,10 @@
 [ext_resource type="Script" path="res://scripts/utility/prop_scatter.gd" id="9_scatter"]
 [ext_resource type="Script" path="res://scripts/utility/set_dressing.gd" id="10_dress"]
 [ext_resource type="Material" path="res://resources/sky_cinder.tres" id="11_sky"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/power_coupling.tscn" id="12_coupling"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/coupling_socket.tscn" id="13_socket"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/hazard_control.tscn" id="14_hazctl"]
+[ext_resource type="PackedScene" path="res://scenes/world/hazard_field.tscn" id="15_hazfield"]
 
 [sub_resource type="Sky" id="Sky_cinder"]
 sky_material = ExtResource("11_sky")
@@ -35,6 +39,10 @@ fog_enabled = true
 fog_light_color = Color(0.34, 0.16, 0.10, 1)
 fog_light_energy = 0.9
 fog_density = 0.020
+# Fog must not repaint the SKY. Godot's fog_sky_affect defaults to 1.0, so a
+# dark fog colour completely replaces the starfield - which is how a ship
+# with four windows onto deep space came out with four black rectangles.
+fog_sky_affect = 0.0
 adjustment_enabled = true
 adjustment_contrast = 1.10
 adjustment_saturation = 1.14
@@ -583,6 +591,22 @@ accepts_crystal_id = "crystal_grove"
 
 [node name="StarMapAltar" parent="Interactables" instance=ExtResource("8_altar")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -2.000)
+
+[node name="PowerCoupling" parent="Interactables" instance=ExtResource("12_coupling")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 29.826, 0.000, 42.596)
+object_id = "cinder_power_coupling"
+
+[node name="CouplingSocket" parent="Interactables" instance=ExtResource("13_socket")]
+transform = Transform3D(-0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, -0.8660, -20.000, 0.000, -34.641)
+object_id = "cinder_coupling_socket"
+unlocks_crystal_id = "crystal_cave"
+
+[node name="HazardControl" parent="Interactables" instance=ExtResource("14_hazctl")]
+transform = Transform3D(0.0872, 0, -0.9962, 0, 1, 0, 0.9962, 0, 0.0872, -49.810, 0.000, 4.358)
+object_id = "cinder_hazard_control"
+
+[node name="HazardField" parent="." instance=ExtResource("15_hazfield")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 45.825, 0.000, -4.009)
 
 [node name="TempleTrigger" type="Area3D" parent="."]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.000, 15.000)

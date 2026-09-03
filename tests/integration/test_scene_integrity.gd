@@ -22,6 +22,8 @@ func is_async() -> bool:
 
 
 func run_async() -> void:
+	_check_player_interact_ray()
+
 	for key in _levels:
 		set_current("level:" + String(key))
 		await _check_level(String(key), String(_levels[key]))
@@ -79,6 +81,30 @@ func _check_common(key: String, level: Node) -> void:
 			"%s: %s is in the Interactable group" % [key, node.name])
 		check_eq(node.get("collision_layer"), GameConfig.LAYER_INTERACTABLE,
 			"%s: %s is on the interactable physics layer" % [key, node.name])
+
+
+## The player's interact ray must report shapes it STARTS INSIDE.
+##
+## A RayCast3D ignores those by default. The camera sits at y = 1.62 and the
+## ship stations' collision boxes run from the deck to y = 1.7, so a player who
+## walked right up to a console had their camera inside its box - and the
+## prompt vanished at exactly the moment they were closest to it. The automated
+## playtest reproduced it as eight consecutive frames of "E held, ray on
+## nothing" while standing flush against the fuel station.
+func _check_player_interact_ray() -> void:
+	set_current("player")
+	var packed: PackedScene = load("res://scenes/entities/player.tscn") as PackedScene
+	if not check(packed != null, "player.tscn loads"):
+		return
+	var player := packed.instantiate()
+	var ray := player.get_node_or_null("CameraPivot/InteractRay") as RayCast3D
+	if check(ray != null, "the player has CameraPivot/InteractRay"):
+		check(ray.hit_from_inside,
+			"the interact ray reports shapes it starts inside, so standing "
+			+ "flush against a console does not hide its prompt")
+		check(ray.target_position.length() > 1.0,
+			"the interact ray has a usable length (%.1f m)" % ray.target_position.length())
+	player.free()
 
 
 func _check_ship(level: Node) -> void:

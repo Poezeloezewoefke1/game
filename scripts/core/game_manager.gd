@@ -390,6 +390,7 @@ func host_on_scene_barrier_completed(scene_key: String) -> void:
 		# is lives in the snapshot, not in this branch - that is what stops a
 		# new destination needing a new case here.
 		SpawnManager.host_spawn_all_players()
+		_host_spawn_crystal_guards()
 		_host_set_state(MS.FIND_TEMPLE)
 	_host_publish()
 
@@ -520,6 +521,71 @@ func host_apply_destination(peer_id: int, mission_id: String) -> void:
 	snapshot["crystal_locks"] = MissionRules.locked_crystals(mission_id)
 	snapshot["hazard_online"] = MissionCatalog.hazard(mission_id) != MissionCatalog.HAZARD_NONE
 	Logx.info("ship", "peer %d set course for %s" % [peer_id, mission_id])
+	_host_publish()
+
+
+## The coupling goes into the same slot a crystal would, which is what makes the
+## fetch cost a trip rather than being free.
+## Puts a Sentinel beside every crystal this mission has sealed behind a guard.
+##
+## The guard's position comes from the crystal's own node rather than from a
+## marker in the level, so a planet cannot end up with its guard standing in the
+## wrong place - and adding a guard lock to a new mission needs no level edit.
+func _host_spawn_crystal_guards() -> void:
+	if not _is_host():
+		return
+	var mission_id := String(snapshot.get("mission_id", ""))
+	var locks: Dictionary = snapshot.get("crystal_locks", {})
+	for crystal_id in locks:
+		if String(locks[crystal_id]) != MissionRules.LOCK_GUARD:
+			continue
+		var node: Node = SpawnManager.find_interactable("%s_%s" % [mission_id, crystal_id])
+		if node == null:
+			Logx.warn("mission",
+				"No crystal node for %s on %s; its guard cannot be placed"
+				% [crystal_id, mission_id])
+			continue
+		# Stood off from the crystal, not on top of it, so the crystal is still
+		# visible and shootable past the thing defending it.
+		var at: Vector3 = (node as Node3D).global_position + Vector3(0.0, 0.0, 5.0)
+		SpawnManager.host_spawn_crystal_guard(String(crystal_id), at)
+
+
+func host_apply_coupling_pickup(peer_id: int) -> void:
+	snapshot["coupling_taken"] = true
+	var carried: Dictionary = snapshot["crystals_carried"]
+	carried[peer_id] = GameConfig.ITEM_COUPLING
+	Logx.info("mission", "peer %d took the power coupling" % peer_id)
+	_host_publish()
+
+
+func host_apply_coupling_fitted(peer_id: int, crystal_id: String) -> void:
+	var carried: Dictionary = snapshot["crystals_carried"]
+	carried.erase(peer_id)
+	var locks: Dictionary = snapshot["crystal_locks"]
+	locks.erase(crystal_id)
+	Logx.info("mission", "peer %d unsealed %s with the coupling" % [peer_id, crystal_id])
+	_host_publish()
+
+
+func host_apply_hazard_shutdown(peer_id: int) -> void:
+	snapshot["hazard_online"] = false
+	Logx.info("mission", "peer %d sealed the vent" % peer_id)
+	_host_publish()
+
+
+## A crystal's guard has been destroyed. Recorded rather than inferred from the
+## absence of the guard node, because "the node is gone" is also true one frame
+## before it spawns and on every client that has not received it yet.
+func host_apply_guard_killed(crystal_id: String) -> void:
+	if not _is_host():
+		return
+	var down: Array = snapshot.get("guards_down", [])
+	if down.has(crystal_id):
+		return
+	down.append(crystal_id)
+	snapshot["guards_down"] = down
+	Logx.info("mission", "the guard on %s is down" % crystal_id)
 	_host_publish()
 
 

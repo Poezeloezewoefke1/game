@@ -53,6 +53,9 @@ var _hovered: Node = null
 var _hovered_prompt: String = ""
 var _reviving_target: int = 0
 var _interact_held: bool = false
+## When the current Interact press stops looking for a target, in engine ms.
+## Zero means no press is in flight. See GameConfig.INTERACT_GRACE_TIME.
+var _interact_pending_until_ms: int = 0
 ## Last downed state the visuals were built for, so the refresh runs on change
 ## rather than 60 times a second per player.
 var _visuals_downed: bool = not is_downed
@@ -440,14 +443,16 @@ func _tick_local_actions() -> void:
 		_stop_revive()
 
 	# --- Interact: single press on a world object ---
-	if pressed and not _interact_held:
-		_interact_held = true
-		if revive_target == 0 and _hovered != null and _hovered.is_in_group(GameConfig.GROUP_INTERACTABLE):
-			var oid := String(_hovered.get("object_id"))
-			if not oid.is_empty():
-				GameManager.request_interact(oid)
-	elif not pressed:
-		_interact_held = false
+	var target_id := ""
+	if revive_target == 0 and _hovered != null \
+			and _hovered.is_in_group(GameConfig.GROUP_INTERACTABLE):
+		target_id = String(_hovered.get("object_id"))
+	var verdict := resolve_interact(pressed, _interact_held,
+		_interact_pending_until_ms, Time.get_ticks_msec(), target_id)
+	_interact_held = bool(verdict["held"])
+	_interact_pending_until_ms = int(verdict["pending_until_ms"])
+	if bool(verdict["fire"]):
+		GameManager.request_interact(target_id)
 
 	# --- Fire ---
 	if Input.is_action_pressed("fire") and can_act():
@@ -846,3 +851,36 @@ func _team_colour() -> Color:
 	if found >= 0:
 		index = found
 	return PALETTE[index % PALETTE.size()]
+
+
+## Should this frame's Interact press be spent, and on what?
+##
+## Pure and static so the rule can be tested without a level, a ray or a
+## session - which matters, because the bug it fixes was a ONE-FRAME race that
+## only an automated playtest ever reproduced.
+##
+## `target_id` is whatever the interact ray is on this frame ("" for nothing).
+## Returns {"fire": bool, "held": bool, "pending_until_ms": int}.
+##
+## The contract:
+##   * At most one fire per key press. Holding E never repeats.
+##   * A press with no target does NOT immediately consume itself; it keeps
+##     looking until INTERACT_GRACE_TIME has passed.
+##   * Releasing the key always clears everything.
+static func resolve_interact(pressed: bool, held: bool, pending_until_ms: int,
+		now_ms: int, target_id: String) -> Dictionary:
+	if not pressed:
+		return {"fire": false, "held": false, "pending_until_ms": 0}
+	if held:
+		# Already spent this press.
+		return {"fire": false, "held": true, "pending_until_ms": 0}
+	var deadline := pending_until_ms
+	if deadline == 0:
+		deadline = now_ms + int(GameConfig.INTERACT_GRACE_TIME * 1000.0)
+	if target_id != "":
+		return {"fire": true, "held": true, "pending_until_ms": 0}
+	if now_ms >= deadline:
+		# Nothing found in time. Spend the press so it cannot fire later on
+		# something the player walked past while still holding the key.
+		return {"fire": false, "held": true, "pending_until_ms": 0}
+	return {"fire": false, "held": false, "pending_until_ms": deadline}

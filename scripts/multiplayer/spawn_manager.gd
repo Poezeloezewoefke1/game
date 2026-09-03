@@ -254,6 +254,16 @@ func host_spawn_guardian() -> Node:
 	return _spawner.spawn({"kind": KIND_GUARDIAN, "pos": origin})
 
 
+## A crystal's guard: a Sentinel that stands at a named spot and can be killed.
+## `at` is passed explicitly because a guard belongs beside its crystal, not at
+## the temple's GuardianAnchor.
+func host_spawn_crystal_guard(crystal_id: String, at: Vector3) -> Node:
+	if not _is_host() or not has_level():
+		return null
+	Logx.info("spawn", "Spawning a guard for %s at %s" % [crystal_id, str(at)])
+	return _spawner.spawn({"kind": KIND_GUARDIAN, "pos": at, "guards": crystal_id})
+
+
 ## The Warden hovers, so it spawns above the anchor rather than on it.
 func host_spawn_warden() -> Node:
 	if not _is_host() or not has_level():
@@ -311,7 +321,10 @@ func _spawn_entity(data: Variant) -> Node:
 		KIND_PLAYER:
 			return _build_player(d)
 		KIND_GUARDIAN:
-			return _build_simple(GUARDIAN_SCENE, "Sentinel", d)
+			var sentinel := _build_simple(GUARDIAN_SCENE, "Sentinel", d)
+			if sentinel != null and String(d.get("guards", "")) != "":
+				sentinel.set("guards_crystal_id", String(d["guards"]))
+			return sentinel
 		KIND_WARDEN:
 			return _build_simple(WARDEN_SCENE, "Warden", d)
 		KIND_GUARDIAN_PROJECTILE:

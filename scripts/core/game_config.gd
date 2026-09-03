@@ -176,6 +176,19 @@ const INTERACT_DISTANCE: float = 3.2
 ## is not exploitable - see NET-010 in docs/REQUIREMENTS_TRACEABILITY.md.
 const INTERACT_VALIDATE_DISTANCE: float = 5.0
 
+## How long a press of Interact keeps looking for something to act on.
+##
+## A press used to be sampled on exactly ONE frame. If the interact ray happened
+## to be off the object on that frame - head bob is enough, and so is still
+## decelerating as you walk up to something - the press was spent against
+## nothing and the latch blocked any retry until the key was released. To a
+## player that is "I pressed E looking right at it and nothing happened".
+##
+## A press is now an INTENT with a short deadline. It still fires at most once
+## per key press, so holding E cannot autofire and holding E to revive a
+## teammate is unchanged.
+const INTERACT_GRACE_TIME: float = 0.18
+
 ## Extra vertical tolerance when validating interaction distance, so standing on
 ## a crate next to a pedestal does not silently fail.
 const INTERACT_VALIDATE_HEIGHT: float = 3.0
@@ -328,6 +341,10 @@ const HAZARD_TICK_INTERVAL: float = 1.0
 ## The Sentinel counts HITS and staggers on the tenth; it has no health at all.
 ## A boss needs a bar, so it needs a number - at 25 a node takes 5 bolts and the
 ## body takes 36, which is a fight for one player and a brisk one for four.
+## Hits to destroy a crystal's guard. Lower than the boss on purpose: the guard
+## is an obstacle on the way to an objective, not the fight itself.
+const GUARD_HITS_TO_KILL: int = 14
+
 const BLASTER_BOSS_DAMAGE: int = 25
 
 const BOSS_MAX_HEALTH: int = 900

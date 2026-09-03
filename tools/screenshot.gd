@@ -26,11 +26,13 @@ const SHOT_SIZE := Vector2i(960, 540)
 ## up the map. Getting this wrong the first time pointed half the shots at a
 ## blank wall.
 const SHOTS: Array = [
-	["hub", Vector3(0, 0, -5), 0.0, -2.0, "01-hub-terminal"],
-	["hub", Vector3(-8, 0, 0), 90.0, 2.0, "02-hub-window"],
-	["hub", Vector3(6, 0, -4), 270.0, -2.0, "03-hub-consoles"],
-	["hub", Vector3(-2, 0, 10), 0.0, 0.0, "04-hub-wide"],
-	["hub", Vector3(0, 0, -2), 0.0, 0.0, "05-hub-firing", true],
+	["ship", Vector3(0, 0, -12), 0.0, 0.0, "01-ship-bridge"],
+	["ship", Vector3(0, 0, -17), 0.0, 2.0, "02-ship-forward-window"],
+	["ship", Vector3(0, 0, -6), 180.0, 0.0, "03-ship-quarters"],
+	["ship", Vector3(0, 0, 2), 200.0, -4.0, "04-ship-mess"],
+	["ship", Vector3(2, 0, 12), 250.0, 2.0, "05-ship-engineering"],
+	["ship", Vector3(-2, 0, 10), 290.0, 0.0, "06-ship-medbay"],
+	["ship", Vector3(0, 0, 19), 180.0, 0.0, "07-ship-cargo"],
 	["nerava", Vector3(0, 0, 40), 180.0, -2.0, "06-nerava-drop-pod"],
 	["nerava", Vector3(0, 0, 32), 0.0, 0.0, "07-nerava-canyon"],
 	["nerava", Vector3(0, 0, 16), 0.0, 0.0, "08-nerava-temple-approach"],
@@ -88,7 +90,7 @@ func _run() -> void:
 		push_error("hub never mounted")
 		get_tree().quit(1)
 		return
-	await _shoot_all("hub")
+	await _shoot_all("ship")
 
 	await GameManager.host_start_expedition()
 	if not await _wait_for(GameConfig.SCENE_NERAVA, 40.0):

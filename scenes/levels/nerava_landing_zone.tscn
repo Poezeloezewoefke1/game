@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/game_level.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/utility/world_block.gd" id="2_block"]
@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" path="res://scenes/interactables/star_map_altar.tscn" id="8_altar"]
 [ext_resource type="Material" path="res://resources/sky_nerava.tres" id="9_sky"]
 [ext_resource type="Script" path="res://scripts/utility/set_dressing.gd" id="10_dress"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/power_coupling.tscn" id="12_coupling"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/coupling_socket.tscn" id="13_socket"]
 
 [sub_resource type="Sky" id="Sky_nerava"]
 sky_material = ExtResource("9_sky")
@@ -36,6 +38,10 @@ fog_light_color = Color(0.16, 0.21, 0.32, 1)
 fog_light_energy = 0.9
 fog_sun_scatter = 0.25
 fog_density = 0.0075
+# Fog must not repaint the SKY. Godot's fog_sky_affect defaults to 1.0, so a
+# dark fog colour completely replaces the starfield - which is how a ship
+# with four windows onto deep space came out with four black rectangles.
+fog_sky_affect = 0.0
 fog_aerial_perspective = 0.35
 adjustment_enabled = true
 adjustment_contrast = 1.1
@@ -246,7 +252,7 @@ size = Vector3(24, 10, 4)
 palette = "rock"
 
 [node name="GroveTree1" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 3, -26)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 3, -26)
 script = ExtResource("2_block")
 size = Vector3(1.2, 6, 1.2)
 palette = "foliage"
@@ -366,6 +372,15 @@ accepts_crystal_id = "crystal_grove"
 [node name="StarMapAltar" parent="Interactables" instance=ExtResource("8_altar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
 
+[node name="PowerCoupling" parent="Interactables" instance=ExtResource("12_coupling")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.000, 0.000, 24.000)
+object_id = "nerava_power_coupling"
+
+[node name="CouplingSocket" parent="Interactables" instance=ExtResource("13_socket")]
+transform = Transform3D(-0.3420, 0, 0.9397, 0, 1, 0, -0.9397, 0, -0.3420, 36.000, 0.000, -3.000)
+object_id = "nerava_coupling_socket"
+unlocks_crystal_id = "crystal_cave"
+
 [node name="TempleTrigger" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 13)
 collision_layer = 0
@@ -429,14 +444,14 @@ variant = 1
 solid = false
 
 [node name="D02_crate_stack" type="Node3D" parent="NavigationRegion3D/Dressing2"]
-transform = Transform3D(0.9272, 0, 0.3746, 0, 1, 0, -0.3746, 0, 0.9272, 3.600, 0.000, 40.500)
+transform = Transform3D(0.9272, 0, 0.3746, 0, 1, 0, -0.3746, 0, 0.9272, 6.800, 0.000, 40.000)
 script = ExtResource("10_dress")
 kind = "crate_stack"
 variant = 0
 solid = true
 
 [node name="D03_supply_pallet" type="Node3D" parent="NavigationRegion3D/Dressing2"]
-transform = Transform3D(0.9703, 0, -0.2419, 0, 1, 0, 0.2419, 0, 0.9703, -3.400, 0.000, 38.500)
+transform = Transform3D(0.9703, 0, -0.2419, 0, 1, 0, 0.2419, 0, 0.9703, -6.600, 0.000, 38.000)
 script = ExtResource("10_dress")
 kind = "supply_pallet"
 variant = 0
@@ -555,14 +570,14 @@ variant = 3
 solid = true
 
 [node name="D20_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing2"]
-transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, -10.500, 0.000, 2.000)
+transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, -11.500, 0.000, 7.500)
 script = ExtResource("10_dress")
 kind = "ruin_pillar"
 variant = 2
 solid = true
 
 [node name="D21_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing2"]
-transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, 10.500, 0.000, 2.000)
+transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, 11.500, 0.000, 7.500)
 script = ExtResource("10_dress")
 kind = "ruin_pillar"
 variant = 3

@@ -117,9 +117,15 @@ func _check_clean_slate(attempt: int) -> void:
 		check_false(bool(player.get("revive_active")), "%s: no revive is in progress" % tag)
 
 	# --- Interactable registry ---
+	# Counted from the scene, not hardcoded. The point of this check is that a
+	# replay leaves NO stale registrations behind - not that Nerava happens to
+	# contain a particular number of objects. The hardcoded 8 only ever measured
+	# how recently someone had edited the level.
 	var ids := SpawnManager.interactable_ids()
-	check_eq(ids.size(), 8,
-		"%s: exactly the 8 authored Nerava interactables are registered (got %d)" % [tag, ids.size()])
+	check_eq(ids.size(), _authored_interactable_count(),
+		"%s: exactly the authored interactables are registered (got %d)" % [tag, ids.size()])
+	check_eq(ids.size(), _unique(ids).size(),
+		"%s: no id is registered twice" % tag)
 
 	# --- Stale requests must be rejected ---
 	var stale_epoch := GameManager.session_epoch - 1
@@ -139,3 +145,33 @@ func _test_return_to_lobby() -> void:
 	check_eq(SpawnManager.interactable_ids().size(), 0, "the interactable registry is empty in the lobby")
 	check(GameManager.host_accepts_new_players(), "the lobby accepts joins again")
 	check_false(LobbyManager.is_ready(GameConfig.HOST_PEER_ID), "ready flags are cleared")
+
+
+## How many interactables the destination's scene actually authors. Loaded once
+## and cached: instantiating a level per replay would dominate the test's time.
+var _authored_count: int = -1
+
+
+func _authored_interactable_count() -> int:
+	if _authored_count >= 0:
+		return _authored_count
+	_authored_count = 0
+	var key := MissionCatalog.scene_key(String(GameManager.snapshot.get("mission_id", "")))
+	var path := GameConfig.scene_path(key if key != "" else GameConfig.SCENE_NERAVA)
+	var packed: PackedScene = load(path) as PackedScene
+	if packed == null:
+		return _authored_count
+	var level := packed.instantiate()
+	for node in level.find_children("*", "", true, false):
+		var oid: Variant = node.get("object_id")
+		if oid != null and String(oid) != "":
+			_authored_count += 1
+	level.free()
+	return _authored_count
+
+
+func _unique(values: Array) -> Array:
+	var seen: Dictionary = {}
+	for v in values:
+		seen[v] = true
+	return seen.keys()

@@ -1,14 +1,23 @@
 # Test checklist
 
 Legend: **[A]** covered by an automated test · **[N]** covered by the
-multi-process multiplayer check · **[M]** manual, needs a human at a screen ·
-**[B]** blocked in the current environment.
+multi-process multiplayer check · **[P]** covered by the automated playtest,
+which drives the shipped game with simulated keyboard and mouse · **[M]**
+manual, needs a human at a screen · **[B]** blocked in the current environment.
+
+**[A] and [P] are different claims.** An [A] test calls the game's API -
+`GameManager.request_interact()` - and proves the rules are right. A [P] check
+walks a player there with `Input.action_press("move_forward")` and looks at the
+thing with a synthetic mouse, and proves the rule can be reached by playing. A
+row that is only [A] can be green in a game that cannot be played; that is not
+hypothetical, it is how BUG-002 in `docs/QA_REPORT.md` survived 1394 assertions.
 
 Run the automated layers with:
 
 ```bash
 godot --headless --path . res://tests/test_runner.tscn
 tools/run_multiplayer_check.sh /path/to/godot 7700 3
+tools/run_playtest.sh /path/to/godot cautious
 tools/check_structure.sh
 ```
 
@@ -87,20 +96,83 @@ tools/check_structure.sh
 | A8 | Returning to the lobby releases the mouse and clears overlays | [A] |
 | A9 | Movement, look, jump, sprint actually feel right | [M] |
 
-## Hub and transition
+## The Starfarer: crew deck and pre-flight
+
+The "hub" of earlier builds is gone; the crew now spends the first act aboard a
+ship that flies. `ship` is a gameplay scene like any surface - it gets a
+spawner, a HUD and players.
 
 | # | Case | Cover |
 |---|---|---|
-| 26 | All players spawn in the hub | [A] / [N] |
+| 26 | All players spawn on the crew deck | [A] / [N] |
 | 27 | Nameplates appear above other players | [M] |
 | 28 | Player movement replicates between peers | [N] (position-driven pickups prove it) |
-| 29 | The host can use the Mission Terminal | [A] / [N] |
-| 30 | A client cannot use the Mission Terminal | [N] |
-| 31 | An out-of-range terminal request is refused | [A] |
+| 29 | The host can set a course at the nav console | [A] / [N] |
+| 30 | A client cannot set a course | [N] |
+| 31 | An out-of-range interact request is refused | [A] |
 | 32 | The readiness barrier waits for every peer | [N] |
 | 33 | A peer that never acknowledges is disconnected on timeout | [M] |
 | 34 | A stale transition acknowledgement is ignored | [A] (epoch/transition id checks) |
-| 35 | Every ready client reaches Nerava | [N] |
+| 35 | Every ready client reaches the destination surface | [N] |
+| 26a | Every deck station is reachable on foot from the spawn | [A] `test_level_reachability` (capsule sweep along `ShipRoutes`) |
+| 26b | The whole deck spine is walkable end to end | [A] `test_level_reachability` |
+| 26c | Furniture leaves standing room at each station | [A] `test_level_reachability` |
+| 26d | The four pre-flight tasks each complete once, in any order | [A] `test_mission_rules` / [P] |
+| 26e | A task cannot be completed twice | [A] |
+| 26f | The launch lever refuses while the checklist is unfinished | [A] |
+| 26g | The launch lever refuses while any crew member is unseated | [A] / [P] |
+| 26h | A crew seat can be taken, and holding forward does not walk you out of it | [P] (drift measured, < 0.5 m) |
+| 26i | A seat already occupied refuses a second player | [A] |
+| 26j | The HUD shows the remaining checklist aboard the ship, not the Star Map line | [A] `test_scene_integrity` / [M] |
+| 26k | Beds, mess, med bay and cargo are walkable, not just decorative | [P] (`explorer` strategy tours them) |
+
+## Flight: launch, transit and landing
+
+The flight is three host-clock states rendered identically on every peer;
+`FlightSequence` never sets state, so there is no per-peer animation drift.
+
+| # | Case | Cover |
+|---|---|---|
+| 26l | Pulling the lever moves the mission to LAUNCHING | [A] / [P] |
+| 26m | LAUNCHING -> IN_TRANSIT -> LANDING advance on the host clock | [A] / [P] |
+| 26n | The engine bells light during a burn and go dark in transit | [M] |
+| 26o | Star streaks appear only in transit, outside the windows | [M] |
+| 26p | Landing mounts the destination surface and spawns the crew there | [A] / [P] |
+| 26q | The objective line reads "Descending..." during the landing | [P] |
+| 26r | A client sees the same phase at the same time as the host | [N] |
+
+## Multiple planets and mission unlocks
+
+| # | Case | Cover |
+|---|---|---|
+| 26s | Nerava is flyable on a fresh save; Cinder and Hallow are not | [A] `test_mission_rules` |
+| 26t | Completing a mission unlocks exactly the next one in order | [A] |
+| 26u | The nav console names the destination and says why others are locked | [P] (prompt read: "Course: Nerava (no other destination unlocked)") |
+| 26v | Each planet has its own sky, palette and crystal names | [M] / [A] `test_scene_integrity` |
+| 26w | Cinder and Hallow are reachable and walkable | [A] `test_level_reachability` |
+
+## Crystal locks: coupling, guard and hazard
+
+| # | Case | Cover |
+|---|---|---|
+| 26x | A sealed crystal cannot be taken while its lock stands | [A] `test_mission_rules` |
+| 26y | The coupling occupies the same inventory slot as a crystal | [A] |
+| 26z | Fitting the coupling at the socket unseals the cave crystal | [A] / [P] |
+| 26aa | A guarded crystal opens only when its guard is down | [A] |
+| 26ab | A hazard-locked crystal opens only when the vent is sealed | [A] |
+| 26ac | The hazard field damages a player standing in it, and stops when sealed | [A] |
+| 26ad | Only the host applies hazard damage | [A] (host-authoritative by construction) |
+
+## The Warden
+
+| # | Case | Cover |
+|---|---|---|
+| 26ae | Taking the Star Map wakes the Warden exactly once | [A] / [P] |
+| 26af | Shots do nothing while any shield node stands | [A] |
+| 26ag | Downing all three nodes exposes the boss | [A] |
+| 26ah | The boss enrages below the configured health fraction | [A] |
+| 26ai | Killing the Warden clears the way to extraction | [A] / [P] |
+| 26aj | A wipe during the fight fails the mission | [A] |
 
 ## Nerava mission
 
@@ -302,24 +374,43 @@ The interface, via `tools/render_ui.sh`:
    name is refused.
 2. Host on 7000. Confirm the lobby shows you as HOST.
 3. Launch a second instance, join `127.0.0.1`. Confirm both rosters agree.
-4. Start the mission. Confirm both peers reach the hub and see two players with
-   nameplates.
-5. As the client, aim at the terminal — confirm the prompt says only the host
-   can start it, and pressing `E` does nothing.
-6. As the host, start the expedition. Confirm both reach Nerava.
-7. Walk into the clearing; confirm the objective changes to the crystal hunt.
-8. Collect all three crystals across both players; confirm HUD inventory,
-   wrong-pedestal refusals, and the altar opening on the third placement.
-9. Take the Star Map. Confirm the Sentinel spawns once, chases the carrier, and
-   staggers after ten hits.
-10. Let the carrier go down. Confirm the map drops once, is visible, and can be
-    recovered by the other player.
-11. Revive the downed player. Confirm the three-second hold, the progress
+4. Start. Confirm both peers spawn on the Starfarer's crew deck and see each
+   other with nameplates.
+5. Walk the whole deck: quarters and beds, mess, med bay, engineering, cargo.
+   Confirm nothing blocks the spine and every station has standing room.
+6. As the client, aim at the nav console — confirm the prompt says only the host
+   sets a course, and pressing `E` does nothing.
+7. As the host, set a course. Confirm the destination list shows Nerava unlocked
+   and the other two locked, with a reason.
+8. Complete the four pre-flight tasks between both players. Confirm the HUD
+   checklist shrinks as each lands, and that a completed task cannot be redone.
+9. Pull the launch lever with someone still standing. Confirm it refuses and
+   names who is not seated.
+10. Everyone sits. Confirm the seat holds you — hold forward and check you do
+    not walk out of the chair — and that the view still swivels.
+11. Pull the lever. Watch the launch: engine bells lit under burn, star streaks
+    outside the windows in transit, then the landing. Confirm both peers see the
+    same phase at the same moment.
+12. Walk into the clearing; confirm the objective changes to the crystal hunt.
+13. Try the sealed crystal. Confirm it refuses and says what is holding it.
+14. Fetch the power coupling. Confirm it fills the same slot a crystal would,
+    then fit it at the socket and confirm the crystal unseals.
+15. Collect all three crystals across both players; confirm HUD inventory,
+    wrong-pedestal refusals, and the altar opening on the third placement.
+16. Take the Star Map. Confirm the Warden wakes once, that shots do nothing
+    while its shield nodes stand, that downing all three exposes it, and that it
+    changes behaviour when it enrages.
+17. Let the carrier go down mid-fight. Confirm the map drops once, is visible,
+    and can be recovered by the other player.
+18. Revive the downed player. Confirm the three-second hold, the progress
     readout, cancellation on walking away, and the 40 health on completion.
-12. Extract. Confirm the victory screen on both peers.
-13. Return to lobby, then replay the whole mission. Confirm nothing is stale.
-14. Fail deliberately (let both players go down). Confirm the failure screen and
+19. Kill the Warden, then extract. Confirm the victory screen on both peers.
+20. Return to the ship. Confirm the next planet is now unlocked at the nav
+    console, and fly it. Confirm its hazard damages you until the vent is
+    sealed, and that its guarded crystal needs the guard down.
+21. Return to lobby, then replay a whole mission. Confirm nothing is stale.
+22. Fail deliberately (let both players go down). Confirm the failure screen and
     that Retry produces a clean run.
-15. Kill the host process. Confirm the client returns to the menu with a
+23. Kill the host process. Confirm the client returns to the menu with a
     readable message.
-16. Repeat 2-12 with an exported Windows build, on two machines, over a LAN.
+24. Repeat 2-19 with an exported Windows build, on two machines, over a LAN.
