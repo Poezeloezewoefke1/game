@@ -206,8 +206,9 @@ func _host_fire(delta: float) -> void:
 	# A spread rather than a single shot: one projectile is dodgeable by walking,
 	# three force a decision about which way.
 	var spread := 0.13
-	for i in GameConfig.BOSS_VOLLEY_PROJECTILES:
-		var offset := float(i) - float(GameConfig.BOSS_VOLLEY_PROJECTILES - 1) * 0.5
+	var count: int = MissionRules.boss_volley_projectiles(_crew())
+	for i in count:
+		var offset := float(i) - float(count - 1) * 0.5
 		var dir := aim.rotated(Vector3.UP, offset * spread).normalized()
 		SpawnManager.host_spawn_guardian_projectile(origin, dir)
 	AudioDirector.play(AudioDirector.Cue.WARDEN_VOLLEY)

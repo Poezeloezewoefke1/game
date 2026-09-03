@@ -231,10 +231,16 @@ func _play_the_ship() -> bool:
 	# This is the only thing the strategy changes aboard the ship, and it is
 	# there to prove the quarters and mess are walkable at all.
 	if _strategy == "explorer":
+		var here := Vector3(0.0, 0.0, -8.0)   # the crew quarters, where players spawn
 		for spot in [Vector3(-6.0, 0, -11.0), Vector3(6.0, 0, -7.0),
 				Vector3(0.0, 0, 1.0), Vector3(-6.0, 0, 10.0)]:
-			if not await _walk_to(spot, "deck tour"):
-				_fail("the crew deck is not walkable at %s" % str(spot))
+			# Cross the bulkheads through their doorways, the way a player does.
+			for leg in ShipRoutes.route_between(here, spot):
+				if not await _walk_to(leg, "deck tour"):
+					_fail("the crew deck is not walkable at %s (heading for %s)"
+						% [str(leg), str(spot)])
+					break
+			here = spot
 
 	for object_id in stations:
 		# The lever and the seat are walked separately, after the checklist.

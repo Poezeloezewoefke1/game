@@ -304,3 +304,27 @@ func test_boss_volleys_come_slower_for_a_smaller_crew() -> void:
 	for crew in [1, 2, 3, 4]:
 		check(MissionRules.boss_volley_interval(crew, false) > 0.0,
 			"crew %d has a positive volley interval" % crew)
+
+
+## The lever that actually decided whether a solo player finishes the game.
+## Scaling the Warden's HEALTH was not enough - four solo runs of the shipped
+## build gave one win and three losses, every loss the same shape: downed in the
+## exposed phase with the boss around 275 of 450. Health was not what killed the
+## player; three projectiles at 33 damage against 100 health was.
+func test_boss_volley_size_scales_with_crew() -> void:
+	check_eq(MissionRules.boss_volley_projectiles(4), GameConfig.BOSS_VOLLEY_PROJECTILES,
+		"a full crew faces the configured volley unchanged")
+	var previous := 0
+	for crew in [1, 2, 3, 4]:
+		var count: int = MissionRules.boss_volley_projectiles(crew)
+		check(count >= 1, "crew %d faces at least one projectile" % crew)
+		check(count >= previous, "crew %d faces no fewer than crew %d" % [crew, crew - 1])
+		check(count <= GameConfig.BOSS_VOLLEY_PROJECTILES,
+			"crew %d never faces more than the configured volley" % crew)
+		previous = count
+	check(MissionRules.boss_volley_projectiles(1) < MissionRules.boss_volley_projectiles(4),
+		"a solo player faces a smaller volley than a full crew")
+	check_eq(MissionRules.boss_volley_projectiles(0), MissionRules.boss_volley_projectiles(1),
+		"crew 0 is treated as solo")
+	check_eq(MissionRules.boss_volley_projectiles(99), MissionRules.boss_volley_projectiles(4),
+		"a crew above four clamps to four")

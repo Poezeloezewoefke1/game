@@ -624,6 +624,27 @@ static func boss_volley_interval(crew: int, enraged: bool) -> float:
 	return base * (2.0 - boss_scale(crew))
 
 
+## How many projectiles the Warden puts in a volley, by crew size.
+##
+## Measured across four solo runs of the shipped build: one win, three losses,
+## every loss the same shape - downed in the exposed phase with the boss around
+## 275 of 450. Scaling the boss's HEALTH down had already been done and did not
+## fix it, because health is not what was killing the player. Three projectiles
+## at 33 damage against 100 health is a down in three volleys, and one player
+## cannot spread four players' worth of incoming across four bodies.
+##
+## So a smaller crew faces a smaller volley. The spread still exists at two -
+## the point of a volley rather than a single shot is that it forces a decision
+## about which way to go, and two projectiles still do that - and a full crew
+## faces exactly what it faced before.
+const BOSS_VOLLEY_BY_CREW: Array = [1, 2, 3, 3]
+
+
+static func boss_volley_projectiles(crew: int) -> int:
+	var index: int = clampi(crew, 1, BOSS_VOLLEY_BY_CREW.size()) - 1
+	return int(BOSS_VOLLEY_BY_CREW[index])
+
+
 ## The phase the Warden should be in for a given health fraction, given that its
 ## shield is already down. Kept separate from the node so the ladder is testable
 ## without spawning anything.

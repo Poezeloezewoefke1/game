@@ -71,6 +71,34 @@ const ALL: Dictionary = {
 }
 
 
+## Waypoints from one point on the deck to another that cross every bulkhead
+## between them SQUARELY, on the centre-line.
+##
+## The bulkheads are solid except for a 4 m doorway in the middle, so a straight
+## line between two compartments walks into a side panel. That is the level
+## being correct, not the level being blocked - and it is the difference between
+## a route bug and a level bug, which look identical from inside a stuck report.
+## The automated playtest's deck tour learned this by walking into Bulk3SideP.
+static func route_between(from: Vector3, to: Vector3) -> Array:
+	var out: Array = []
+	var going_forward: bool = to.z > from.z
+	var crossings: Array = []
+	for z in BULKHEAD_Z:
+		var zz := float(z)
+		if zz > minf(from.z, to.z) and zz < maxf(from.z, to.z):
+			crossings.append(zz)
+	crossings.sort()
+	if not going_forward:
+		crossings.reverse()
+	for z in crossings:
+		var approach: float = float(z) + (-1.6 if going_forward else 1.6)
+		var beyond: float = float(z) + (1.6 if going_forward else -1.6)
+		out.append(Vector3(0.0, 0.0, approach))
+		out.append(Vector3(0.0, 0.0, beyond))
+	out.append(to)
+	return out
+
+
 ## Every leg of every route, as [from, to] pairs, starting from the spawn area.
 static func legs() -> Array:
 	var out: Array = []
