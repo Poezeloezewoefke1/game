@@ -241,6 +241,15 @@ func _play_the_ship() -> bool:
 						% [str(leg), str(spot)])
 					break
 			here = spot
+		# Back to the crew quarters before starting work. The station routes in
+		# ShipRoutes all begin from the spawn area, so a wanderer who goes
+		# straight from the med bay to the bridge walks into the bulkhead
+		# between them - the tour has to put the player back where the routes
+		# expect to find them, which is also what a player does.
+		for leg in ShipRoutes.route_between(here, Vector3(0.0, 0.0, -8.0)):
+			if not await _walk_to(leg, "back from the tour"):
+				_fail("the way back from the deck tour is blocked at %s" % str(leg))
+				break
 
 	for object_id in stations:
 		# The lever and the seat are walked separately, after the checklist.

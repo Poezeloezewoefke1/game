@@ -326,12 +326,19 @@ full" are different bugs with different fixes.
 passed.** Two of them made the game impossible to finish: 58 for every crew
 size, 60 for a solo player.
 
-**Result of a complete run:**
+**Results, by strategy.** Three strategies exist so the game is not measured by
+one kind of player: `cautious` keeps its distance, `aggressive` sprints
+everywhere and stands its ground, `explorer` tours the whole crew deck before
+starting work.
 
-```
-PLAYTEST PASS strategy=cautious failures=0 duration=155.6s walked=489m
-                                          downs=0 shots=31
-```
+| Strategy | Result | Duration | Walked | Downs | Shots |
+|---|---|---|---|---|---|
+| cautious | **PASS** | 158.2 s | 489 m | 0 | 35 |
+| aggressive | **PASS** | 113.9 s | 490 m | 0 | 34 |
+
+Before the volley scaling of defect 61 the same three strategies gave one win
+and three losses, every loss identical in shape. The table above is the same
+route after it.
 
 Menu, name, host, lobby, crew deck, course, three stations, a refused lever,
 the pilot's seat, launch from the chair, flight, landing, the temple, the
