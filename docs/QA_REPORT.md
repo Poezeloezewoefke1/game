@@ -322,8 +322,22 @@ Every prompt is recorded at the moment it is read, which is what makes a
 failure legible - "pressed E and nothing happened" and "the prompt said Hands
 full" are different bugs with different fixes.
 
-**Defects 52-59 were all found by this, in a build where 1468 assertions
-passed.** One of them, defect 58, made the game impossible to finish.
+**Defects 52-60 were all found by this, in a build where 1468 assertions
+passed.** Two of them made the game impossible to finish: 58 for every crew
+size, 60 for a solo player.
+
+**Result of a complete run:**
+
+```
+PLAYTEST PASS strategy=cautious failures=0 duration=155.6s walked=489m
+                                          downs=0 shots=31
+```
+
+Menu, name, host, lobby, crew deck, course, three stations, a refused lever,
+the pilot's seat, launch from the chair, flight, landing, the temple, the
+coupling errand, three crystals fetched and placed, the Star Map, the Warden
+killed at 147.3 s, and extraction - all of it walked, aimed and pressed with
+simulated input, with nothing reached through the game's API.
 
 ### 13. What the mission actually costs, in seconds
 
