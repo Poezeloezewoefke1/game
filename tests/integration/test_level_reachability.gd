@@ -301,8 +301,68 @@ func _check_ship_is_walkable() -> void:
 		check(_has_standing_room(space, shape, target.global_position),
 			"a player can stand within reach of %s" % String(oid))
 
+	_check_pilot_can_launch(level)
+
 	level.queue_free()
 	await tree.process_frame
+
+
+## How far the interact ray reaches, and how far a seated player may swivel.
+## Both are properties of the PLAYER, checked here against the LEVEL, because
+## that is where the two can disagree.
+const INTERACT_RAY_LENGTH := 3.2
+const SEATED_SWIVEL_LIMIT_DEG := 105.0
+## The camera pivot rides this far above the seated body.
+const EYE_ABOVE_SEAT := 0.6
+
+
+## Can a strapped-in pilot actually launch the ship?
+##
+## This is the check that would have caught the worst defect in the build. The
+## launch lever refuses to fire while any crew member is standing, and the lever
+## stood 3.9 m behind the nearest chair - past the 3.2 m interact ray, and 168
+## degrees round from a seat that only swivels 105. Every gate was green: the
+## rules were right, the routes were walkable, there was standing room at the
+## lever, and the ship could not be launched by playing the game.
+##
+## Nothing that asks about the level alone can see it, because it is not a fact
+## about the level: it is the level and the player's reach disagreeing. So this
+## asserts the disagreement directly, from the seat, using the same two numbers
+## the player uses.
+func _check_pilot_can_launch(level: Node) -> void:
+	set_current("the pilot's reach")
+	var lever: Node3D = null
+	var seats: Array = []
+	for node in level.find_children("*", "", true, false):
+		if String(node.get("object_id") if node.get("object_id") != null else "") \
+				== "ship_launch_lever":
+			lever = node as Node3D
+		if node.get("is_pilot_seat") != null and bool(node.get("is_pilot_seat")):
+			seats.append(node)
+	if not check(lever != null, "the ship has a launch control"):
+		return
+	if not check(not seats.is_empty(), "exactly one seat is marked as the pilot's"):
+		return
+	check(seats.size() == 1, "exactly one seat is the pilot's (found %d)" % seats.size())
+
+	for seat in seats:
+		var node3d := seat as Node3D
+		var sit: Vector3 = node3d.call("sit_position") if node3d.has_method("sit_position") \
+			else node3d.global_position
+		var eye: Vector3 = sit + Vector3(0.0, EYE_ABOVE_SEAT, 0.0)
+		# Aim at the lever's body, not its origin on the floor.
+		var to_lever: Vector3 = lever.global_position + Vector3(0.0, 0.9, 0.0) - eye
+		check(to_lever.length() <= INTERACT_RAY_LENGTH,
+			"the launch control is within the %.1f m interact ray of %s (it is %.2f m)"
+			% [INTERACT_RAY_LENGTH, String(seat.name), to_lever.length()])
+
+		var flat := Vector3(to_lever.x, 0.0, to_lever.z)
+		var seat_yaw: float = node3d.call("sit_yaw") if node3d.has_method("sit_yaw") \
+			else node3d.global_rotation.y
+		var swivel: float = rad_to_deg(absf(wrapf(atan2(-flat.x, -flat.z) - seat_yaw, -PI, PI)))
+		check(swivel <= SEATED_SWIVEL_LIMIT_DEG,
+			"the launch control is within the %.0f deg seated swivel of %s (it is %.0f deg)"
+			% [SEATED_SWIVEL_LIMIT_DEG, String(seat.name), swivel])
 
 
 ## The first thing standing in one leg of a walking route, or "" if it is clear.
@@ -384,11 +444,25 @@ func _check_spawn_exits(stage: Node) -> void:
 	shape.radius = PLAYER_RADIUS
 	shape.height = PLAYER_HEIGHT
 
-	# Out of the landing pad and towards the temple is -Z on every surface.
-	var exit_direction := Vector3(0.0, 0.0, -1.0)
+	# Not straight -Z. A player leaving the pad walks at the temple, so the leg
+	# that has to be clear is spawn -> clearing, and they do not walk it as a
+	# laser line: this sweeps three parallel lines 0.9 m apart, which is roughly
+	# how far a player wanders while looking around on a first landing.
+	#
+	# The straight -Z version passed this level while a 5 m rock stood four
+	# metres in front of Spawn1, because the capsule cleared its corner by
+	# 0.1 m. The automated playtest walked into it on the second run and not the
+	# first, which is exactly what a 0.1 m margin buys you.
+	var clearing := Vector3(0.0, 0.0, 13.0)
 	for point in root.get_children():
 		var at := (point as Node3D).global_position
 		var name := String(point.name)
-		var blocker := _blocker_along_leg(space, shape, at, at + exit_direction * 8.0)
-		check(blocker == "", "%s has a clear 8 m exit%s"
-			% [name, "" if blocker == "" else " - blocked by " + blocker])
+		var to_clearing: Vector3 = clearing - at
+		to_clearing.y = 0.0
+		var side: Vector3 = to_clearing.normalized().cross(Vector3.UP)
+		for lane in [-0.9, 0.0, 0.9]:
+			var offset: Vector3 = side * lane
+			var blocker := _blocker_along_leg(space, shape, at + offset,
+				at + offset + to_clearing.normalized() * 14.0)
+			check(blocker == "", "%s has a clear 14 m run at the clearing (lane %+.1f)%s"
+				% [name, lane, "" if blocker == "" else " - blocked by " + blocker])

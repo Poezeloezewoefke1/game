@@ -144,13 +144,13 @@ size = Vector3(18, 12, 4)
 palette = "rock"
 
 [node name="CanyonSpire1" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 2.5, 38)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2.5, 34)
 script = ExtResource("2_block")
 size = Vector3(2, 5, 2)
 palette = "rock"
 
 [node name="CanyonSpire2" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2, 27)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2, 27)
 script = ExtResource("2_block")
 size = Vector3(2.4, 4, 2.4)
 palette = "rock"

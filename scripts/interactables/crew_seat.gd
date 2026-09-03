@@ -11,6 +11,12 @@ extends Interactable
 ## the rest are furniture you can also sit in.
 @export var seat_id: String = ""
 @export var is_bridge_seat: bool = true
+## The pilot's chair. Exactly one seat on the ship has this, and it is the only
+## one the launch control is within arm's reach of - so the host has to take it
+## before anyone goes anywhere. Saying so on the OTHER seats is the whole point
+## of the flag: a host who straps into the wrong chair would otherwise sit there
+## with the checklist green, the crew seated, and no way to leave.
+@export var is_pilot_seat: bool = false
 ## Where the occupant's body sits, relative to this node.
 @export var sit_offset: Vector3 = Vector3(0.0, 0.62, 0.0)
 
@@ -55,6 +61,12 @@ func get_interaction_prompt(player: Node) -> String:
 		return "Stand up first"
 	if not MissionRules.is_ship_state(GameManager.mission_state()):
 		return ""
+	if me == GameConfig.HOST_PEER_ID and is_bridge_seat:
+		# The launch control sits on the pilot's console and nowhere else, so
+		# for the host - the only peer who may pull it - which chair they take
+		# decides whether the ship can leave at all.
+		return "Press E to take the pilot's seat" if is_pilot_seat \
+			else "Press E to Sit (the pilot's seat has the launch control)"
 	return "Press E to Sit"
 
 

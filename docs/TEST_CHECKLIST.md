@@ -121,6 +121,9 @@ spawner, a HUD and players.
 | 26e | A task cannot be completed twice | [A] |
 | 26f | The launch lever refuses while the checklist is unfinished | [A] |
 | 26g | The launch lever refuses while any crew member is unseated | [A] / [P] |
+| 26g1 | **The launch control is within a seated pilot's reach and swivel** | [A] `test_level_reachability` |
+| 26g2 | The pilot's seat is named as the one with the control, on the other bridge seats | [A] / [M] |
+| 26g3 | A strapped-in pilot can launch by looking at the console and pressing E | [P] |
 | 26h | A crew seat can be taken, and holding forward does not walk you out of it | [P] (drift measured, < 0.5 m) |
 | 26i | A seat already occupied refuses a second player | [A] |
 | 26j | The HUD shows the remaining checklist aboard the ship, not the Star Map line | [A] `test_scene_integrity` / [M] |

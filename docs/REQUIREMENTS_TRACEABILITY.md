@@ -11,6 +11,7 @@ its honest status.
 | **NET** | The multi-process multiplayer check asserts it across real OS processes |
 | **STATIC** | Implemented and reviewed by reading; no test exercises it |
 | **MANUAL** | Requires a human at a screen; listed in `docs/TEST_CHECKLIST.md` |
+| **PLAY** | The automated playtest reaches it by driving the shipped build with simulated keyboard and mouse |
 | **BLOCKED** | Cannot be verified in this environment |
 
 Test files are referenced by name; `runner` means `tests/run_tests.gd`.
@@ -209,3 +210,42 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | BUILD-008 | A broken script fails the compile phase | `run_tests.gd:_script_problem` | proven by a real regression during development | AUTO |
 | BUILD-009 | An engine error inside a passing test fails the run | `tools/run_validation.sh` | proven by removing the defect-17 fix and confirming exit 1 | AUTO |
 | BUILD-010 | CI and a developer run byte-identical checks | both workflows call `tools/run_validation.sh` | STATIC | STATIC |
+
+## The ship, the flight and the campaign (SHIP / FLY / MIS)
+
+| ID | Requirement | Implementation | Verification | Status |
+|---|---|---|---|---|
+| SHIP-001 | The crew begins each run aboard a ship, not a static hub | `starfarer_deck.tscn`, `GameConfig.SCENE_SHIP` | `test_scene_integrity`, playtest | AUTO + PLAY |
+| SHIP-002 | Four pre-flight tasks must be completed before launch | `ship_station.gd`, `MissionRules.ship_tasks_remaining` | `test_mission_rules`, playtest | AUTO + PLAY |
+| SHIP-003 | A completed task cannot be completed twice | `MissionRules.can_complete_ship_task` | `test_mission_rules` | AUTO |
+| SHIP-004 | The course is set at the nav console, host only | `nav_console.gd` | `test_mission_flow`, playtest | AUTO + PLAY |
+| SHIP-005 | Every station is reachable on foot from the spawn | `ShipRoutes`, level layout | `test_level_reachability` (capsule sweep), playtest | AUTO + PLAY |
+| SHIP-006 | The crew must be seated before the ship will launch | `launch_lever.gd:_blocker`, `MissionRules.can_launch` | `test_mission_rules`, playtest reads the refusal prompt | AUTO + PLAY |
+| SHIP-007 | A seated player cannot walk out of the chair | `player.gd:_seated_physics` | playtest measures the drift under held input | PLAY |
+| SHIP-008 | A seated player may swivel but not turn their back on the seat | `player.gd:SEATED_YAW_LIMIT` | STATIC | STATIC |
+| SHIP-009 | **The launch control is within a seated pilot's reach and swivel** | `starfarer_deck.tscn`, `crew_seat.gd:is_pilot_seat` | `test_level_reachability:_check_pilot_can_launch`; the playtest pulls it from the chair | AUTO + PLAY |
+| SHIP-010 | Seats are occupied host-authoritatively and freed on disconnect | `crew_seat.gd`, `game_manager.gd` | `test_mission_rules`, `test_session_reset` | AUTO |
+| FLY-001 | Launch, transit and landing run on the host clock | `game_manager.gd`, `MissionRules` | `test_mission_flow`, playtest | AUTO + PLAY |
+| FLY-002 | The flight is presented identically on every peer with no extra RPC | `flight_sequence.gd` reads phase + start time only | STATIC (single-peer playtest sees the sequence run) | STATIC |
+| FLY-003 | Landing mounts the destination surface and respawns the crew there | `scene_manager.gd`, `spawn_manager.gd` | `test_mission_flow`, playtest | AUTO + PLAY |
+| FLY-004 | A player is never left strapped into a seat that no longer exists | `player.gd`, transition reset | playtest asserts `seated_at` is clear after landing | PLAY |
+| MIS-001 | Three planets exist as data, each with its own scene, sky and hazard | `mission_catalog.gd` | `test_mission_rules`, `test_scene_integrity` | AUTO |
+| MIS-002 | Missions unlock in order; the first is always flyable | `MissionCatalog.is_unlocked` | `test_mission_rules` | AUTO |
+| MIS-003 | The nav console says why a destination is locked | `nav_console.gd` | playtest reads the prompt | PLAY |
+| MIS-004 | A crystal may be sealed behind a coupling, a guard or a hazard | `MissionRules.crystal_lock` | `test_mission_rules` | AUTO |
+| MIS-005 | The coupling occupies the crystal inventory slot | `game_manager.gd`, `GameConfig.ITEM_COUPLING` | `test_mission_rules`, playtest | AUTO + PLAY |
+| MIS-006 | Fitting the coupling unseals its crystal | `coupling_socket.gd` | `test_mission_rules`, playtest | AUTO + PLAY |
+| MIS-007 | A hazard field damages players until the vent is sealed, host only | `hazard_field.gd`, `hazard_control.gd` | `test_mission_rules`; damage path STATIC | AUTO + STATIC |
+| MIS-008 | Taking the Star Map wakes the Warden exactly once | `game_manager.gd:guardian_spawned` | `test_mission_flow` | AUTO |
+| MIS-009 | The Warden is invulnerable until all three shield nodes are down | `MissionRules.boss_is_vulnerable`, `warden.gd` | `test_mission_rules` | AUTO |
+| MIS-010 | The Warden enrages below a health fraction and hunts the map carrier | `warden.gd` | `test_mission_rules` (phase function) | AUTO |
+
+## Quality gates (QA)
+
+| ID | Requirement | Implementation | Verification | Status |
+|---|---|---|---|---|
+| QA-001 | The game can be played from the main menu to extraction | `tools/playtest.gd`, run in CI | the playtest itself | PLAY |
+| QA-002 | A press of E is never silently swallowed | `player.gd:resolve_interact` | `test_interact_press` (16 assertions) | AUTO |
+| QA-003 | Every authored route is walkable by a player-sized capsule, across its width | `test_level_reachability` | itself | AUTO |
+| QA-004 | A spawn point has a clear run at the objective, not just a clear axis | `test_level_reachability:_check_spawn_exits` | itself | AUTO |
+| QA-005 | The playtest cannot report a clean run after dying | `playtest.gd:_require_failure` | proven by a driver that died and was caught | AUTO |

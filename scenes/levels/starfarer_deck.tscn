@@ -807,6 +807,7 @@ transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -5.600, 
 object_id = "ship_seat_1"
 seat_id = "ship_seat_1"
 is_bridge_seat = true
+is_pilot_seat = true
 
 [node name="CrewSeat2" parent="Interactables" instance=ExtResource("7_seat")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -1.900, 0.000, -20.200)
@@ -830,7 +831,7 @@ is_bridge_seat = true
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, -16.600)
 
 [node name="LaunchLever" parent="Interactables" instance=ExtResource("10_lever")]
-transform = Transform3D(0.8192, 0, 0.5736, 0, 1, 0, -0.5736, 0, 0.8192, 6.400, 0.000, -16.400)
+transform = Transform3D(-1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, -1.0000, -5.600, 0.000, -22.600)
 
 [node name="StationReactor" parent="Interactables" instance=ExtResource("8_station")]
 transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 2.300, 0.000, 8.400)

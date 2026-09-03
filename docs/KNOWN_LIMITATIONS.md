@@ -284,3 +284,27 @@ words intelligible over the bed are all open. They are cheap to change: the
 voice chain is one filter string and the arrangement is a handful of numbers,
 both in `tools/audio/`.
 
+## VERIFY-008 - nobody has played this game
+
+**Status: open. Unverifiable from here.**
+
+There is no GPU and no Vulkan on this machine, no display beyond Xvfb with a
+software rasteriser, and no person at a screen. A great deal about the game has
+now been MEASURED from real runs of the shipped build: that a player can walk
+from the main menu to extraction using nothing but simulated keyboard and mouse,
+how long each act takes, what every prompt says at the moment it is read, how
+far a seated player drifts, how many times they go down, and that the engine
+raises no errors doing it. `tools/playtest.gd` is the instrument and
+`ci-logs/playtest-*.log` is its output.
+
+None of that establishes that the game is FUN. Whether the 41 m walk between
+pre-flight stations reads as a ship you crew or as a corridor you trudge,
+whether the launch lands as a moment, whether the Warden's shield phase is
+tense or fiddly, and whether the coupling errand is a good detour or a chore -
+these are judgements, and the ones in `docs/QA_REPORT.md` are inferred from
+timings, distances, death counts and the shape of the loop, not from having
+played it. They are stated as inferences there, and they should be read as
+hypotheses for the first human playtest to confirm or throw out.
+
+The one thing measurement does settle: it is now possible to play the game at
+all, start to finish. Before this pass it was not - see defect 58.

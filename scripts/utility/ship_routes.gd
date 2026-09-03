@@ -53,10 +53,10 @@ const TO_LEVER: Array = [
 	Vector3(0, 0, 17.0), Vector3(0, 0, 15.0), Vector3(2.4, 0, 13.0),
 	Vector3(2.4, 0, 10.0), Vector3(2.4, 0, 6.4), Vector3(0, 0, 5.0),
 	Vector3(0, 0, 0.0), Vector3(0, 0, -4.0), Vector3(0, 0, -10.0),
-	Vector3(0, 0, -15.0), Vector3(0, 0, -16.6), Vector3(4.6, 0, -16.6),
+	Vector3(0, 0, -15.0), Vector3(0, 0, -17.4), Vector3(-5.2, 0, -20.8),
 ]
 const TO_SEAT: Array = [
-	Vector3(0, 0, -17.4), Vector3(-5.2, 0, -18.8),
+	Vector3(0, 0, -17.4), Vector3(-5.2, 0, -18.8), Vector3(-5.6, 0, -19.4),
 ]
 
 ## Every route, by the station it serves. Order is the order a crew works the

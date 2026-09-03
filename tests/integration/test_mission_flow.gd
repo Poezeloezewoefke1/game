@@ -11,13 +11,29 @@ const MS := MissionRules.MissionState
 ## INTERACT_VALIDATE_DISTANCE of their target.
 ## Aboard the Starfarer. The bridge is at the bow, so these are all negative Z.
 const SHIP_NAV_SPOT := Vector3(0, 0, -14.5)
-const SHIP_LEVER_SPOT := Vector3(5.0, 0, -15.0)
 const SHIP_SEAT_SPOT := Vector3(-5.6, 0, -18.6)
+
 const SHIP_STATION_SPOTS := {
 	"ship_task_reactor": Vector3(1.0, 0, 8.4),
 	"ship_task_fuel": Vector3(6.2, 0, 13.4),
 	"ship_task_hatch": Vector3(0.0, 0, 21.6),
 }
+
+## Where to stand to work the launch lever, derived from where the lever
+## actually is rather than written down beside it.
+##
+## It was a constant until the lever moved onto the pilot's console, and then
+## thirty assertions failed at once - not because anything was broken, but
+## because a hard-coded position in a test is a second copy of a level fact,
+## and the two drifted apart the moment the level changed. Asking the level is
+## the only version that cannot drift.
+func _lever_spot() -> Vector3:
+	# The last waypoint of the authored route to the lever - the spot a player
+	# walking there actually ends up on. ShipRoutes is already the one place
+	# the playtest and the walkability gate agree about the deck, so a third
+	# opinion here would be a third thing to keep in sync.
+	var route: Array = ShipRoutes.TO_LEVER
+	return route.back() as Vector3 if not route.is_empty() else Vector3(-5.2, 0.0, -20.8)
 const TEMPLE_TRIGGER_SPOT := Vector3(0, 0, 13)
 const CRYSTAL_SPOTS := {
 	"nerava_crystal_ruins": Vector3(-42, 0, 0),
@@ -119,7 +135,7 @@ func _phase_preflight() -> void:
 	check_eq(GameManager.mission_state(), MS.SHIP_IDLE, "an unknown object id changes nothing")
 
 	# The lever must refuse while the checklist is red, even in range.
-	await _session.move_host_player_to(SHIP_LEVER_SPOT)
+	await _session.move_host_player_to(_lever_spot())
 	GameManager.request_interact("ship_launch_lever")
 	await tree.process_frame
 	check_eq(GameManager.mission_state(), MS.SHIP_IDLE,
@@ -138,7 +154,7 @@ func _phase_preflight() -> void:
 		"every pre-flight station is green")
 
 	# Still refused: nobody is strapped in.
-	await _session.move_host_player_to(SHIP_LEVER_SPOT)
+	await _session.move_host_player_to(_lever_spot())
 	GameManager.request_interact("ship_launch_lever")
 	await tree.process_frame
 	check_eq(GameManager.mission_state(), MS.SHIP_IDLE,
@@ -166,7 +182,7 @@ func _phase_preflight() -> void:
 func _phase_descent() -> void:
 	set_current("descent")
 	# The lever is armed now. This is the real path.
-	await _session.move_host_player_to(SHIP_LEVER_SPOT)
+	await _session.move_host_player_to(_lever_spot())
 	GameManager.request_interact("ship_launch_lever")
 	check(await _session.await_mission_state(MS.LAUNCHING, 5.0),
 		"the lever starts the launch sequence")

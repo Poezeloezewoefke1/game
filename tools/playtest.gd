@@ -265,10 +265,18 @@ func _play_the_ship() -> bool:
 	if drift > 1.0:
 		_fail("a seated player walked %.2f m out of the chair" % drift)
 
-	# The host launches from the seat. The lever is out of reach from there, so
-	# this is the one action a seated player takes through the mission API -
-	# and it is the same call the lever makes.
-	GameManager.host_begin_launch()
+	# Strapped in, the pilot pulls the lever. This used to call
+	# GameManager.host_begin_launch() directly, with a comment explaining that
+	# the lever was out of reach from the seat - which is not a note about the
+	# harness, it is the report that the ship could not be launched by playing
+	# the game. A driver that reaches past the control it is testing proves
+	# nothing, so it now does what a player does: look at the console and press
+	# E, from the chair.
+	if not await _approach_and_use("ship_launch_lever", "the launch lever, from the seat",
+			func() -> bool: return GameManager.mission_state() == MS.LAUNCHING,
+			false):
+		_fail("a seated pilot could not launch the ship")
+		return false
 	if not await _until(func() -> bool:
 		return GameManager.mission_state() == MS.LAUNCHING, 6.0):
 		_fail("the launch never started")
@@ -402,6 +410,48 @@ func _play_the_surface() -> bool:
 ## right inventory without a second edit.
 func _carrying() -> String:
 	return GameManager.carried_crystal_of(NetworkManager.local_peer_id())
+
+
+## The id of an interactable, or "-" for a body that is not one. `get()` on a
+## missing property returns null, and `String(null)` is not a constructor -
+## it raised a SCRIPT ERROR inside the failure report, which killed the very
+## diagnostic that was trying to explain the failure.
+## Is the ray on the thing we are trying to use? With no id given, any prompt
+## counts, which is what the free-aim callers want.
+func _aimed_at(wanted_id: String) -> bool:
+	if _prompt_text() == "":
+		return false
+	return wanted_id == "" or _hovered_id() == wanted_id
+
+
+## The object the interact ray is currently latched onto, or "" for nothing.
+func _hovered_id() -> String:
+	var p := _player()
+	if p == null or not is_instance_valid(p):
+		return ""
+	var hovered: Variant = p.get("_hovered")
+	if hovered == null or not is_instance_valid(hovered):
+		return ""
+	return _object_id_of(hovered as Node)
+
+
+func _object_id_of(n: Node) -> String:
+	var oid: Variant = n.get("object_id")
+	return "-" if oid == null else str(oid)
+
+
+## A node named the way a person can find it: the tail of its path, not just a
+## leaf name. "NavigationRegion3D" as a blocker name is useless - a level has
+## one of those and everything solid hangs off it. "Terrain/RidgeBlock" is not.
+func _describe(n: Node) -> String:
+	var parts: Array = []
+	var at: Node = n
+	for _i in 3:
+		if at == null:
+			break
+		parts.push_front(String(at.name))
+		at = at.get_parent()
+	return "/".join(parts)
 
 
 func _pedestal_letter(crystal_id: String) -> String:
@@ -584,13 +634,19 @@ func _look_at_object(object_id: String) -> void:
 		return
 	var aim: Vector3 = (node as Node3D).global_position + Vector3(0.0, 0.9, 0.0)
 	await _look_at_point(aim)
-	await _pitch_towards(aim)
+	await _pitch_towards(aim, object_id)
 
 
 ## Drive the camera pitch to look at a world point, then micro-scan around it
-## until the interact ray actually reports something - which is the only
+## until the interact ray reports the object we WANT - which is the only
 ## definition of "aimed at it" that matters.
-func _pitch_towards(target: Vector3) -> void:
+##
+## `wanted` matters more than it looks. Stopping as soon as any prompt appeared
+## meant that on a bridge with four chairs in a row, the scan settled on
+## whichever one the ray happened to graze first and then reported success while
+## looking at the wrong seat. An empty `wanted` keeps the old any-prompt
+## behaviour for callers that genuinely do not care.
+func _pitch_towards(target: Vector3, wanted_id: String = "") -> void:
 	var player := _player() as Node3D
 	if player == null:
 		return
@@ -599,7 +655,7 @@ func _pitch_towards(target: Vector3) -> void:
 		return
 	var sens: float = SettingsManager.effective_mouse_sensitivity()
 	for _i in 60:
-		if _prompt_text() != "":
+		if _aimed_at(wanted_id):
 			return
 		var eye: Vector3 = pivot.global_position
 		var to_target: Vector3 = target - eye
@@ -618,7 +674,7 @@ func _pitch_towards(target: Vector3) -> void:
 	# On target geometrically but still no prompt: scan a few degrees either
 	# side, because the ray is a line and the object has a finite hitbox.
 	for step in [4.0, -8.0, 12.0, -16.0, 20.0]:
-		if _prompt_text() != "":
+		if _aimed_at(wanted_id):
 			return
 		var ev2 := InputEventMouseMotion.new()
 		ev2.relative = Vector2(0.0, deg_to_rad(step) / sens)
@@ -703,9 +759,7 @@ func _what_is_blocking(player: Node3D) -> String:
 		params.transform = Transform3D(Basis(), Vector3(probe.x, 0.95, probe.z))
 		params.collision_mask = GameConfig.LAYER_WORLD
 		for hit in space.intersect_shape(params, 4):
-			var n: Node = hit["collider"]
-			var who: Node = n.get_parent() if n.get_parent() != null else n
-			var tag := "capsule:%s@%.1fm" % [who.name, step]
+			var tag := "capsule:%s@%.1fm" % [_describe(hit["collider"] as Node), step]
 			if not names.has(tag):
 				names.append(tag)
 
@@ -721,9 +775,7 @@ func _what_is_blocking(player: Node3D) -> String:
 			var hit := space.intersect_ray(q)
 			if hit.is_empty():
 				continue
-			var node: Node = hit["collider"]
-			var owner_node: Node = node.get_parent() if node.get_parent() != null else node
-			var label := "%s(y=%.2f)" % [owner_node.name, height]
+			var label := "%s(y=%.2f)" % [_describe(hit["collider"] as Node), height]
 			if not names.has(label):
 				names.append(label)
 	# Finally the player's own state. Geometry is only one reason a body does not
@@ -759,9 +811,9 @@ func _player_state_line(player: Node3D) -> String:
 		var other := col.get_collider() as Node
 		if other == null:
 			continue
-		var who: Node = other.get_parent() if other.get_parent() != null else other
-		bits.append("touching %s (layer %d)" % [who.name,
-			int(other.get("collision_layer")) if other.get("collision_layer") != null else -1])
+		bits.append("touching %s (layer %d, normal %s)" % [_describe(other),
+			int(other.get("collision_layer")) if other.get("collision_layer") != null else -1,
+			str(col.get_normal().snapped(Vector3.ONE * 0.01))])
 	return "state: " + " ".join(bits)
 
 
@@ -777,19 +829,30 @@ func _player_state_line(player: Node3D) -> String:
 ## the caller checks the outcome itself. The first version inferred "done" from
 ## the object id and silently treated every id it did not recognise as already
 ## finished - so pressing E on a seat never pressed at all.
+## `may_walk` is false for a seated player: stepping towards the target is how
+## this closes the gap, and a player in a chair cannot step anywhere. Letting it
+## try would hide the very thing being tested - whether the control is within
+## reach OF THE SEAT - behind a walk that silently does nothing.
 func _approach_and_use(object_id: String, what: String = "",
-		done: Callable = Callable()) -> bool:
+		done: Callable = Callable(), may_walk: bool = true) -> bool:
 	var label := what if what != "" else object_id
 	var node := SpawnManager.find_interactable(object_id)
 	if node == null:
 		_fail("%s is not registered in this level" % label)
 		return false
 
-	for _attempt in 14:
+	for _attempt in (14 if may_walk else 3):
 		await _look_at_object(object_id)
-		if _prompt_text() != "":
+		# A prompt is not enough: it has to be THIS object's prompt. Walking to
+		# a flight seat, the driver stopped 3 m short with the ray on the chair
+		# NEXT to it, saw a prompt, and declared itself arrived. A player headed
+		# for a particular chair keeps walking until they are looking at that
+		# chair, so the loop only breaks when the ray agrees with the target.
+		if _prompt_text() != "" and _hovered_id() == object_id:
 			break
-		# Not in range or not aimed - take a step towards it and try again.
+		if not may_walk:
+			continue
+		# Not in range, not aimed, or aimed at the wrong thing - step towards it.
 		await _look_at_point((node as Node3D).global_position)
 		await _hold("move_forward", 0.28)
 		await _frames(2)
@@ -813,18 +876,13 @@ func _approach_and_use(object_id: String, what: String = "",
 			var hit := space.intersect_ray(q)
 			if not hit.is_empty():
 				var n: Node = hit["collider"]
-				seen = "%s (oid='%s', parent=%s) at %.2f m" % [n.name,
-					String(n.get("object_id")),
-					n.get_parent().name if n.get_parent() != null else "-",
+				seen = "%s (oid='%s') at %.2f m" % [_describe(n), _object_id_of(n),
 					eye.distance_to(hit["position"])]
 		_fail("%s never showed a prompt (closed to %.1f m; player at %s, camera pitch %.0f deg, ray found %s)"
 			% [label, gap, str(player.global_position.snapped(Vector3.ONE * 0.1)),
 				rad_to_deg(pivot.rotation.x) if pivot != null else 0.0, seen])
 		return false
-	var hovered: Variant = _player().get("_hovered")
-	var hovered_id := "none"
-	if hovered != null and is_instance_valid(hovered):
-		hovered_id = String((hovered as Node).get("object_id"))
+	var hovered_id := _hovered_id()
 	_last_prompt = prompt
 	_event("prompt", "%s -> '%s' (ray on '%s')" % [label, prompt, hovered_id])
 	if hovered_id != object_id:
