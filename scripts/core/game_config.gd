@@ -311,6 +311,18 @@ const SHIP_TASK_LABELS: Dictionary = {
 	"task_hatch": "Seal the outer hatch",
 }
 
+## Where each station IS. The deck runs 41 m from bow to stern through four
+## bulkheads, and the HUD used to name the next task without saying where to
+## find it - so the only way to learn the ship was to walk all of it once. The
+## label says what to do; this says where, and the two are shown together.
+## Bow is -Z, stern is +Z, port is -X, starboard is +X.
+const SHIP_TASK_LOCATIONS: Dictionary = {
+	"task_reactor": "engineering, by the spine",
+	"task_course": "the bridge, at the bow",
+	"task_fuel": "engineering, on the starboard wall",
+	"task_hatch": "the cargo bay, at the stern",
+}
+
 ## How long each seat's restraint animation takes to settle. Purely cosmetic;
 ## the seat is authoritative the instant the host accepts it.
 const SEAT_SETTLE_TIME: float = 0.35
@@ -345,6 +357,11 @@ const HAZARD_TICK_INTERVAL: float = 1.0
 ## is an obstacle on the way to an objective, not the fight itself.
 const GUARD_HITS_TO_KILL: int = 14
 
+## How much health the altar gives back when it activates. A full heal: the
+## crew has earned it by placing three crystals, and the fight it summons is
+## balanced around arriving at full. See GameManager._host_restore_crew.
+const ALTAR_RESTORE_HEALTH: int = MAX_HEALTH
+
 const BLASTER_BOSS_DAMAGE: int = 25
 
 const BOSS_MAX_HEALTH: int = 900
@@ -356,6 +373,21 @@ const BOSS_VOLLEY_INTERVAL: float = 2.6
 const BOSS_ENRAGED_VOLLEY_INTERVAL: float = 1.4
 const BOSS_VOLLEY_PROJECTILES: int = 3
 const BOSS_CONTACT_DAMAGE: int = 18
+## How close, MEASURED ON THE GROUND, the enraged Warden has to be to hurt you
+## by contact. Horizontal because it flies: see Warden._host_contact_damage.
+const BOSS_CONTACT_RANGE: float = 3.2
+
+## The rings the Warden holds around its target: comfortable while it trades
+## fire, close while enraged.
+##
+## The enraged ring MUST sit outside BOSS_CONTACT_RANGE. It was 3.0 against a
+## contact range of 3.2, so the boss deliberately parked inside its own damage
+## radius and contact damage stopped being a punishment for letting it reach
+## you - it was an unconditional 18 damage a second for the whole phase, which
+## killed a solo player from full in four seconds however well they played.
+## Measured, on both the cautious and the aggressive driver.
+const BOSS_STAND_OFF: float = 11.0
+const BOSS_ENRAGED_STAND_OFF: float = 4.5
 const BOSS_MOVE_SPEED: float = 4.2
 ## How far above its anchor the Warden hovers. It flies rather than walks, so it
 ## needs no navmesh - which removes the whole class of navigation failures the

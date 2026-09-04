@@ -106,7 +106,7 @@ func _process(_delta: float) -> void:
 			_starmap_label.text = "All stations green - take your seat"
 		else:
 			_starmap_label.text = "Next: %s (%d left)" % [
-				GameConfig.SHIP_TASK_LABELS.get(remaining[0], remaining[0]),
+				MissionRules.ship_task_hint(String(remaining[0])),
 				remaining.size()]
 		_refresh_team(me)
 		return

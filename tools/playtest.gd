@@ -40,6 +40,13 @@ const MS := MissionRules.MissionState
 ## declares itself stuck. A stuck leg is the single most valuable thing this
 ## harness can find: it means geometry blocks a route a player must walk.
 const ARRIVE_RADIUS: float = 2.6
+## How close the driver has to get to an intermediate navigation corner before
+## turning for the next one. Tight, deliberately: see _nav_walk_to.
+const NAV_CORNER_RADIUS: float = 0.9
+## How much room the driver wants between itself and an enraged Warden before it
+## turns round to shoot. Beyond the boss's own 11 m stand-off ring, so turning to
+## fight does not simply hand the distance straight back.
+const WARDEN_SAFE_GAP: float = 14.0
 const LEG_TIMEOUT: float = 45.0
 ## If the player moves less than this over STUCK_WINDOW while holding forward,
 ## something solid is in the way.
@@ -47,6 +54,10 @@ const STUCK_DISTANCE: float = 0.35
 const STUCK_WINDOW: float = 2.5
 
 var _strategy: String = "cautious"
+## Which planet to fly. Empty means "whatever is unlocked on a fresh save",
+## which is Nerava - and which is why for a long time nothing had ever played
+## the other two thirds of the campaign.
+var _mission: String = ""
 var _out_path: String = ""
 var _events: Array = []
 var _t0: int = 0
@@ -78,6 +89,8 @@ func _ready() -> void:
 			_strategy = a.split("=", true, 1)[1]
 		elif a.begins_with("--out="):
 			_out_path = a.split("=", true, 1)[1]
+		elif a.begins_with("--mission="):
+			_mission = a.split("=", true, 1)[1]
 	# Godot ACCUMULATES mouse motion by default: several events parsed within
 	# one frame are merged into one before they reach `_unhandled_input`. For a
 	# person that is a smoothing feature. For a driver that nudges the mouse and
@@ -109,7 +122,9 @@ func _fail(message: String) -> void:
 # ==========================================================================
 
 func _run() -> void:
-	_event("playtest.start", "strategy=%s godot=%s" % [_strategy, Engine.get_version_info()["string"]])
+	_event("playtest.start", "strategy=%s mission=%s godot=%s"
+		% [_strategy, (_mission if _mission != "" else "first unlocked"),
+			Engine.get_version_info()["string"]])
 
 	LanDiscovery.local_teardown()
 	var packed: PackedScene = load("res://main.tscn") as PackedScene
@@ -222,6 +237,50 @@ func _find_button(root: Node, names: Array) -> Button:
 # Aboard the ship: the pre-flight checklist, walked and pressed
 # ==========================================================================
 
+## Cycle the chart table round to the planet this run is meant to fly.
+##
+## The console offers only what the crew has UNLOCKED, and on a fresh save that
+## is Nerava alone - which is the honest reason two thirds of the catalog had
+## never been played by anything. Asking for a later planet therefore has to
+## grant the campaign progress that would have earned it, and the log says so
+## in as many words: this is a driver standing in for a save file, not the game
+## handing out destinations.
+func _plot_the_course() -> bool:
+	if _mission == "" or _mission == String(GameManager.snapshot.get("mission_id", "")):
+		return true
+	if not MissionCatalog.has_mission(_mission):
+		_fail("--mission=%s is not in the catalog" % _mission)
+		return false
+
+	# Everything ordered before the wanted planet counts as flown already.
+	var earned: Array = []
+	for id in MissionCatalog.ids():
+		if String(id) == _mission:
+			break
+		earned.append(String(id))
+	if not earned.is_empty():
+		GameManager.snapshot["completed_missions"] = earned
+		_event("campaign.unlocked",
+			"standing in for a save that has flown %s" % str(earned))
+
+	# Then plot it the way a player does: press E until the chart reads right.
+	for _i in MissionCatalog.ids().size() + 1:
+		if String(GameManager.snapshot.get("mission_id", "")) == _mission:
+			_event("course.plotted", MissionCatalog.display_name(_mission))
+			return true
+		if not await _approach_and_use("ship_nav_console", "the chart table",
+				func() -> bool:
+					return String(GameManager.snapshot.get("mission_id", "")) == _mission,
+				false):
+			break
+	if String(GameManager.snapshot.get("mission_id", "")) == _mission:
+		_event("course.plotted", MissionCatalog.display_name(_mission))
+		return true
+	_fail("the chart table would not plot a course for %s (it reads %s)"
+		% [_mission, GameManager.snapshot.get("mission_id", "")])
+	return false
+
+
 func _play_the_ship() -> bool:
 	# Routes come from ShipRoutes so the playtest and the walkability gate can
 	# never disagree about what "the way to the fuel station" means.
@@ -268,6 +327,8 @@ func _play_the_ship() -> bool:
 			task_id = GameConfig.SHIP_TASK_COURSE
 		await _approach_and_use(String(object_id), "",
 			func() -> bool: return _station_done(task_id))
+		if String(object_id) == "ship_nav_console" and not await _plot_the_course():
+			return false
 	var remaining: Array = MissionRules.ship_tasks_remaining(GameManager.snapshot)
 	_event("ship.checklist", "remaining=%s" % str(remaining))
 	if not remaining.is_empty():
@@ -386,8 +447,7 @@ func _play_the_surface() -> bool:
 	_event("surface.ready", "player at %s"
 		% str((_player() as Node3D).global_position.snapped(Vector3.ONE * 0.1)))
 
-	if not await _walk_to(Vector3(0, 0, 13), "temple clearing"):
-		_fail("could not walk from the landing pad to the temple")
+	if not await _walk_to_temple():
 		return false
 	if not await _until(func() -> bool:
 		return GameManager.mission_state() == MS.FIND_CRYSTALS, 8.0):
@@ -401,24 +461,26 @@ func _play_the_surface() -> bool:
 		if not await _do_coupling_errand(mission_id):
 			return false
 
-	# Three crystals, each fetched and placed. The routes are the authored
-	# corridors; a straight line walks into rock.
-	var routes := {
-		GameConfig.CRYSTAL_RUINS: [Vector3(0, 0, 4), Vector3(-12, 0, 0), Vector3(-41, 0, 0)],
-		GameConfig.CRYSTAL_CAVE: [Vector3(0, 0, 4), Vector3(14, 0, 0), Vector3(41, 0, 0)],
-		GameConfig.CRYSTAL_GROVE: [Vector3(0, 0, 4), Vector3(0, 0, -18), Vector3(0, 0, -41)],
-	}
-	var pedestals := {
-		GameConfig.CRYSTAL_RUINS: Vector3(-4, 0, 3),
-		GameConfig.CRYSTAL_CAVE: Vector3(4, 0, 3),
-		GameConfig.CRYSTAL_GROVE: Vector3(0, 0, -7),
-	}
-	for crystal_id in routes:
+	# The hazard errand, if this mission runs a hazard field over a crystal.
+	# Nerava has none; Cinder burns and Hallow freezes, and on both of them one
+	# crystal sits inside the field. Walking in without sealing the vent is a
+	# slow death, so the valve comes first - which is what the lock is for.
+	if _hazard_locks_a_crystal():
+		if not await _seal_the_vent(mission_id):
+			return false
+
+	# Three crystals, each fetched and placed. Every route is asked of the
+	# level's own navigation mesh rather than read off a table: the tables were
+	# hand-measured on Nerava, which is why nothing had ever walked Cinder.
+	var last_hp_before_place := GameConfig.MAX_HEALTH
+	for crystal_id in [GameConfig.CRYSTAL_RUINS, GameConfig.CRYSTAL_CAVE,
+			GameConfig.CRYSTAL_GROVE]:
 		var t_start := _now()
-		for leg in routes[crystal_id]:
-			if not await _walk_to(leg, "to %s" % crystal_id):
-				_fail("route to %s is blocked at %s" % [crystal_id, str(leg)])
 		var want: String = String(crystal_id)
+		var crystal_object: String = "%s_%s" % [mission_id, crystal_id]
+		if not await _nav_walk_to_object(crystal_object, "to %s" % crystal_id):
+			_fail("could not reach %s" % crystal_id)
+			return false
 
 		# A guarded crystal cannot be taken until its Sentinel is down, and the
 		# prompt says so. Fight it first, the way a player who read the prompt
@@ -428,29 +490,29 @@ func _play_the_surface() -> bool:
 			if not await _kill_the_guard(want):
 				return false
 
-		if not await _approach_and_use("%s_%s" % [mission_id, crystal_id],
-				"the %s" % crystal_id,
+		if not await _approach_and_use(crystal_object, "the %s" % crystal_id,
 				func() -> bool: return _carrying() == want):
 			return false
-		_event("crystal.taken", "%s in %.1fs" % [crystal_id, _now() - t_start])
+		_event("crystal.taken", "%s in %.1fs, %d hp"
+			% [crystal_id, _now() - t_start, int(_player().get("health"))])
 
-		# Retrace the corridor rather than cutting the diagonal home. The route
-		# out has a dog-leg at (14, 0, 0) that misses the cave stalagmite; a
-		# straight line from the crystal to (0, 0, 4) walks into it, and the
-		# driver was stopped dead at (29.2, 0, 2.1) against exactly that. The
-		# corridor is not blocked - the shortcut is.
-		var home: Array = (routes[crystal_id] as Array).duplicate()
-		home.reverse()
-		home.remove_at(0)
-		home.append(pedestals[crystal_id])
-		for leg in home:
-			if not await _walk_to(leg, "carry %s home" % crystal_id):
-				_fail("carrying %s home is blocked at %s" % [crystal_id, str(leg)])
-		if not await _approach_and_use(
-				"%s_pedestal_%s" % [mission_id, _pedestal_letter(crystal_id)],
+		var pedestal_object: String = "%s_pedestal_%s" \
+			% [mission_id, _pedestal_letter(crystal_id)]
+		if not await _nav_walk_to_object(pedestal_object, "carry %s home" % crystal_id):
+			_fail("could not carry %s back to its pedestal" % crystal_id)
+			return false
+		var hp_before_place := int(_player().get("health"))
+		if not await _approach_and_use(pedestal_object,
 				"the %s pedestal" % crystal_id,
 				func() -> bool: return _carrying() == ""):
 			return false
+		last_hp_before_place = hp_before_place
+	# Health at the altar is the number that decides whether the Warden is a
+	# fight or a formality. It used to be whatever the descent had left of it,
+	# so a run that fought a crystal guard arrived at a boss tuned for full
+	# health and lost to arithmetic rather than to play. Log it either way.
+	_event("altar.health", "%d hp before the last crystal was placed, %d after"
+		% [last_hp_before_place, int(_player().get("health"))])
 	_event("pedestals.placed", "%d of %d"
 		% [GameManager.placed_pedestal_count(), GameConfig.REQUIRED_PEDESTAL_COUNT])
 	if GameManager.placed_pedestal_count() < GameConfig.REQUIRED_PEDESTAL_COUNT:
@@ -458,7 +520,7 @@ func _play_the_surface() -> bool:
 		return false
 
 	# The Star Map.
-	if not await _walk_to(Vector3(0, 0, 1), "altar"):
+	if not await _nav_walk_to_object("%s_star_map_altar" % mission_id, "altar"):
 		_fail("could not reach the altar")
 		return false
 	if not await _approach_and_use("%s_star_map_altar" % mission_id, "the altar",
@@ -471,9 +533,8 @@ func _play_the_surface() -> bool:
 		return false
 
 	# Home.
-	for leg in [Vector3(0, 0, 14), Vector3(0, 0, 32), Vector3(0, 0, 42)]:
-		if not await _walk_to(leg, "run for the pod"):
-			_fail("the run back to the pod is blocked at %s" % str(leg))
+	if not await _nav_walk_to_object("%s_drop_pod" % mission_id, "run for the pod"):
+		_fail("the run back to the drop pod is blocked")
 	if not await _approach_and_use("%s_drop_pod" % mission_id, "the drop pod",
 			func() -> bool: return GameManager.mission_state() == MS.MISSION_COMPLETE):
 		return false
@@ -535,6 +596,42 @@ func _kill_the_guard(crystal_id: String) -> bool:
 
 	_fail("the guard on %s was still standing after 90 s" % crystal_id)
 	return false
+
+
+## Run from an enraged Warden - FORWARDS, which is the only direction the game
+## lets anyone sprint in.
+##
+## `player.gd` gates sprint on moving forward (`input.y < 0.0`). The driver held
+## `sprint` together with `move_back`, so it was not sprinting at all: it walked
+## backwards at 5.0 m/s away from something that closes at 6.4, and could never
+## open a gap. Every enraged phase therefore ended in contact range no matter
+## how the fight was tuned. Turning round to run is not a trick to beat the
+## boss - it is what the enrage is FOR, and a driver that will not do it
+## measures itself rather than the game.
+func _run_from_the_warden(warden: Node) -> void:
+	var player := _player() as Node3D
+	if player == null or not is_instance_valid(warden):
+		return
+	# Run until the gap is actually open, not for a fixed time. A sprinting
+	# player gains 2.1 m/s on an enraged Warden, so a 1.1 s dash buys 2.3 m and
+	# the boss is back inside contact range before the next volley leaves the
+	# barrel. Breaking away means breaking away.
+	var deadline := _now() + 4.0
+	Input.action_press("sprint")
+	while _now() < deadline:
+		player = _player() as Node3D
+		if player == null or not is_instance_valid(warden):
+			break
+		if player.global_position.distance_to((warden as Node3D).global_position) \
+				>= WARDEN_SAFE_GAP:
+			break
+		var away: Vector3 = player.global_position - (warden as Node3D).global_position
+		away.y = 0.0
+		if away.length() < 0.1:
+			away = Vector3(1.0, 0.0, 0.0)
+		await _look_at_point(player.global_position + away.normalized() * 20.0)
+		await _hold("move_forward", 0.35)
+	Input.action_release("sprint")
 
 
 ## The Sentinel that guards a particular crystal, or null.
@@ -665,35 +762,71 @@ func _pedestal_letter(crystal_id: String) -> String:
 
 func _do_coupling_errand(mission_id: String) -> bool:
 	_event("coupling.errand", "the cave crystal is sealed")
-	for leg in [Vector3(0, 0, 20), Vector3(-4, 0, 24)]:
-		if not await _walk_to(leg, "to the coupling"):
-			_fail("the power coupling is not reachable at %s" % str(leg))
-			return false
+	if not await _nav_walk_to_object("%s_power_coupling" % mission_id, "to the coupling"):
+		_fail("the power coupling is not reachable")
+		return false
 	if not await _approach_and_use("%s_power_coupling" % mission_id, "the power coupling",
 			func() -> bool: return _carrying() == GameConfig.ITEM_COUPLING):
 		return false
-	for leg in [Vector3(0, 0, 8), Vector3(0, 0, 2), Vector3(14, 0, 0),
-			Vector3(24, 0, -2), Vector3(34, 0, -3)]:
-		if not await _walk_to(leg, "to the socket"):
-			_fail("the coupling socket is not reachable at %s" % str(leg))
-			return false
+	if not await _nav_walk_to_object("%s_coupling_socket" % mission_id, "to the socket"):
+		_fail("the coupling socket is not reachable")
+		return false
 	if not await _approach_and_use("%s_coupling_socket" % mission_id, "the coupling socket",
 			func() -> bool:
 				return MissionRules.crystal_lock(
 					GameManager.snapshot, GameConfig.CRYSTAL_CAVE) == ""):
 		return false
 	_event("coupling.fitted", "the cave crystal is open")
-
-	# Walk back down the authored corridor rather than cutting the diagonal
-	# home. The crystal routes all start at (0, 0, 4), and a straight line to it
-	# from the socket crosses ground no corridor covers - so a failure there
-	# would say "the level is broken" when the truth is "nobody designed that
-	# line to be walkable".
-	for leg in [Vector3(24, 0, -2), Vector3(14, 0, 0), Vector3(0, 0, 4)]:
-		if not await _walk_to(leg, "back from the socket"):
-			_fail("the way back from the coupling socket is blocked at %s" % str(leg))
-			return false
 	return true
+
+
+## True when a crystal on this mission is behind a live hazard field.
+func _hazard_locks_a_crystal() -> bool:
+	for crystal_id in [GameConfig.CRYSTAL_RUINS, GameConfig.CRYSTAL_CAVE,
+			GameConfig.CRYSTAL_GROVE]:
+		if MissionRules.crystal_lock(GameManager.snapshot, String(crystal_id)) \
+				== MissionRules.LOCK_HAZARD:
+			return true
+	return false
+
+
+## Shut the surface hazard down before walking into it.
+##
+## Cinder burns and Hallow freezes, and on both of them one crystal stands in
+## the field. Fetching it with the vent open is a slow death by design, so the
+## valve is the errand - and it is at the far edge of the map, which is the
+## point of it.
+func _seal_the_vent(mission_id: String) -> bool:
+	_event("hazard.errand", "the vent is open and a crystal stands in the field")
+	var t_start := _now()
+	if not await _nav_walk_to_object("%s_hazard_control" % mission_id, "to the vent"):
+		_fail("the hazard control is not reachable")
+		return false
+	if not await _approach_and_use("%s_hazard_control" % mission_id, "the hazard control",
+			func() -> bool:
+				return not bool(GameManager.snapshot.get("hazard_online", false))):
+		return false
+	_event("hazard.sealed", "the field is down after %.1fs, %d hp"
+		% [_now() - t_start, int(_player().get("health"))])
+	return true
+
+
+## Walk into the temple clearing, wherever this mission put it.
+##
+## The trigger is an authored Area3D and every surface has one; walking to a
+## literal (0, 0, 13) only ever worked because that was Nerava's.
+func _walk_to_temple() -> bool:
+	var target := Vector3(0.0, 0.0, 13.0)
+	var stage := SceneManager.current_stage()
+	var trigger := stage.get_node_or_null("TempleTrigger") as Node3D \
+		if stage != null else null
+	if trigger != null:
+		target = trigger.global_position
+		target.y = 0.0
+	if await _nav_walk_to(target, "temple clearing"):
+		return true
+	_fail("could not walk from the landing pad to the temple")
+	return false
 
 
 ## The boss, fought by aiming and holding the trigger. Strategy decides how the
@@ -717,9 +850,14 @@ func _fight_the_warden() -> bool:
 		var phase := int(GameManager.snapshot.get("boss_phase", 0))
 		if phase != last_phase:
 			last_phase = phase
-			_event("warden.phase", "%d, health=%d nodes=%d at %.1fs"
+			# The PLAYER's health belongs here too. Three balance questions in a
+			# row could not be answered from these logs - "is the fight too
+			# hard" and "is the driver playing it badly" look identical without
+			# the number that separates them.
+			_event("warden.phase", "%d, boss=%d nodes=%d, me=%d hp at %.1fs"
 				% [phase, int(GameManager.snapshot.get("boss_health", 0)),
-					int(GameManager.snapshot.get("boss_nodes", 0)), _now()])
+					int(GameManager.snapshot.get("boss_nodes", 0)),
+					_my_health(), _now()])
 		if phase == MissionRules.BOSS_DEAD:
 			break
 		if not is_instance_valid(warden):
@@ -734,7 +872,7 @@ func _fight_the_warden() -> bool:
 			var node := _live_shield_node(warden)
 			if node != null:
 				aim_at = node
-		await _aim_at_point((aim_at as Node3D).global_position)
+		_aim_converged = await _aim_at_point((aim_at as Node3D).global_position)
 
 		# Break away when it enrages. An enraged Warden moves at 6.4 m/s and does
 		# 18 contact damage a second; a walking player does 5.0 and cannot get
@@ -748,10 +886,17 @@ func _fight_the_warden() -> bool:
 			var gap: float = player.global_position.distance_to((warden as Node3D).global_position)
 			var enraged := phase == MissionRules.BOSS_ENRAGED
 			if enraged and gap < 14.0:
-				Input.action_press("sprint")
-				await _hold("move_back", 0.8)
-				Input.action_release("sprint")
-				await _aim_at_point((warden as Node3D).global_position)
+				await _run_from_the_warden(warden)
+				# Re-check AFTER the await. Eight tenths of a second is long
+				# enough for the crew to be wiped out and every session-bound
+				# node freed, and a freed Node in Godot 4 is not null - it is an
+				# object that crashes the moment it is cast. The driver died
+				# here reporting "aborted without recording a reason", which is
+				# the least useful thing a harness can say about a mission that
+				# had in fact just been lost in a perfectly legible way.
+				if not is_instance_valid(warden):
+					break
+				_aim_converged = await _aim_at_point((warden as Node3D).global_position)
 			elif _strategy == "cautious" and gap < 9.0:
 				await _hold("move_back", 0.5)
 
@@ -763,10 +908,29 @@ func _fight_the_warden() -> bool:
 		# merely demanding look unwinnable. Anything read off a driver that does
 		# not play the way the fight is designed to be played is a measurement
 		# of the driver.
+		if GameManager.mission_state() == MS.MISSION_FAILED:
+			_fail("the crew was wiped out by the Warden")
+			return false
+
 		_strafe = -_strafe
 		var strafe_action := "move_left" if _strafe > 0 else "move_right"
+
+		# No angle, no shot. When the aim cannot reach the Warden - the camera
+		# against its pitch clamp, or a pillar between us - firing is worse than
+		# useless: it overheats the blaster and reads in the log as a fight that
+		# was fought and lost. Move for an angle instead, which is what a player
+		# does when they cannot see what is shooting at them. A run that spent
+		# 84 volleys pinned at +65 degrees with the boss on 50 health is what
+		# this is here to stop being invisible.
+		if not _aim_converged:
+			Input.action_press(strafe_action)
+			await _hold("move_back", 0.6)
+			Input.action_release(strafe_action)
+			await _frames(2)
+			continue
+
 		Input.action_press(strafe_action)
-		await _hold("fire", 0.55)
+		await _hold("fire", _burst_length())
 		Input.action_release(strafe_action)
 		_shots += 1
 		await _frames(2)
@@ -774,13 +938,19 @@ func _fight_the_warden() -> bool:
 		# deadline, or the only evidence is "the boss did not die".
 		if _shots % 12 == 0:
 			var pl := _player() as Node3D
-			_event("warden.pressing", "%d volleys, phase=%d health=%d nodes=%d, %.1f m away, pitch %.0f"
+			var pivot := pl.get_node_or_null("CameraPivot") as Node3D if pl != null else null
+			var boss3 := warden as Node3D
+			_event("warden.pressing",
+				"%d volleys, phase=%d boss=%d nodes=%d, me=%d hp, %.1f m away, pitch %.0f (want %.0f), at %s boss at %s%s"
 				% [_shots, phase, int(GameManager.snapshot.get("boss_health", 0)),
-					int(GameManager.snapshot.get("boss_nodes", 0)),
-					pl.global_position.distance_to((warden as Node3D).global_position)
+					int(GameManager.snapshot.get("boss_nodes", 0)), _my_health(),
+					pl.global_position.distance_to(boss3.global_position)
 						if pl != null else -1.0,
-					rad_to_deg((pl.get_node_or_null("CameraPivot") as Node3D).rotation.x)
-						if pl != null and pl.get_node_or_null("CameraPivot") != null else 999.0])
+					rad_to_deg(pivot.rotation.x) if pivot != null else 999.0,
+					rad_to_deg(_wanted_pitch_to(boss3.global_position)),
+					str(pl.global_position.snapped(Vector3.ONE * 0.1)) if pl != null else "?",
+					str(boss3.global_position.snapped(Vector3.ONE * 0.1)),
+					"" if _aim_converged else "  AIM-DID-NOT-CONVERGE"])
 		if bool(_player().get("is_downed")):
 			_downs += 1
 			_event("player.downed", "during the Warden fight")
@@ -903,22 +1073,76 @@ func _aim_point(node: Node3D) -> Vector3:
 ## wrong for the boss: the Warden hovers 6.4 m above the temple floor, the fight
 ## aimed with yaw alone, and every shot went under it. A fight the driver cannot
 ## win looks exactly like a boss that cannot be killed.
-func _aim_at_point(target: Vector3) -> void:
+func _aim_at_point(target: Vector3) -> bool:
 	await _look_at_point(target)
 	var player := _player() as Node3D
 	if player == null:
-		return
+		return false
 	var pivot := player.get_node_or_null("CameraPivot") as Node3D
 	if pivot == null:
-		return
+		return false
 	var sens: float = await _look_gain()
+	_last_aim_error = 0.0
 	for _i in 12:
 		var to_target: Vector3 = target - pivot.global_position
 		var flat: float = Vector2(to_target.x, to_target.z).length()
 		var error: float = atan2(to_target.y, maxf(flat, 0.01)) - pivot.rotation.x
+		_last_aim_error = error
 		if absf(error) < deg_to_rad(1.0):
-			return
+			return true
 		await _send_mouse(Vector2(0.0, clampf(-(error * 0.6) / sens, -400.0, 400.0)))
+	# Twelve corrections and still off target. Almost always this means the
+	# camera is against a pitch clamp: the point is steeper than the player is
+	# allowed to look, so no amount of mouse will reach it and every shot fired
+	# from here goes somewhere else. Saying so is the difference between "the
+	# boss survived" and "the boss could not be aimed at from where we stood".
+	return false
+
+
+## How long to hold the trigger, from what the blaster can actually take.
+##
+## A fixed 0.55 s is three shots. The weapon allows seven before it overheats,
+## and after a retreat it is stone cold - so a fixed burst threw away more than
+## half the damage of every window the retreat had just bought, and the enraged
+## phase became a war of attrition the player loses. Firing until nearly hot and
+## then breaking is how the weapon is built to be used.
+func _burst_length() -> float:
+	var p := _player()
+	if p == null or not is_instance_valid(p):
+		return 0.55
+	if bool(p.get("overheated")):
+		return 0.0
+	var headroom: float = GameConfig.BLASTER_HEAT_MAX * 0.92 - float(p.get("heat"))
+	var shots: int = clampi(int(headroom / GameConfig.BLASTER_HEAT_PER_SHOT), 1, 7)
+	return float(shots) * GameConfig.BLASTER_FIRE_INTERVAL + 0.05
+
+
+## This player's health, or -1 when there is no player to ask.
+func _my_health() -> int:
+	var p := _player()
+	if p == null or not is_instance_valid(p):
+		return -1
+	return int(p.get("health"))
+
+
+## Pitch error left over from the last _aim_at_point, in radians.
+var _last_aim_error: float = 0.0
+## Whether the last fight aim actually reached its target.
+var _aim_converged: bool = true
+
+
+## The pitch the camera WOULD need to look at a world point, in radians. Read
+## alongside the pitch it actually has: the two disagreeing by tens of degrees
+## is the signature of a camera against its clamp, firing at the sky.
+func _wanted_pitch_to(target: Vector3) -> float:
+	var player := _player() as Node3D
+	if player == null:
+		return 0.0
+	var pivot := player.get_node_or_null("CameraPivot") as Node3D
+	if pivot == null:
+		return 0.0
+	var to_target: Vector3 = target - pivot.global_position
+	return atan2(to_target.y, maxf(Vector2(to_target.x, to_target.z).length(), 0.01))
 
 
 ## Drive the camera pitch to look at a world point, then micro-scan around it
@@ -1006,7 +1230,8 @@ func _set_pitch(pivot: Node3D, wanted: float, sens: float) -> void:
 
 ## Walk to a point with WASD. Returns false if the player gets stuck or the leg
 ## times out - which is the finding this whole harness exists to produce.
-func _walk_to(target: Vector3, label: String) -> bool:
+func _walk_to(target: Vector3, label: String,
+		arrive: float = ARRIVE_RADIUS) -> bool:
 	var player := _player() as Node3D
 	if player == null:
 		_fail("no player to walk (%s)" % label)
@@ -1031,7 +1256,7 @@ func _walk_to(target: Vector3, label: String) -> bool:
 		if player == null:
 			break
 		var flat_target := Vector3(target.x, player.global_position.y, target.z)
-		if player.global_position.distance_to(flat_target) <= ARRIVE_RADIUS:
+		if player.global_position.distance_to(flat_target) <= arrive:
 			arrived = true
 			break
 		await _look_at_point(target, 6.0)
@@ -1055,6 +1280,94 @@ func _walk_to(target: Vector3, label: String) -> bool:
 		_event("timeout", "%s: %.1fs without arriving, at %s"
 			% [label, LEG_TIMEOUT, str((_player() as Node3D).global_position)])
 	return arrived
+
+
+## Walk somewhere using the level's OWN navigation mesh.
+##
+## The hard-coded corridor tables encoded real knowledge - the dog-leg at
+## (14, 0, 0) exists because a straight line walks into a stalagmite - but it
+## was one mission's knowledge, hand-measured off Nerava. Two thirds of the
+## catalog had therefore never been played by anything, on any build.
+##
+## The navmesh already knows where the walkable ground is on every surface,
+## because the Sentinel navigates by it and `GameLevel` bakes it before it
+## reports the scene ready. Asking it for the corridor is more general than a
+## table AND closer to what a player does, which is walk round the rock they
+## can see. When there is no navmesh or no route the leg falls back to a
+## straight line, so a missing bake degrades to the old behaviour and the stuck
+## detector still says what it hit.
+func _nav_walk_to(target: Vector3, label: String) -> bool:
+	var path: PackedVector3Array = _nav_path(target)
+	if path.size() < 2:
+		return await _walk_to(target, label)
+	var legs: Array = []
+	# Drop the first corner - it is where the player already stands - and any
+	# corner that repeats the one before it. Nothing else: a navmesh corner is a
+	# corner precisely BECAUSE the straight line past it is not walkable, and
+	# thinning them on distance is how the driver walked into TemplePillar4 with
+	# a perfectly good path in hand.
+	for i in range(1, path.size()):
+		var corner: Vector3 = path[i]
+		if not legs.is_empty() and corner.distance_to(legs.back()) < 0.3:
+			continue
+		legs.append(corner)
+	if legs.is_empty():
+		legs.append(target)
+	for i in legs.size():
+		# Round each corner properly. The default arrive radius is 2.6 m, which
+		# is fine for "walk over to that console" and far too loose for a corner
+		# with 0.4 m of clearance either side: stopping 2.6 m short of a turn
+		# and heading for the next corner cuts exactly the geometry the turn
+		# exists to avoid. The last leg keeps the loose radius, because it ends
+		# at a stand-off point in front of an object rather than at a corner.
+		var last: bool = i == legs.size() - 1
+		if not await _walk_to(legs[i], "%s (%d/%d)" % [label, i + 1, legs.size()],
+				ARRIVE_RADIUS if last else NAV_CORNER_RADIUS):
+			return false
+	return true
+
+
+## The navigation path from where the player stands to `target`, or empty.
+func _nav_path(target: Vector3) -> PackedVector3Array:
+	var player := _player() as Node3D
+	if player == null:
+		return PackedVector3Array()
+	var region := _nav_region()
+	if region == null:
+		return PackedVector3Array()
+	var map: RID = region.get_navigation_map()
+	if not map.is_valid():
+		return PackedVector3Array()
+	return NavigationServer3D.map_get_path(map, player.global_position, target, true)
+
+
+func _nav_region() -> NavigationRegion3D:
+	var stage := SceneManager.current_stage()
+	if stage == null:
+		return null
+	return stage.get_node_or_null("NavigationRegion3D") as NavigationRegion3D
+
+
+## Walk to an interactable by id, without knowing where it is.
+##
+## This is what makes the driver mission-agnostic: the object ids differ only by
+## their mission prefix, and the navmesh supplies the route. `offset` backs off
+## from the object itself so the player ends up in front of it rather than
+## inside its collision shape.
+func _nav_walk_to_object(object_id: String, label: String) -> bool:
+	var node := SpawnManager.find_interactable(object_id) as Node3D
+	if node == null:
+		_fail("%s does not exist in this level" % object_id)
+		return false
+	var player := _player() as Node3D
+	if player == null:
+		return false
+	var to_object: Vector3 = node.global_position - player.global_position
+	to_object.y = 0.0
+	var stand_off: Vector3 = node.global_position
+	if to_object.length() > 2.0:
+		stand_off -= to_object.normalized() * 1.6
+	return await _nav_walk_to(stand_off, label)
 
 
 ## What the player is pressed against. "Stuck" on its own says a route failed;

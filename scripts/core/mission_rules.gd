@@ -471,6 +471,19 @@ static func ship_tasks_remaining(snap: Dictionary) -> Array:
 	return out
 
 
+## "Prime the reactor - engineering, by the spine".
+##
+## One string so every surface that names a station names its place too, and a
+## station added without a location reads as its bare label rather than as
+## "task_reactor - " with nothing after the dash.
+static func ship_task_hint(task_id: String) -> String:
+	var label := String(GameConfig.SHIP_TASK_LABELS.get(task_id, task_id))
+	var where := String(GameConfig.SHIP_TASK_LOCATIONS.get(task_id, ""))
+	if where.is_empty():
+		return label
+	return "%s - %s" % [label, where]
+
+
 ## The launch gate, and the reason the seats exist.
 ##
 ## `crew` is peer_id -> {"alive": bool, "downed": bool}. Every living crew
@@ -643,10 +656,18 @@ static func boss_volley_interval(crew: int, enraged: bool) -> float:
 ## matters more now than it used to: Nerava carries a guard, so this is the
 ## first enemy a new player has to actually beat rather than run past.
 ##
-## Rounded UP so a smaller crew never gets a guard that dies in one burst - the
-## point of the lock is that it is a fight, not a formality.
+## Rounded UP, and floored well above zero, so a smaller crew never gets a guard
+## that dies in one burst - the point of the lock is that it is a fight, not a
+## formality. The floor is not arbitrary: at the boss curve alone a solo guard
+## came to 7 hits and an automated run killed it in 2.6 seconds, which made the
+## guarded trip only 2.7 seconds longer than the plain fetch beside it. A lock
+## that changes the SHAPE of a trip but not its cost is barely a lock.
+const GUARD_MIN_HITS: int = 8
+
+
 static func guard_hits_to_kill(crew: int) -> int:
-	return maxi(int(ceil(float(GameConfig.GUARD_HITS_TO_KILL) * boss_scale(crew))), 4)
+	return maxi(int(ceil(float(GameConfig.GUARD_HITS_TO_KILL) * boss_scale(crew))),
+		GUARD_MIN_HITS)
 
 
 ## How many projectiles the Warden puts in a volley, by crew size.

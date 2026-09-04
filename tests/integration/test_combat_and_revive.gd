@@ -33,7 +33,9 @@ func run_async() -> void:
 	await _test_damage_and_downed()
 	await _test_revive()
 	await _test_revive_cancels_when_the_reviver_goes_down()
+	await _test_altar_restores_the_crew()
 	await _test_star_map_drop()
+	await _test_the_warden_can_be_aimed_at()
 	await _test_total_failure()
 
 	_session.stop()
@@ -265,7 +267,10 @@ func _test_star_map_drop() -> void:
 	var dropped_before := _dropped_star_maps()
 	check_eq(dropped_before, 0, "nothing is on the ground while the map is carried")
 
-	# Down the carrier - the map must drop exactly once.
+	# Down the carrier - the map must drop exactly once. The carrier has to be
+	# STANDING first: this used to assert only that they ended up downed, which
+	# a player who was already downed satisfies without any drop ever happening.
+	check_false(bool(_p2.get("is_downed")), "the carrier is on their feet to begin with")
 	for i in 4:
 		_p2.host_apply_damage(GameConfig.GUARDIAN_PROJECTILE_DAMAGE, "test")
 	await wait_frames(3)
@@ -296,6 +301,54 @@ func _test_star_map_drop() -> void:
 		check_eq(_session.boss_count(), 1, "recovering the map does not wake a second Warden")
 
 
+## The Warden has to be SHOOTABLE from the ground it drives you onto.
+##
+## It hovers, the player's pitch is clamped at 65 degrees up, and the enraged
+## phase drives it to a 3 m stand-off - so how high it hovers is not a cosmetic
+## number, it decides whether the fight can be won at all. It was wrong: the
+## spawner offset the anchor by BOSS_HOVER_HEIGHT so the Warden would appear at
+## its hover height, and the height hold then added the same offset again, so it
+## settled 3.4 m higher than authored. At the enraged stand-off that needs 70
+## degrees of upward pitch against a 65 degree clamp: a measured run sat at the
+## clamp for 84 volleys with the boss frozen on 50 health and the player
+## untouched, which is a stalemate, not a fight.
+func _test_the_warden_can_be_aimed_at() -> void:
+	set_current("warden geometry")
+	var boss := _session.boss_node()
+	if not check(boss != null, "the Warden is awake"):
+		return
+	# Let the height hold settle wherever it is going to settle.
+	await wait_seconds(1.2)
+	var spawn_y := float((boss.get("spawn_position") as Vector3).y)
+	# The height hold is proportional, so it settles asymptotically and sits a
+	# few centimetres under its target for ever. The tolerance is there for that
+	# and nothing else: the error this guards against was 3.4 m.
+	var drift: float = absf(boss.global_position.y - spawn_y)
+	check(drift < 0.25,
+		"the Warden holds the height it spawned at (%.2f m from %.2f, drift %.2f m)"
+			% [boss.global_position.y, spawn_y, drift])
+
+	# The angle a player on the ground below would need, at the closest the
+	# enraged Warden ever comes.
+	var above_eye: float = boss.global_position.y - GameConfig.EYE_HEIGHT
+	var needed := rad_to_deg(atan2(above_eye, GameConfig.BOSS_ENRAGED_STAND_OFF))
+	check(needed <= GameConfig.PITCH_MAX_DEG,
+		"a player can look up far enough to aim at the Warden at its enraged stand-off (needs %.0f deg, clamp is %.0f)"
+			% [needed, GameConfig.PITCH_MAX_DEG])
+
+	# Contact damage has to be a PUNISHMENT, not an aura. The enraged ring was
+	# 3.0 against a contact range of 3.2, so the Warden parked inside its own
+	# damage radius and dealt 18 a second for the whole phase unconditionally -
+	# which killed a solo player from full in four seconds however well they
+	# played, measured on two different drivers. It must hold station outside
+	# the radius, so contact is what happens when it CATCHES you.
+	check(GameConfig.BOSS_ENRAGED_STAND_OFF > GameConfig.BOSS_CONTACT_RANGE,
+		"the enraged Warden holds station outside its own contact range (%.1f m ring vs %.1f m reach)"
+			% [GameConfig.BOSS_ENRAGED_STAND_OFF, GameConfig.BOSS_CONTACT_RANGE])
+	check(GameConfig.BOSS_ENRAGED_STAND_OFF < GameConfig.BOSS_STAND_OFF,
+		"enraging still brings it closer than the ring it trades fire from")
+
+
 func _test_total_failure() -> void:
 	set_current("failure")
 	check_ne(GameManager.mission_state(), MS.MISSION_FAILED, "the mission is still live")
@@ -324,3 +377,46 @@ func _first_dropped_star_map() -> Node3D:
 		if (n as Node).has_method("is_dropped_star_map"):
 			return n as Node3D
 	return null
+
+
+## The altar pays the crew back before it summons the Warden.
+##
+## Health was one-way across the whole mission - nothing restored it - so every
+## point lost fetching crystals was a point missing at the boss, and a solo run
+## that fought a crystal guard on the way arrived hurt and was downed having
+## done nothing wrong. A difficulty curve decided by attrition rather than play.
+func _test_altar_restores_the_crew() -> void:
+	set_current("altar restore")
+	# Hurt one player, down another, and leave a third untouched.
+	_p1.host_apply_damage(GameConfig.GUARDIAN_PROJECTILE_DAMAGE, "test")
+	var hurt_to := int(_p1.get("health"))
+	check(hurt_to < GameConfig.MAX_HEALTH, "the first player is hurt (%d hp)" % hurt_to)
+	_p2.host_set_downed()
+	await wait_frames(2)
+	check(bool(_p2.get("is_downed")), "the second player is down")
+
+	# Place the last crystal, which is what activates the altar.
+	GameManager.snapshot["state"] = MS.FIND_CRYSTALS
+	GameManager.snapshot["temple_discovered"] = true
+	GameManager.snapshot["pedestals"] = {
+		"pedestal_a": GameConfig.CRYSTAL_RUINS,
+		"pedestal_b": GameConfig.CRYSTAL_CAVE,
+	}
+	GameManager.snapshot["crystals_carried"] = {
+		GameConfig.HOST_PEER_ID: GameConfig.CRYSTAL_GROVE}
+	GameManager.host_apply_crystal_placement(
+		GameConfig.HOST_PEER_ID, "pedestal_c", GameConfig.CRYSTAL_GROVE)
+	await wait_frames(2)
+
+	check(GameManager.is_altar_active(), "the altar activated")
+	check_eq(int(_p1.get("health")), GameConfig.MAX_HEALTH,
+		"a hurt player is restored to full when the altar wakes")
+	check(bool(_p2.get("is_downed")),
+		"a DOWNED player is not quietly revived by it - that is what reviving is for")
+
+	# Stand the second player back up. Leaving them down was not a detail: the
+	# next test needs a carrier who can BE downed, and a player who is already
+	# down cannot be downed again, so the drop it exists to prove never fired.
+	_p2.host_revive()
+	await wait_frames(2)
+	check_false(bool(_p2.get("is_downed")), "the second player is back on their feet")

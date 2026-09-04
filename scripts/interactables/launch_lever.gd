@@ -24,7 +24,7 @@ func _blocker() -> String:
 	var remaining: Array = MissionRules.ship_tasks_remaining(snap)
 	if not remaining.is_empty():
 		if remaining.size() == 1:
-			return String(GameConfig.SHIP_TASK_LABELS.get(remaining[0], remaining[0]))
+			return MissionRules.ship_task_hint(String(remaining[0]))
 		return "%d stations still red" % remaining.size()
 	var waiting: Array = []
 	for peer_id in LobbyManager.sorted_peer_ids():

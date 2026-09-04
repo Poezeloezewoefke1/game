@@ -240,6 +240,16 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-009 | The Warden is invulnerable until all three shield nodes are down | `MissionRules.boss_is_vulnerable`, `warden.gd` | `test_mission_rules` | AUTO |
 | MIS-010 | The Warden enrages below a health fraction and hunts the map carrier | `warden.gd` | `test_mission_rules` (phase function) | AUTO |
 | MIS-011 | **The Warden is sized to the crew, so a solo player can finish the game** | `MissionRules.boss_scale`, `game_manager.gd`, `warden.gd` | `test_mission_rules`, playtest | AUTO + PLAY |
+| MIS-012 | The first mission carries two locks, not one, so it is not three identical fetches | `MissionRules.locked_crystals` | `test_mission_rules`, playtest | AUTO + PLAY |
+| MIS-013 | **A guard cannot be killed twice, however many shots land in one frame** | `sentinel.gd:_guard_dead` | `test_mission_rules`; found by a real engine crash | AUTO |
+| MIS-014 | A crystal guard and the temple Sentinel coexist | `spawn_manager.gd:host_spawn_guardian` | `test_sentinel`, `test_combat_and_revive` | AUTO |
+| MIS-015 | A guard is sized to the crew and never dies in one burst | `MissionRules.guard_hits_to_kill` | `test_mission_rules` | AUTO |
+| MIS-016 | **The altar restores the crew when it activates, so the boss is decided by play and not by attrition** | `GameManager._host_restore_crew`, `Player.host_heal` | `test_combat_and_revive`, playtest | AUTO + PLAY |
+| MIS-017 | The restore does not stand a downed player up - reviving is what does that | `GameManager._host_restore_crew` | `test_combat_and_revive` | AUTO |
+| MIS-018 | **Every interactable id names the level it is in** - Cinder and Hallow shipped Nerava's altar and drop pod ids | level scenes | `test_scene_integrity` (prefix gate) | AUTO |
+| MIS-019 | Every pre-flight station names its place, not just its job | `GameConfig.SHIP_TASK_LOCATIONS`, `MissionRules.ship_task_hint` | `test_mission_rules` | AUTO |
+| MIS-020 | **The Warden stays inside the angle a player is allowed to look up** | `Warden._host_think` height hold | `test_combat_and_revive`, playtest | AUTO + PLAY |
+| MIS-021 | The enraged Warden can actually damage a player it closes on | `Warden._host_contact_damage` (horizontal range) | `test_combat_and_revive` | AUTO |
 
 ## Quality gates (QA)
 
@@ -250,3 +260,5 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | QA-003 | Every authored route is walkable by a player-sized capsule, across its width | `test_level_reachability` | itself | AUTO |
 | QA-004 | A spawn point has a clear run at the objective, not just a clear axis | `test_level_reachability:_check_spawn_exits` | itself | AUTO |
 | QA-005 | The playtest cannot report a clean run after dying | `playtest.gd:_require_failure` | proven by a driver that died and was caught | AUTO |
+| QA-006 | The playtest routes come from each level's navigation mesh, so any mission can be driven | `tools/playtest.gd:_nav_walk_to` | playtest runs | PLAY |
+| QA-007 | The playtest can plot a course for a later planet the way an unlocked crew would | `tools/playtest.gd:_plot_the_course`, `--mission=` | playtest runs | PLAY |

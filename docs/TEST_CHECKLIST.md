@@ -127,6 +127,8 @@ spawner, a HUD and players.
 | 26h | A crew seat can be taken, and holding forward does not walk you out of it | [P] (drift measured, < 0.5 m) |
 | 26i | A seat already occupied refuses a second player | [A] |
 | 26j | The HUD shows the remaining checklist aboard the ship, not the Star Map line | [A] `test_scene_integrity` / [M] |
+| 26k | **Every pre-flight station says WHERE it is, not just what it does** | [A] `test_mission_rules` / [M] |
+| 26l | A station with no location entry reads as its bare label, never a dangling dash | [A] |
 | 26k | Beds, mess, med bay and cargo are walkable, not just decorative | [P] (`explorer` strategy tours them) |
 
 ## Flight: launch, transit and landing
@@ -153,6 +155,8 @@ The flight is three host-clock states rendered identically on every peer;
 | 26u | The nav console names the destination and says why others are locked | [P] (prompt read: "Course: Nerava (no other destination unlocked)") |
 | 26v | Each planet has its own sky, palette and crystal names | [M] / [A] `test_scene_integrity` |
 | 26w | Cinder and Hallow are reachable and walkable | [A] `test_level_reachability` |
+| 26x | **Every interactable id names its own level** - Cinder's altar and drop pod carried Nerava's | [A] `test_scene_integrity` |
+| 26y | Cinder and Hallow can be flown end to end, not just loaded | [P] `run_playtest.sh ... <mission>` |
 
 ## Crystal locks: coupling, guard and hazard
 
@@ -161,7 +165,11 @@ The flight is three host-clock states rendered identically on every peer;
 | 26x | A sealed crystal cannot be taken while its lock stands | [A] `test_mission_rules` |
 | 26y | The coupling occupies the same inventory slot as a crystal | [A] |
 | 26z | Fitting the coupling at the socket unseals the cave crystal | [A] / [P] |
-| 26aa | A guarded crystal opens only when its guard is down | [A] |
+| 26aa | A guarded crystal opens only when its guard is down | [A] / [P] |
+| 26aa1 | Nerava guards its ruins crystal, so the first mission has two locks and one plain fetch | [A] `test_mission_rules` |
+| 26aa2 | **Two shots on a guard in the same frame do not crash or double-kill it** | [A] (idempotent death path) |
+| 26aa3 | A crystal guard and the temple Sentinel can be alive at once | [A] |
+| 26aa4 | The guard is sized to the crew, and is never a formality | [A] `test_mission_rules` |
 | 26ab | A hazard-locked crystal opens only when the vent is sealed | [A] |
 | 26ac | The hazard field damages a player standing in it, and stops when sealed | [A] |
 | 26ad | Only the host applies hazard damage | [A] (host-authoritative by construction) |
@@ -178,6 +186,11 @@ The flight is three host-clock states rendered identically on every peer;
 | 26aj | A wipe during the fight fails the mission | [A] |
 | 26ak | **The Warden is sized to the crew, so one player can finish the game** | [A] `test_mission_rules` / [P] |
 | 26al | A player joining or leaving mid-fight does not resize the boss | [A] (crew recorded in the snapshot at spawn) |
+| 26am | **The Warden holds the height it spawned at** - the hover offset was applied twice | [A] `test_combat_and_revive` |
+| 26an | **A player on the ground can look up far enough to aim at it at its enraged stand-off** | [A] / [P] |
+| 26ao | The enraged Warden's contact damage can actually reach a player it closes on | [A] |
+| 26ap | **It holds station OUTSIDE that reach** - contact is a punishment, not an aura | [A] |
+| 26aq | Enraging still brings it closer than the ring it trades fire from | [A] |
 
 ## Nerava mission
 
@@ -193,9 +206,13 @@ The flight is three host-clock states rendered identically on every peer;
 | 43 | A pedestal accepts its matching crystal | [A] |
 | 44 | A filled pedestal cannot be filled again | [A] |
 | 45 | The altar opens only after all three correct placements | [A] |
+| 45a | **The altar restores the crew when it activates** | [A] `test_combat_and_revive` |
+| 45b | It does not quietly revive a downed player | [A] |
+| 45c | The altar test stands the second player back up before the next test runs | [A] |
 | 46 | The Star Map cannot be taken early | [A] / [N] |
 | 47 | Star Map ownership replicates | [A] |
 | 48 | The Star Map drops exactly once when the carrier is downed | [A] |
+| 48a | The drop test starts from a carrier who is STANDING, so the down is a real transition | [A] |
 | 49 | The Star Map drops when the carrier disconnects | [A] |
 | 50 | A living player can recover a dropped Star Map | [A] |
 | 51 | **Every objective is physically reachable** | [A] `test_level_reachability` |

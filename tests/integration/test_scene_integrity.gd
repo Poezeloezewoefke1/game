@@ -72,6 +72,14 @@ func _check_common(key: String, level: Node) -> void:
 		check_false(seen.has(oid), "%s: object_id '%s' is unique (also on %s)" % [
 			key, oid, String(seen.get(oid, ""))])
 		seen[oid] = node.name
+		# The id must name the level it is IN. Uniqueness within a level is not
+		# enough: Cinder's altar and drop pod kept the packed scene's defaults,
+		# so both worlds shipped a `nerava_star_map_altar`. Nothing collided,
+		# because two levels are never mounted at once - but every caller that
+		# builds an id as "<mission>_<thing>" looked for one that did not exist,
+		# which is exactly why no automated run had ever finished Cinder.
+		check(oid.begins_with(key + "_"),
+			"%s: object_id '%s' on %s names its own level" % [key, oid, node.name])
 		for method in ["get_interaction_prompt", "can_interact",
 				"request_interact", "host_validate_and_apply_interaction",
 				"refresh_visual_state", "requires_line_of_sight"]:

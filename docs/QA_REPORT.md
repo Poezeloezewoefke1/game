@@ -13,8 +13,8 @@ renders for real under Xvfb with a software rasteriser.
 ## Verdict
 
 **The game is complete and playable end to end, and it was not when this pass
-started.** Two defects made it impossible to finish and neither was visible to
-1468 passing assertions:
+started.** Four defects made it impossible to finish, and none was visible to
+the assertion suite of its day:
 
 * **58** - the launch lever sat 3.9 m behind the nearest flight seat and 168
   degrees round from it, against a 3.2 m interact ray and a 105 degree seated
@@ -24,9 +24,17 @@ started.** Two defects made it impossible to finish and neither was visible to
 * **60/61** - the Warden was tuned for four players. Solo, four complete runs
   gave one win and three losses, every loss identical: downed in the exposed
   phase with the boss around 275 of 450. The README offers 1-4 players.
+* **67** - health was a one-way resource across an entire descent, so a solo
+  player who fought a crystal guard on the way arrived at a boss tuned to be
+  close-run from full and was downed having played correctly.
+* **70** - the Warden's hover height was applied twice, in the spawner and
+  again in its height hold, so it flew 3.4 m higher than authored. At its
+  enraged stand-off that needs 70 degrees of upward pitch against a 65 degree
+  clamp: the boss parks overhead where it cannot be shot. One run sat at the
+  clamp for 84 volleys with the boss frozen on 50 health and the player
+  untouched. Earlier runs passed only because they killed it before it closed.
 
-Both are fixed, both are gated, and four consecutive complete runs across three
-playing styles now finish the game with no deaths.
+All are fixed and all are gated by a test that fails if they come back.
 
 **What is NOT claimed.** Nobody has played it. There is no GPU, no audio device
 and no person at a screen here, so every judgement in this document about how
@@ -40,9 +48,9 @@ mouse, because that was measured, repeatedly, on the shipped build.
 |---|---|
 | Repository structure | PASS |
 | Import, compile, scene load | PASS, no script errors |
-| Automated suite | PASS - 133 checks, 1516 assertions, no engine errors |
+| Automated suite | PASS - 133 checks, 1614 assertions, no engine errors |
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
-| Automated playtest x4, 3 strategies | PASS - 0 failures, 0 deaths |
+| Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
 | Played by a person | NOT DONE (VERIFY-008) |
 
@@ -348,6 +356,15 @@ makes this possible at all.
 
 It runs in `validate.yml` alongside the other gates.
 
+**Routes come from the level, not from a table.** Every corridor the driver
+walked used to be a hand-measured `Vector3` list taken off Nerava, which is the
+honest reason no automated run had ever played Cinder or Hallow. It now asks
+each level's own `NavigationRegion3D` for the path - the same mesh the Sentinel
+navigates by - and takes `--mission=` to plot a course for a later planet the
+way a crew who had already flown Nerava would. See I16 and I17: the first
+attempt at following those paths walked straight through a temple pillar, which
+was the follower thinning corners, not the path being wrong.
+
 What it asserts, in the order a player meets them: the menu accepts a name and
 hosts; the lobby starts; the crew deck mounts; every pre-flight station can be
 walked to and worked; the launch lever refuses while anyone is standing and
@@ -361,9 +378,10 @@ Every prompt is recorded at the moment it is read, which is what makes a
 failure legible - "pressed E and nothing happened" and "the prompt said Hands
 full" are different bugs with different fixes.
 
-**Defects 52-60 were all found by this, in a build where 1468 assertions
-passed.** Two of them made the game impossible to finish: 58 for every crew
-size, 60 for a solo player.
+**Defects 52-60, 67 and 70-71 were all found by this, in builds where every
+assertion passed.** Four of them made the game impossible to finish: 58 for
+every crew size, 60 for a solo player, 67 for anyone who took damage on the way
+to the altar, and 70 for anyone whose Warden reached its enraged phase.
 
 **Results, by strategy.** Three strategies exist so the game is not measured by
 one kind of player: `cautious` keeps its distance, `aggressive` sprints
@@ -521,6 +539,12 @@ are recorded because they are the reason the test suite looks the way it does.
 | 64 | An assertion labelled "taking the Star Map spawns the Sentinel" was counting the Warden | Separating guard roles in the test harness | `guardian_count()` lumped every guardian together - temple Sentinel, crystal guard and boss - so the one it found was the Warden and the assertion passed while saying something untrue. It now counts the three roles separately, and the assertion says what actually happens |
 | 65 | **The extraction race was passing only because the crystal race was failing** | Giving Nerava a guard made the crystal race start succeeding, and the extraction race two phases later began to fail | The races run in sequence against one live session. The crystal race leaves somebody holding a crystal, and full hands cannot take the Star Map - so the extraction phase depended on nobody ever winning the contested crystal, which was true only because that crystal was locked. A test that is green for a reason unrelated to its subject is not evidence. Both later phases now reset hands explicitly |
 | 66 | The revive race ran four metres from where a guard now spawns | The revive never completed and the extraction two phases later failed with it | `test_concurrency` stands two revivers at (-42, 0, 1) to bring up a third, and Nerava's ruins guard spawns at (-44, 0, 5). A Sentinel opening fire on the participants is exactly right for the game and fatal for a test about two things happening in the same frame - the target kept being shot back down. The races clear the field first, and say why |
+| 67 | **Health was a one-way resource across the whole mission** | Adding the guard to Nerava exposed it immediately: a solo run fought the guard, arrived at the Warden below full, and was downed having played correctly | Nothing anywhere in a descent restored health, so every point lost fetching crystals was a point missing at a boss that is tuned to be close-run from full. That is a difficulty curve decided by attrition rather than by play, and it gets worse with every hazard or guard added in front of it. The altar now restores the crew when it activates - the one moment that unambiguously means "the work is done, the fight is next", earned by placing three crystals, and costing nothing if you took no damage. A DOWNED player is deliberately excluded; being brought round is what reviving is for |
+| 68 | **Cinder's and Hallow's altar and drop pod carried Nerava's object ids** | Found by reading the scenes while making the playtest able to fly them: neither level overrode `object_id` on `StarMapAltar` or `DropPod`, so both shipped a `nerava_star_map_altar` and a `nerava_drop_pod` | It never collided, because two levels are never mounted at once and the id is only a lookup key - which is exactly why it survived. But every caller that builds an id as `"%s_star_map_altar" % mission_id` looked for something that did not exist on two of the three planets, and the automated playtest was one of them. Fixed in both scenes; `test_scene_integrity` now requires every interactable id to begin with its own level key, so uniqueness within a level is no longer enough to pass |
+| 69 | The pre-flight checklist said what to do and never where | The HUD reads "Next: Prime the reactor (3 left)" on a 41 m deck divided by four bulkheads | The four stations are spread bow to stern and the only way to find them was to walk the whole ship once. `SHIP_TASK_LOCATIONS` now pairs each label with its place - "Prime the reactor - engineering, by the spine" - through one `ship_task_hint()` that the HUD and the launch lever both use, so a station added without a location cannot silently render as a label with a dangling dash |
+| 70 | **The Warden hovered 3.4 m higher than authored, which made the enraged phase a stalemate** | A run sat at the +65 degree pitch clamp for 84 volleys with the boss frozen on 50 of 450 health and the player untouched. Measured from the log the instrument was made to print: `me (6.0, 0.0, 1.6) boss (-1.8, 9.8, -6.2)` - the Warden at y=9.8 where the anchor plus its hover height is 6.4 | `SpawnManager.host_spawn_warden` adds `BOSS_HOVER_HEIGHT` to the anchor so the Warden appears at its hover height instead of dropping in; `Warden._host_think` then held `spawn_position.y + BOSS_HOVER_HEIGHT`, adding the same offset a second time. Two places each taking responsibility for one offset. Not cosmetic: the enraged Warden closes to a 3 m ring, and from 9.8 m up that needs 70 degrees of upward pitch against a 65 degree clamp - the boss parks overhead where it cannot be shot. Three earlier runs passed only because they killed it before it ever closed |
+| 71 | **The enraged Warden's contact damage had never once fired** | Found while reading the same code: `global_position.distance_to(player) > 3.2` on an enemy that hovers metres up | The vertical gap alone exceeds 3.2 m at any hover height the level authors, so the check could never pass and the enraged phase's signature threat - 18 damage a second for letting it reach you - was dead code. It now measures the HORIZONTAL distance, which is what "it is on top of you" means for something flying, against a named `BOSS_CONTACT_RANGE`. `test_combat_and_revive` asserts both that the Warden holds the height it spawned at and that a player on the ground can look up far enough to aim at it at the closest it ever comes |
+| 72 | **The enraged Warden held station INSIDE its own contact radius** | Exposed the moment 71 was fixed: with contact damage live, all three strategies died about four seconds into the enraged phase - the aggressive one from a full 100 hp, having taken no damage anywhere else in the run | The enraged ring was 3.0 m and the contact reach 3.2 m, so the boss parked inside the radius and dealt 18 damage a second for the entire phase unconditionally. That is not a punishment for letting it reach you, it is an aura, and no amount of playing well avoids it. The rings are now named constants (`BOSS_STAND_OFF`, `BOSS_ENRAGED_STAND_OFF`) with the enraged one at 4.5 m, outside the reach: enraging still halves the distance and closes fast, and contact is what happens when it CATCHES you. `test_combat_and_revive` asserts the ordering, so the two numbers cannot drift back past each other |
 
 ---
 
@@ -546,6 +570,15 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I12 | The driver stood still in a fight built around moving | It went down in every boss run, and the fight looked unwinnable solo | The Warden throws three projectiles doing 33 damage each at a player with 100 health, and they take the best part of a second to cross the gap: strafing out of the way is the fight. The driver fired from a standstill, ate the third volley every time, and made a demanding fight look impossible. It now weaves, flipping direction each volley. Anything read off a driver that does not play the way a fight is designed to be played is a measurement of the driver, not of the game - and tuning the game against it would have made the game worse for real players |
 | I13 | The driver would not run from a boss designed to be run from | It reached the enraged phase with the Warden at 150 of 450 and was still run down and killed, which reads as "the boss is too strong" | An enraged Warden moves at 6.4 m/s and does 18 contact damage a second. A walking player does 5.0 and cannot escape; a SPRINTING player does 8.5 and can. The enrage is precisely what turns the fight from a shooting gallery into a retreat, and the driver never touched sprint. Two rounds of boss tuning were nearly spent on a driver that would not run away - which is the argument for fixing the instrument before believing anything it says about balance |
 | I14 | Carrying a crystal home cut the corner the corridor exists to avoid | Stopped dead at (29.2, 0, 2.1) against `CaveStalagmite`, carrying the Cave Crystal | The route OUT dog-legs through (14, 0, 0) precisely to miss that rock; the route home was a straight line to (0, 0, 4) and walked into it. The corridor was never blocked - the shortcut was. The carry-home legs are now the outbound route reversed, which is also what a player who just walked it does |
+| I15 | A test asserted the outcome it needed instead of the change it was measuring | `star map drop` reported three failures the moment a new test ran ahead of it: the map stayed carried when its carrier was downed | The drop fires on the DOWNED transition, and the test proved it by damaging the carrier and checking `is_downed`. A player who was already down satisfies that check without any transition happening at all - so the assertion passed while the thing it names never occurred. It only became visible because the altar-restore test left the second player down; for as long as the order happened to suit it, the test was green on a state it never created. It now asserts the carrier is STANDING first, and the altar test stands them back up rather than leaving the world changed for whoever runs next |
+| I16 | The driver's routes were Nerava's, hand-measured, so nothing had ever played the other two planets | Every corridor, errand and run-for-the-pod leg was a literal `Vector3` table written off one level | The tables encoded real knowledge - the dog-leg at (14, 0, 0) exists because a straight line walks into a stalagmite - but it was knowledge about ONE world, and it silently limited every automated playthrough to the only planet a fresh save unlocks. The driver now asks the level's own navigation mesh for each route, which is more general than a table and closer to what a player does, and takes `--mission=` so it can plot a course for Cinder or Hallow the way a crew who had flown Nerava would |
+| I17 | Following a navigation path by thinning its corners walked straight through a pillar | `stuck: to the socket (5/8) ... against TemplePillar4` with a perfectly good path in hand | Two mistakes with one cause - treating a navmesh corner as a waypoint rather than as a turn. The follower dropped any corner within 2.6 m of the next, and then arrived at the ones it kept from 2.6 m away before heading for the one after. A corner is a corner PRECISELY because the straight line past it is not walkable, so both shortcuts cut the exact geometry the turn exists to avoid. Corners are now kept unless they repeat, and intermediate ones are rounded to 0.9 m; only the final leg, which ends in front of an object rather than at a corner, keeps the loose radius |
+| I18 | The fight could not say why it was losing | 84 volleys against a boss whose health never moved, and a log line that said only "12.1 m away, pitch 65" | Range and pitch alone cannot distinguish "the shots are missing" from "the shots are not being fired" from "the boss cannot be aimed at from here", and the run before this one was all three at once. `_aim_at_point` now REPORTS whether it converged, the fight logs the pitch it wanted beside the pitch it has and both positions, and a volley whose aim did not converge is not fired at all - it moves for an angle instead, which is what a player does when they cannot see what is shooting at them. The very next run printed `boss (-1.8, 9.8, -6.2)` and defect 70 was a two-line read |
+| I19 | The driver never sprinted away from the enraged Warden, because it held sprint in a direction the game does not sprint in | It was run down in the enraged phase every time, and the fight read as too hard | `player.gd` gates sprint on moving FORWARD (`input.y < 0.0`). The driver held `sprint` together with `move_back`, so it walked backwards at 5.0 m/s away from something that closes at 6.4 and could never open a gap - the enraged phase always ended in contact range no matter how the boss was tuned. This is I13 in a second costume: the code comment already said a sprinting player escapes and a walking one does not, and the driver believed it while doing the opposite. It now turns round and runs, which is what the enrage is FOR |
+| I20 | The driver crashed instead of reporting a mission it had just lost | `SCRIPT ERROR: Trying to cast a freed object` at `_fight_the_warden`, reported as "aborted without recording a reason" | The crew was wiped out during an 0.8 s retreat; the failure freed every session-bound node, and a freed Node in Godot 4 is not null - it is an object that crashes on the cast. The loop re-checks `is_instance_valid` after the await and tests for MISSION_FAILED before firing, so a lost fight now reads as "the crew was wiped out by the Warden", which is a result rather than an incident |
+| I21 | "Break away" was a 1.1 s dash | The driver reached the enraged phase with the Warden on 25 of 450 and was still caught and downed | A sprinting player gains 2.1 m/s on an enraged Warden, so 1.1 s of running buys 2.3 m and the boss is back inside contact range before the next volley leaves the barrel. Breaking away has to mean breaking away: the retreat now runs until the gap is genuinely open (14 m, beyond the boss's own stand-off ring) or four seconds have passed, re-facing away each step as the boss moves. The same discipline as I12, I13 and I19 - measure the game with a driver that plays it the way it is designed to be played, or measure the driver |
+| I22 | The driver fired three-shot bursts from a weapon that allows seven | With the retreat fixed it survived the enraged phase three times longer and took the boss from 150 to 75 instead of to 25 - it lived longer and did LESS damage | A fixed 0.55 s on the trigger is three shots. The blaster holds 100 heat, spends 14 a shot and cools at 26 a second, so after a four-second retreat it is stone cold and good for seven. The fixed burst threw away more than half the damage of every window the retreat had just bought, which turns a fight built on kiting into a war of attrition the player loses. The burst is now sized from the heat the weapon actually has left |
+| I23 | Two playtests at once, and the loser blamed the game | `hosting did not reach the lobby` on three consecutive runs, from `ERROR: Couldn't create an ENet host` | A second batch was started while the first was still going; both bound the same ENet port and the loser reported a clean-looking game failure fifteen seconds in. `run_playtest.sh` now waits for any other playtest to finish and refuses rather than starting a second, so a scheduling mistake cannot come back as a bug report about the lobby |
 
 ## Design observations from the measured runs
 
@@ -560,14 +593,19 @@ told no, fix the reason, go - and the refusal is what gives it one. With a crew
 of four the four tasks parallelise, so it gets shorter rather than longer with
 more players, which is the correct direction for a co-op opening.
 
-**The crystal hunt is the weakest part, and the fix already exists.** 64 of the
-124 seconds to the boss are three structurally identical round trips: walk out,
-press E, walk back, press E. The crystal locks - a coupling to fetch, a guard
-to kill, a hazard to shut off - are exactly the mechanism that breaks that
-repetition, and `MissionRules` already supports all three on any mission. But
-Nerava, the mission every player sees first, applies only the coupling, so two
-of its three trips are plain fetches. The first mission is the one that decides
-whether a player keeps going.
+**The crystal hunt was the weakest part, and the fix already existed.** 64 of
+the 124 seconds to the boss were three structurally identical round trips: walk
+out, press E, walk back, press E. The crystal locks - a coupling to fetch, a
+guard to kill, a hazard to shut off - are exactly the mechanism that breaks
+that repetition, and `MissionRules` already supported all three on any mission.
+Nerava, the mission every player sees first, applied only the coupling.
+
+It now applies two: the cave crystal is still sealed behind the coupling, the
+ruins crystal is guarded, and the grove crystal is still a plain fetch, which
+is what teaches the base move. Nerava has no hazard for the third lock to key
+off, so that still waits for Cinder. Measured afterwards, the three trips are
+12.8 s, 10.1 s and 10.2 s against 20 s each before - and, more to the point,
+they are no longer the same trip three times.
 
 **The coupling errand is the most interesting thing in the mission** because it
 is the only one with a constraint: it fills the same single inventory slot a
@@ -586,36 +624,39 @@ nobody to revive you. Nothing scales the boss to crew size.
 Ranked by what the evidence supports, with the reasoning stated so a designer
 can disagree with it on the merits.
 
-**1. Put a second lock on Nerava.** `MissionRules.locked_crystals` gives Nerava
-only the coupling, with the comment "Nerava is the tutorial", which is a real
-reason. But the measured consequence is that the first mission any player sees
-is one interesting errand followed by two identical fetch-and-carry trips, and
-the first mission is the one that decides whether they play a second. The
-`LOCK_GUARD` shape already exists, the level already has a `GuardianAnchor`,
-and the Sentinel already works. Putting the guard on the Ruins Crystal would
-leave exactly one plain fetch, which is enough to teach the base move.
-NOT DONE: this changes first-run difficulty, and it is a design call rather
-than a defect.
+**1. DONE - Nerava carries a second lock.** `MissionRules.locked_crystals` gave
+Nerava only the coupling, with the comment "Nerava is the tutorial", which was a
+real reason. The measured consequence was that the first mission any player sees
+was one interesting errand followed by two identical fetch-and-carry trips - and
+the first mission is the one that decides whether they play a second. The Ruins
+Crystal now has a guard, leaving exactly one plain fetch, which is enough to
+teach the base move. Measured solo: the guard fight lasts 3.2 s and 5 volleys,
+and the crystal that used to take 9 s now takes 13.3.
 
-**2. Give the crystal trips different shapes, not just different locks.** All
-three run out and back along a corridor at about 20 s each. The locks vary what
-you do at the far end; they do not vary the journey. The one that already reads
-differently is the coupling, because it makes you give up your inventory slot -
-a constraint that follows you the whole way rather than sitting at the
-destination.
+**2. DONE - the crew is restored at the altar.** Adding that guard immediately
+exposed something the flat mission had hidden: health was a one-way resource
+across an entire descent, so a solo player who fought the guard arrived at a
+Warden tuned to be close-run from full and was downed having played correctly.
+Difficulty by attrition rather than by play, and it would have got worse with
+every lock added in front of the boss. Placing the third crystal now restores
+the crew - the one moment that unambiguously means "the work is done, the fight
+is next". Same run, after the fix: 0 downs across all three strategies.
 
-**3. Scale the Sentinel to crew size too.** The Warden now does this (defect
-60), and the Sentinel that guards a crystal on Cinder and Hallow does not:
-`GUARD_HITS_TO_KILL` is a flat 14. The same argument applies, and the mechanism
-is already written.
+**3. DONE - the Sentinel scales to crew size,** as the Warden already did, with
+a floor of `GUARD_MIN_HITS` so a solo guard is shorter but never a formality.
 
-**4. Say what the pre-flight tasks are before the player has walked the deck.**
-The objective line reads "Ready the ship for launch." and the checklist lives
-in the HUD, which is correct, but a first-time player learns the deck by
-walking all 41 m of it. A one-line hint naming the four stations would cost
-nothing and save the least patient player their first minute.
+**4. DONE - the pre-flight checklist says where each station is.** "Next: Prime
+the reactor (3 left)" named the job and not the place, on a 41 m deck divided by
+four bulkheads, so the only way to learn the ship was to walk all of it once.
 
-**5. Nobody has heard the game or seen it in motion at a real frame rate.** The
+**5. Give the crystal trips different shapes, not just different locks.** Still
+open, and now the weakest measured part of the mission. All three run out and
+back at about 10-13 s each. The locks vary what you do at the far end; they do
+not vary the journey. The one that already reads differently is the coupling,
+because it makes you give up your inventory slot - a constraint that follows you
+the whole way rather than sitting at the destination.
+
+**6. Nobody has heard the game or seen it in motion at a real frame rate.** The
 gap that everything above is written around. See VERIFY-002, VERIFY-007 and
 VERIFY-008 in `docs/KNOWN_LIMITATIONS.md`.
 
@@ -628,16 +669,8 @@ In the order they would pay off.
    ordered walkthrough, rewritten for the ship-and-flight structure.
 2. **Run the Windows build workflow.** `build-windows.yml` is
    `workflow_dispatch` only and has never been triggered (VERIFY-001).
-3. **Take recommendation 1 or 2** above - the crystal hunt is the weakest
-   measured part of the mission, and both fixes use mechanisms that already
-   exist.
-4. **Scale the Sentinel to crew size**, as the Warden now is. Same argument,
-   same mechanism, and it applies on Cinder and Hallow where a guarded crystal
-   is one of the three locks.
-5. **Play the campaign through to Hallow.** Every automated run here flies
-   Nerava, because it is the only mission unlocked on a fresh save. Cinder and
-   Hallow are covered by the reachability and scene gates but no playthrough
-   has ever reached them.
+3. **Take recommendation 5** - varying the journeys rather than the locks is the
+   last measured weakness in the crystal hunt.
 
 ## Open defects
 

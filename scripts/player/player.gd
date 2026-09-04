@@ -830,6 +830,17 @@ func _update_first_person_view(delta: float, grounded: bool) -> void:
 		_view_model.set_heat_ratio(heat / GameConfig.BLASTER_HEAT_MAX, overheated)
 
 
+## HOST. Put health back, up to a cap. Refused for a downed or dead player -
+## being brought round is what `host_revive` is for, and a heal that quietly
+## doubled as a revive would let a crew skip the revive mechanic entirely.
+func host_heal(amount: int) -> void:
+	if not _is_host() or is_downed or not is_alive or amount <= 0:
+		return
+	if health >= GameConfig.MAX_HEALTH:
+		return
+	health = mini(health + amount, GameConfig.MAX_HEALTH)
+
+
 ## Called when this player takes damage, so being shot is felt and not merely
 ## read off a health bar.
 func shake_view(amount: float) -> void:

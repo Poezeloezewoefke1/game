@@ -569,6 +569,7 @@ region = Vector3(108, 0, 108)
 
 [node name="DropPod" parent="Interactables" instance=ExtResource("5_pod")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 54.000)
+object_id = "hallow_drop_pod"
 
 [node name="CrystalRuins" parent="Interactables" instance=ExtResource("6_crystal")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -26.385, 0.300, 37.681)
@@ -605,6 +606,7 @@ accepts_crystal_id = "crystal_grove"
 
 [node name="StarMapAltar" parent="Interactables" instance=ExtResource("8_altar")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 1.400, -2.000)
+object_id = "hallow_star_map_altar"
 
 [node name="PowerCoupling" parent="Interactables" instance=ExtResource("12_coupling")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 29.826, 0.000, 42.596)

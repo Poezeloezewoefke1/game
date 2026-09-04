@@ -125,6 +125,13 @@ func boss_count() -> int:
 	return tree.get_nodes_in_group(GameConfig.GROUP_BOSS).size()
 
 
+## The Warden itself, or null.
+func boss_node() -> Node3D:
+	for node in tree.get_nodes_in_group(GameConfig.GROUP_BOSS):
+		return node as Node3D
+	return null
+
+
 ## How many crystal guards are standing.
 func crystal_guard_count() -> int:
 	var n := 0

@@ -608,7 +608,41 @@ func host_apply_crystal_placement(peer_id: int, pedestal_id: String, crystal_id:
 		snapshot["altar_active"] = true
 		snapshot["star_map_state"] = MissionRules.MAP_AVAILABLE
 		Logx.info("mission", "Altar activated; Star Map available")
+		_host_restore_crew("the altar")
 	_host_progress_and_publish()
+
+
+## The altar pays the crew back before it summons what it is guarding.
+##
+## Health was a ONE-WAY resource across the entire mission: nothing anywhere
+## restored it, so every point lost on the way to the altar was a point you did
+## not have for the Warden - and the Warden is tuned to be a close-run thing
+## from full. Measured: a solo run that fought a crystal guard on the way
+## arrived with less than full health and was downed at the boss, having done
+## nothing wrong. That is a difficulty curve decided by attrition rather than by
+## play, which is the least interesting kind.
+##
+## Restoring at the altar is where it belongs. It is the one moment that is
+## unambiguously "the work is done, the fight is next", the crew earned it by
+## placing three crystals, and it costs nothing anywhere else in the game: take
+## no damage and it does nothing at all. A DOWNED player is deliberately not
+## included - being brought round is what reviving is for.
+func _host_restore_crew(why: String) -> void:
+	if not _is_host():
+		return
+	var healed := 0
+	for peer_id in LobbyManager.sorted_peer_ids():
+		var node: Node = SpawnManager.player_node(int(peer_id))
+		if node == null or not node.has_method("host_heal"):
+			continue
+		if bool(node.get("is_downed")) or not bool(node.get("is_alive")):
+			continue
+		if int(node.get("health")) >= GameConfig.MAX_HEALTH:
+			continue
+		node.call("host_heal", GameConfig.ALTAR_RESTORE_HEALTH)
+		healed += 1
+	if healed > 0:
+		Logx.info("mission", "%s restored %d crew member(s)" % [why, healed])
 
 
 func host_apply_star_map_pickup(peer_id: int) -> void:

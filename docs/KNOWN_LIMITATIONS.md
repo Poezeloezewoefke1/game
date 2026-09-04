@@ -199,10 +199,20 @@ theirs, so the crew must revive them to progress. That is intentional
 cooperative pressure. It is only unrecoverable if that player *disconnects*, and
 that case returns the crystal to the world (see LIMIT-002).
 
-### BAL-003 - The Sentinel cannot be killed
+### BAL-003 - The temple Sentinel cannot be killed; a crystal guard can
 
-By design. Ten host-validated blaster hits stagger it for three seconds; there
-is no health pool and no kill. The mission is a heist, not a boss fight.
+Two roles, one script, and the difference is deliberate.
+
+The **temple Sentinel** - the one that hunts the Star Map carrier - has no
+health pool and no kill. Ten host-validated blaster hits stagger it for three
+seconds and that is the whole interaction: it is pressure to be escaped, not an
+enemy to be beaten, because the mission is a heist.
+
+A **crystal guard** - a Sentinel standing over a locked crystal - does die, on a
+hit count scaled to crew size by `MissionRules.guard_hits_to_kill` with a floor
+of `GUARD_MIN_HITS` so a solo fight is shorter but never a formality. It has to
+die, because the crystal behind it is required and nothing else unseals it.
+Measured solo on Nerava: 3.2-3.9 s and 5-6 volleys.
 
 ---
 

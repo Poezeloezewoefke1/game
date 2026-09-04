@@ -138,10 +138,10 @@ func _host_think(delta: float) -> void:
 		_target = _pick_target()
 
 	var speed := GameConfig.BOSS_MOVE_SPEED
-	var stand_off := 11.0
+	var stand_off := GameConfig.BOSS_STAND_OFF
 	if sync_phase == MissionRules.BOSS_ENRAGED:
 		speed = GameConfig.BOSS_ENRAGED_MOVE_SPEED
-		stand_off = 3.0
+		stand_off = GameConfig.BOSS_ENRAGED_STAND_OFF
 
 	if _target != null and is_instance_valid(_target):
 		var to_target: Vector3 = _target.global_position - global_position
@@ -158,9 +158,18 @@ func _host_think(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 
-	# Height hold: hover above whatever is below, so it drifts over the temple
-	# rather than clipping into it.
-	var want_y := spawn_position.y + GameConfig.BOSS_HOVER_HEIGHT
+	# Height hold: keep the height it was spawned at, so it drifts over the
+	# temple rather than clipping into it.
+	#
+	# `spawn_position` ALREADY includes BOSS_HOVER_HEIGHT - the spawner adds it
+	# so the Warden appears at its hover height instead of dropping in from the
+	# anchor. Adding it again here applied the same offset twice and put the
+	# Warden 3.4 m higher than authored, which is not a cosmetic difference: at
+	# its enraged stand-off of 3 m the player would have needed 70 degrees of
+	# upward pitch to aim at it, against a 65 degree clamp. The fight became
+	# unwinnable by geometry - a measured run sat at the clamp for 84 volleys
+	# with the boss frozen on 50 health and the player untouched.
+	var want_y := spawn_position.y
 	velocity.y = clampf((want_y - global_position.y) * 2.4, -6.0, 6.0)
 	move_and_slide()
 
@@ -222,7 +231,14 @@ func _host_contact_damage(delta: float) -> void:
 		var node: Node = SpawnManager.player_node(int(peer_id))
 		if node == null or bool(node.get("is_downed")):
 			continue
-		if global_position.distance_to((node as Node3D).global_position) > 3.2:
+		# HORIZONTAL distance. This is a flying enemy holding station several
+		# metres up, so a 3D range of 3.2 m could never be met at any hover
+		# height the level authors it at - the vertical gap alone exceeds it,
+		# and the enraged phase's signature threat was dead code that had never
+		# once fired. "It is on top of you" means on top of you on the ground.
+		var to_player: Vector3 = (node as Node3D).global_position - global_position
+		to_player.y = 0.0
+		if to_player.length() > GameConfig.BOSS_CONTACT_RANGE:
 			continue
 		if node.has_method("host_apply_damage"):
 			node.host_apply_damage(GameConfig.BOSS_CONTACT_DAMAGE)

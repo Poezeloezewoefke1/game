@@ -373,7 +373,8 @@ func test_guard_toughness_scales_with_crew() -> void:
 	var previous := 0
 	for crew in [1, 2, 3, 4]:
 		var hits: int = MissionRules.guard_hits_to_kill(crew)
-		check(hits >= 4, "crew %d still has to fight the guard (%d hits)" % [crew, hits])
+		check(hits >= MissionRules.GUARD_MIN_HITS,
+			"crew %d still has a real fight, not a formality (%d hits)" % [crew, hits])
 		check(hits >= previous, "crew %d faces no weaker a guard than crew %d" % [crew, crew - 1])
 		check(hits <= GameConfig.GUARD_HITS_TO_KILL,
 			"crew %d never faces more than the configured guard" % crew)
@@ -382,3 +383,28 @@ func test_guard_toughness_scales_with_crew() -> void:
 		"a solo player faces a shorter guard fight than a full crew")
 	check_eq(MissionRules.guard_hits_to_kill(0), MissionRules.guard_hits_to_kill(1),
 		"crew 0 is treated as solo")
+
+
+## Every pre-flight station says where it is, not just what it does.
+##
+## The deck is 41 m long with four bulkheads, and the HUD names only the NEXT
+## station. Naming it without naming its place meant the only way to learn the
+## ship was to walk all of it once, which is a minute the least patient player
+## does not spend.
+func test_every_ship_task_says_where_it_is() -> void:
+	for task_id in GameConfig.SHIP_TASK_IDS:
+		var id := String(task_id)
+		var label := String(GameConfig.SHIP_TASK_LABELS.get(id, ""))
+		var where := String(GameConfig.SHIP_TASK_LOCATIONS.get(id, ""))
+		check(not label.is_empty(), "%s has a label" % id)
+		check(not where.is_empty(), "%s says where it is" % id)
+		var hint := MissionRules.ship_task_hint(id)
+		check(hint.contains(label), "%s's hint still names the action" % id)
+		check(hint.contains(where), "%s's hint names the place too" % id)
+		check_false(hint.contains(id),
+			"%s's hint shows no raw task id to a player" % id)
+
+	# A station with no location entry must read as its bare label, not as a
+	# label with an empty half-sentence hanging off a dash.
+	check_eq(MissionRules.ship_task_hint("task_nonexistent"), "task_nonexistent",
+		"an unknown task falls back to its id rather than a dangling dash")
