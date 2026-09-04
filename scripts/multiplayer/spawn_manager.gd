@@ -241,12 +241,19 @@ func host_despawn_player(peer_id: int) -> void:
 func host_spawn_guardian() -> Node:
 	if not _is_host() or not has_level():
 		return null
-	# Only another SENTINEL blocks this, not the Warden: a crystal's guard and
-	# the temple's boss are allowed to be alive at the same time.
+	# Only another TEMPLE Sentinel blocks this. Neither the Warden nor a crystal
+	# guard does: they are different roles that are meant to coexist, and the
+	# comment here always said so - the test just asked the wrong question. It
+	# counted every non-boss guardian, so the moment a mission put a guard on a
+	# crystal, that guard held the temple's slot and the temple Sentinel was
+	# silently refused.
 	for existing in get_tree().get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
-		if not existing.is_in_group(GameConfig.GROUP_BOSS):
-			Logx.warn("spawn", "A Sentinel is already present; refusing duplicate spawn")
-			return null
+		if existing.is_in_group(GameConfig.GROUP_BOSS):
+			continue
+		if String(existing.get("guards_crystal_id")) != "":
+			continue
+		Logx.warn("spawn", "A Sentinel is already present; refusing duplicate spawn")
+		return null
 	var origin := Vector3.ZERO
 	if _guardian_anchor != null and is_instance_valid(_guardian_anchor):
 		origin = _guardian_anchor.global_position

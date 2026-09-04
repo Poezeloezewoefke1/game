@@ -49,6 +49,11 @@ func run_async() -> void:
 func _test_simultaneous_crystal_grab() -> void:
 	set_current("crystal race")
 	var epoch := GameManager.session_epoch
+	# The GROVE crystal, which carries no lock on Nerava. This raced for the
+	# ruins crystal until a guard was put on it, and then the race was decided
+	# by the lock rather than by the race - which is not what this test is for.
+	# The guard is recorded down so the contest is about simultaneity alone.
+	await _clear_crystal_guards()
 	# Put all three players next to the same crystal.
 	for peer_id in [GameConfig.HOST_PEER_ID, P2, P3]:
 		var node: Node = SpawnManager.player_node(peer_id)
@@ -72,8 +77,47 @@ func _test_simultaneous_crystal_grab() -> void:
 		"the contested crystal left the world exactly once")
 
 
+## Empty every pair of hands and put every crystal back in the world.
+##
+## Each race below is about ONE kind of simultaneity, and they run in sequence
+## against one live session. The crystal race leaves somebody holding a crystal,
+## and a player with full hands cannot take the Star Map - so the extraction
+## race silently depended on the crystal race having FAILED. It passed for years
+## because the contested crystal was locked and nobody ever won it. Resetting
+## explicitly is the difference between a test that is isolated and one that is
+## merely lucky.
+func _clear_hands() -> void:
+	GameManager.snapshot["crystals_carried"] = {}
+	GameManager.snapshot["crystals_in_world"] = [
+		GameConfig.CRYSTAL_RUINS, GameConfig.CRYSTAL_CAVE, GameConfig.CRYSTAL_GROVE]
+	await _clear_crystal_guards()
+
+
+## Remove the crystal guards, and say why.
+##
+## The revive race stands two revivers at (-42, 0, 1) to bring up a third - four
+## metres from where Nerava's ruins guard spawns. A Sentinel opening fire on the
+## participants is exactly right for the game and fatal for a test about
+## simultaneity: the target kept being shot back down and the revive never
+## finished. These races are about two things happening in the same frame, not
+## about surviving a firefight, so the field is cleared first.
+func _clear_crystal_guards() -> void:
+	var down: Array = GameManager.snapshot.get("guards_down", [])
+	for node in tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		var cid := String(node.get("guards_crystal_id"))
+		if cid == "":
+			continue
+		if not down.has(cid):
+			down.append(cid)
+		node.queue_free()
+	GameManager.snapshot["guards_down"] = down
+	await tree.process_frame
+	await tree.physics_frame
+
+
 func _test_simultaneous_revive() -> void:
 	set_current("revive race")
+	await _clear_hands()
 	var epoch := GameManager.session_epoch
 	var target: Node = SpawnManager.player_node(P3)
 	if not check(target != null, "the revive target exists"):
@@ -121,6 +165,7 @@ func _test_simultaneous_revive() -> void:
 
 func _test_duplicate_extraction() -> void:
 	set_current("extraction race")
+	await _clear_hands()
 	GameManager.snapshot["temple_discovered"] = true
 	GameManager.snapshot["state"] = MS.RETRIEVE_STAR_MAP
 	GameManager.snapshot["altar_active"] = true

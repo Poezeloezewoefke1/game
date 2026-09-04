@@ -95,8 +95,43 @@ func await_mission_state(state: int, timeout: float = 20.0) -> bool:
 	return false
 
 
+## Every enemy in the guardian group: temple Sentinel, crystal guards, Warden.
+## Tests about cleanup and session reset mean exactly this - "is anything still
+## alive" - so it keeps the broad meaning.
 func guardian_count() -> int:
 	return tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN).size()
+
+
+## The TEMPLE Sentinel specifically: not the boss, not a crystal's guard.
+##
+## Three different things live in the guardian group and every test used to
+## count all of them. That was harmless right up until a mission put a guard on
+## a crystal, and then "taking the Star Map spawns the Sentinel" counted two and
+## failed - while what it had actually been counting all along was the Warden.
+## A test should say which of the three it means.
+func temple_sentinel_count() -> int:
+	var n := 0
+	for node in tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		if node.is_in_group(GameConfig.GROUP_BOSS):
+			continue
+		if String(node.get("guards_crystal_id")) != "":
+			continue
+		n += 1
+	return n
+
+
+## How many bosses are awake. Exactly one Warden per descent, ever.
+func boss_count() -> int:
+	return tree.get_nodes_in_group(GameConfig.GROUP_BOSS).size()
+
+
+## How many crystal guards are standing.
+func crystal_guard_count() -> int:
+	var n := 0
+	for node in tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		if String(node.get("guards_crystal_id")) != "":
+			n += 1
+	return n
 
 
 func projectile_count() -> int:

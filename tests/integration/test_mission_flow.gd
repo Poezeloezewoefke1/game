@@ -261,6 +261,18 @@ func _phase_coupling() -> void:
 
 func _phase_crystals() -> void:
 	set_current("crystals")
+
+	# The guard lock is asserted in its own phase; this one is about the crystal
+	# and pedestal rules, and a locked crystal would simply refuse every request
+	# below for a reason that has nothing to do with what is being tested. So
+	# every guard is recorded down first, deliberately and visibly, rather than
+	# this phase quietly depending on which crystals a mission happens to lock.
+	var down: Array = GameManager.snapshot.get("guards_down", [])
+	for cid in GameManager.snapshot.get("crystal_locks", {}):
+		if not down.has(cid):
+			down.append(cid)
+	GameManager.snapshot["guards_down"] = down
+
 	var first := true
 	for oid in CRYSTAL_SPOTS:
 		var crystal_id := String(oid).replace("nerava_", "")
@@ -323,7 +335,7 @@ func _phase_altar() -> void:
 	check_eq(GameManager.star_map_state(), MissionRules.MAP_AVAILABLE, "the Star Map becomes available")
 	check(await _session.await_mission_state(MS.RETRIEVE_STAR_MAP, 5.0),
 		"the objective advances to RETRIEVE_STAR_MAP")
-	check_eq(_session.guardian_count(), 0, "no Sentinel exists before the Star Map is taken")
+	check_eq(_session.boss_count(), 0, "no Warden exists before the Star Map is taken")
 
 	await _session.move_host_player_to(ALTAR_SPOT)
 	GameManager.request_interact("nerava_star_map_altar")
@@ -334,12 +346,12 @@ func _phase_altar() -> void:
 		"taking the Star Map starts the boss fight")
 
 	await wait_frames(2)
-	check_eq(_session.guardian_count(), 1, "exactly one Warden spawns")
+	check_eq(_session.boss_count(), 1, "exactly one Warden spawns")
 
 	# Requesting it again must not spawn a second guardian.
 	GameManager.request_interact("nerava_star_map_altar")
 	await wait_frames(2)
-	check_eq(_session.guardian_count(), 1, "a repeated Star Map request does not duplicate the Warden")
+	check_eq(_session.boss_count(), 1, "a repeated Star Map request does not duplicate the Warden")
 
 
 ## The Warden, from shield to death, through the same entry point a blaster ray

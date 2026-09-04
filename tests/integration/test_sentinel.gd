@@ -74,10 +74,23 @@ func _setup() -> bool:
 	SpawnManager.host_spawn_guardian()
 	await wait_frames(3)
 
-	var guardians := tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN)
-	if not check_eq(guardians.size(), 1, "exactly one Sentinel exists"):
+	# The TEMPLE Sentinel, specifically. Nerava also puts a guard on the ruins
+	# crystal, so "the only guardian in the scene" stopped being a safe way to
+	# find it - and asking that question got this test shooting the crystal
+	# guard by mistake, which is how the double-free in the guard death path
+	# turned up.
+	var temple: Node = null
+	var others := 0
+	for node in tree.get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		if node.is_in_group(GameConfig.GROUP_BOSS):
+			continue
+		if String(node.get("guards_crystal_id")) != "":
+			others += 1
+			continue
+		temple = node
+	if not check(temple != null, "the temple Sentinel spawned (%d crystal guards alongside)" % others):
 		return false
-	_guardian = guardians[0]
+	_guardian = temple
 	return true
 
 

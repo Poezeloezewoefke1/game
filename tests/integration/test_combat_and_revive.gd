@@ -255,7 +255,12 @@ func _test_star_map_drop() -> void:
 	await wait_frames(2)
 
 	check_eq(GameManager.star_map_carrier(), P2, "the second player carries the Star Map")
-	check_eq(_session.guardian_count(), 1, "taking the Star Map spawns the Sentinel")
+	# The WARDEN, not a Sentinel. This assertion read `guardian_count() == 1` and
+	# was labelled "spawns the Sentinel", and it passed for the wrong reason: the
+	# counter lumped every guardian together, so the one it found was the boss.
+	# Separating the roles in the harness made the mislabel visible.
+	check_eq(_session.boss_count(), 1, "taking the Star Map wakes the Warden")
+	check_eq(_session.temple_sentinel_count(), 0, "and does not also spawn a temple Sentinel")
 
 	var dropped_before := _dropped_star_maps()
 	check_eq(dropped_before, 0, "nothing is on the ground while the map is carried")
@@ -288,7 +293,7 @@ func _test_star_map_drop() -> void:
 			"a living player recovers the dropped Star Map")
 		check_eq(GameManager.star_map_carrier(), GameConfig.HOST_PEER_ID, "the recoverer becomes the carrier")
 		check_eq(_dropped_star_maps(), 0, "the ground copy is removed on recovery")
-		check_eq(_session.guardian_count(), 1, "recovering the map does not spawn a second Sentinel")
+		check_eq(_session.boss_count(), 1, "recovering the map does not wake a second Warden")
 
 
 func _test_total_failure() -> void:

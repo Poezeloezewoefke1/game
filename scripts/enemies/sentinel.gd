@@ -29,6 +29,16 @@ var spawn_position: Vector3 = Vector3.ZERO
 ## flee. A lock you cannot remove is not a lock, so a guard needs a death.
 var guards_crystal_id: String = ""
 var _guard_hits: int = 0
+## Latched the instant a guard's death is applied.
+##
+## `queue_free()` is deferred to the end of the frame, so between the killing
+## shot and the node actually going away it still exists, still answers calls,
+## and still has a hit counter that will happily go past the threshold a second
+## time. In a four-player game that is simply two people firing at the same
+## guard; here it ran the whole death path twice and crashed the engine with
+## signal 11. GameManager.host_apply_guard_killed is already idempotent - it was
+## the NODE that was not.
+var _guard_dead: bool = false
 
 # --- Replicated (host authority) ------------------------------------------
 var sync_position: Vector3 = Vector3.ZERO
@@ -309,6 +319,11 @@ func _publish_transform() -> void:
 ## `part` is unused here - the Sentinel is one body - but the signature has to
 ## match the Warden's, because the host's fire path calls whichever it hit.
 func host_register_hit(from_peer: int, _part: Node = null) -> void:
+	# A dying node still answers calls. `queue_free()` does not take effect
+	# until the end of the frame, so anything that reaches this in between is
+	# talking to a corpse.
+	if _guard_dead or is_queued_for_deletion():
+		return
 	if guards_crystal_id != "":
 		_host_register_guard_hit()
 		return
@@ -426,14 +441,25 @@ func _apply_materials() -> void:
 	_eye.material_override = eye
 
 
-## A guard dies on GUARD_HITS_TO_KILL, unseals its crystal, and removes itself.
+## How many people are on this crew. Read at the moment of the hit rather than
+## cached at spawn: a guard is a short fight, and unlike the Warden there is no
+## phase ladder for a resize to fall out of step with.
+func _crew_size() -> int:
+	return maxi(LobbyManager.sorted_peer_ids().size(), 1)
+
+
+## A guard dies on a crew-scaled hit count, unseals its crystal, and removes
+## itself.
 func _host_register_guard_hit() -> void:
-	if not _is_host():
+	if not _is_host() or _guard_dead:
 		return
 	_guard_hits += 1
 	AudioDirector.play(AudioDirector.Cue.SENTINEL_PROJECTILE)
-	if _guard_hits < GameConfig.GUARD_HITS_TO_KILL:
+	# Sized to the crew, like the Warden. See MissionRules.guard_hits_to_kill.
+	if _guard_hits < MissionRules.guard_hits_to_kill(_crew_size()):
 		return
+	# Set BEFORE anything else, because everything after it can be re-entered.
+	_guard_dead = true
 	Logx.info("sentinel", "guard on %s destroyed" % guards_crystal_id)
 	GameManager.host_apply_guard_killed(guards_crystal_id)
 	queue_free()

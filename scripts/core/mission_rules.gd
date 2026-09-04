@@ -247,11 +247,22 @@ static func fresh_ship_snapshot(epoch: int, mission_id: String = "",
 ##
 ## Every mission uses the same three shapes so the crew learns them once: one
 ## crystal sealed behind a coupling that has to be found and fitted, one held by
-## a guard that has to be put down, one sitting in the hazard field. Nerava is
-## the tutorial and only carries the coupling.
+## a guard that has to be put down, one sitting in the hazard field.
+##
+## Nerava is the tutorial and carries two of the three. It used to carry only the
+## coupling, and the measured consequence was that the first mission any player
+## sees is one interesting errand followed by TWO identical fetch-and-carry
+## trips: 63 of the 124 seconds to the boss, in three round trips of the same
+## shape. The first mission is the one that decides whether anyone plays a
+## second. Nerava has no hazard - it is a jungle, not a furnace - so the third
+## lock still waits for Cinder, and one crystal is still a plain fetch, which is
+## what teaches the base move.
 static func locked_crystals(mission_id: String) -> Dictionary:
 	if mission_id == MissionCatalog.NERAVA:
-		return {GameConfig.CRYSTAL_CAVE: LOCK_COUPLING}
+		return {
+			GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
+			GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
+		}
 	return {
 		GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
 		GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
@@ -622,6 +633,20 @@ static func boss_volley_interval(crew: int, enraged: bool) -> float:
 	var base: float = GameConfig.BOSS_ENRAGED_VOLLEY_INTERVAL if enraged \
 		else GameConfig.BOSS_VOLLEY_INTERVAL
 	return base * (2.0 - boss_scale(crew))
+
+
+## How many hits a crystal guard takes before it dies, by crew size.
+##
+## The same argument as the Warden, one rung down. `GUARD_HITS_TO_KILL` is a
+## flat 14, and a Sentinel that four players drop in three seconds each is a
+## long solo fight in front of a crystal you cannot take until it is over. It
+## matters more now than it used to: Nerava carries a guard, so this is the
+## first enemy a new player has to actually beat rather than run past.
+##
+## Rounded UP so a smaller crew never gets a guard that dies in one burst - the
+## point of the lock is that it is a fight, not a formality.
+static func guard_hits_to_kill(crew: int) -> int:
+	return maxi(int(ceil(float(GameConfig.GUARD_HITS_TO_KILL) * boss_scale(crew))), 4)
 
 
 ## How many projectiles the Warden puts in a volley, by crew size.

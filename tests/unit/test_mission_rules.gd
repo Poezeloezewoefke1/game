@@ -19,6 +19,22 @@ func _snap() -> Dictionary:
 	return s
 
 
+## A crystal with no lock on it, ASKED of the snapshot rather than named.
+##
+## The tests below are about inventory and ownership - who may hold what - and
+## they hard-coded the ruins crystal because it happened to be free. It stopped
+## being free the day Nerava put a guard on it, and four tests failed for a
+## reason that had nothing to do with what they were testing. A hard-coded id in
+## a fixture is a second copy of a design decision; asking the snapshot is the
+## version that cannot drift.
+func _free_crystal(s: Dictionary) -> String:
+	var locks: Dictionary = s.get("crystal_locks", {})
+	for cid in [GameConfig.CRYSTAL_RUINS, GameConfig.CRYSTAL_CAVE, GameConfig.CRYSTAL_GROVE]:
+		if String(locks.get(cid, "")) == "":
+			return String(cid)
+	return GameConfig.CRYSTAL_GROVE
+
+
 # --- Actor eligibility ----------------------------------------------------
 
 func test_actor_gate() -> void:
@@ -32,7 +48,7 @@ func test_actor_gate() -> void:
 
 func test_crystal_pickup_happy_path() -> void:
 	var s := _snap()
-	check_allowed(MissionRules.can_pick_up_crystal(s, 2, GameConfig.CRYSTAL_RUINS, ALIVE),
+	check_allowed(MissionRules.can_pick_up_crystal(s, 2, _free_crystal(s), ALIVE),
 		"a free crystal can be picked up")
 
 
@@ -46,7 +62,7 @@ func test_crystal_cannot_be_taken_twice() -> void:
 func test_only_one_crystal_carried() -> void:
 	var s := _snap()
 	s["crystals_carried"] = {2: GameConfig.CRYSTAL_CAVE}
-	check_denied(MissionRules.can_pick_up_crystal(s, 2, GameConfig.CRYSTAL_RUINS, ALIVE),
+	check_denied(MissionRules.can_pick_up_crystal(s, 2, _free_crystal(s), ALIVE),
 		"inventory_full", "a player carrying a crystal cannot take a second")
 
 
@@ -54,8 +70,9 @@ func test_crystal_cannot_be_double_owned() -> void:
 	# Defence in depth: even if the world list is wrong, two peers must never
 	# both end up holding the same crystal id.
 	var s := _snap()
-	s["crystals_carried"] = {3: GameConfig.CRYSTAL_RUINS}
-	check_denied(MissionRules.can_pick_up_crystal(s, 2, GameConfig.CRYSTAL_RUINS, ALIVE),
+	var held := _free_crystal(s)
+	s["crystals_carried"] = {3: held}
+	check_denied(MissionRules.can_pick_up_crystal(s, 2, held, ALIVE),
 		"crystal_already_carried", "a crystal held by another peer cannot be taken")
 
 
@@ -63,7 +80,7 @@ func test_star_map_carrier_cannot_also_take_a_crystal() -> void:
 	var s := _snap()
 	s["star_map_state"] = MissionRules.MAP_CARRIED
 	s["star_map_carrier"] = 2
-	check_denied(MissionRules.can_pick_up_crystal(s, 2, GameConfig.CRYSTAL_RUINS, ALIVE),
+	check_denied(MissionRules.can_pick_up_crystal(s, 2, _free_crystal(s), ALIVE),
 		"hands_full_star_map", "the Star Map carrier has no free hands")
 
 
@@ -328,3 +345,40 @@ func test_boss_volley_size_scales_with_crew() -> void:
 		"crew 0 is treated as solo")
 	check_eq(MissionRules.boss_volley_projectiles(99), MissionRules.boss_volley_projectiles(4),
 		"a crew above four clamps to four")
+
+
+## Nerava carries two locks now, not one. The measured reason is in
+## locked_crystals: the first mission was one errand and two identical fetches,
+## 63 of the 124 seconds to the boss in three trips of the same shape.
+func test_nerava_has_two_locks_and_one_plain_fetch() -> void:
+	var nerava: Dictionary = MissionRules.locked_crystals(MissionCatalog.NERAVA)
+	check_eq(nerava.size(), 2, "Nerava locks two of its three crystals")
+	check_eq(String(nerava.get(GameConfig.CRYSTAL_CAVE, "")), MissionRules.LOCK_COUPLING,
+		"the cave crystal is still behind the coupling")
+	check_eq(String(nerava.get(GameConfig.CRYSTAL_RUINS, "")), MissionRules.LOCK_GUARD,
+		"the ruins crystal is now guarded")
+	check_false(nerava.has(GameConfig.CRYSTAL_GROVE),
+		"one crystal is still a plain fetch, which is what teaches the base move")
+	# Nerava has no hazard, so a hazard lock there would never open.
+	check_eq(MissionCatalog.hazard(MissionCatalog.NERAVA), MissionCatalog.HAZARD_NONE,
+		"Nerava has no hazard for a hazard lock to key off")
+	for other in [MissionCatalog.CINDER, MissionCatalog.HALLOW]:
+		check_eq(MissionRules.locked_crystals(String(other)).size(), 3,
+			"%s still locks all three" % other)
+
+
+func test_guard_toughness_scales_with_crew() -> void:
+	check_eq(MissionRules.guard_hits_to_kill(4), GameConfig.GUARD_HITS_TO_KILL,
+		"a full crew faces the configured guard unchanged")
+	var previous := 0
+	for crew in [1, 2, 3, 4]:
+		var hits: int = MissionRules.guard_hits_to_kill(crew)
+		check(hits >= 4, "crew %d still has to fight the guard (%d hits)" % [crew, hits])
+		check(hits >= previous, "crew %d faces no weaker a guard than crew %d" % [crew, crew - 1])
+		check(hits <= GameConfig.GUARD_HITS_TO_KILL,
+			"crew %d never faces more than the configured guard" % crew)
+		previous = hits
+	check(MissionRules.guard_hits_to_kill(1) < MissionRules.guard_hits_to_kill(4),
+		"a solo player faces a shorter guard fight than a full crew")
+	check_eq(MissionRules.guard_hits_to_kill(0), MissionRules.guard_hits_to_kill(1),
+		"crew 0 is treated as solo")

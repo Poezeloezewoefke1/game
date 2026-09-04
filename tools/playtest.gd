@@ -419,6 +419,15 @@ func _play_the_surface() -> bool:
 			if not await _walk_to(leg, "to %s" % crystal_id):
 				_fail("route to %s is blocked at %s" % [crystal_id, str(leg)])
 		var want: String = String(crystal_id)
+
+		# A guarded crystal cannot be taken until its Sentinel is down, and the
+		# prompt says so. Fight it first, the way a player who read the prompt
+		# would - the alternative is a driver that presses E at a locked crystal
+		# fourteen times and reports the game broken.
+		if MissionRules.crystal_lock(GameManager.snapshot, want) == MissionRules.LOCK_GUARD:
+			if not await _kill_the_guard(want):
+				return false
+
 		if not await _approach_and_use("%s_%s" % [mission_id, crystal_id],
 				"the %s" % crystal_id,
 				func() -> bool: return _carrying() == want):
@@ -475,6 +484,67 @@ func _play_the_surface() -> bool:
 	_event("mission.complete", "in %.1fs, %d downs, %d shots, %.0f m walked"
 		% [_now(), _downs, _shots, _distance_walked])
 	return true
+
+
+## Put down the Sentinel standing over a crystal.
+##
+## Shorter and simpler than the Warden: no shield phase, no enrage, and it dies
+## on a hit count rather than a health pool. What it shares is that standing
+## still in front of something that shoots you is not playing - so this weaves
+## too, and backs off if it closes.
+func _kill_the_guard(crystal_id: String) -> bool:
+	var guard: Node = null
+	if not await _until(func() -> bool:
+		guard = _find_guard(crystal_id)
+		return guard != null, 8.0):
+		_fail("%s is locked by a guard that never spawned" % crystal_id)
+		return false
+	_event("guard.found", "%s is guarded" % crystal_id)
+
+	var t_start := _now()
+	var deadline := _now() + 90.0
+	while _now() < deadline:
+		if MissionRules.crystal_lock(GameManager.snapshot, crystal_id) != MissionRules.LOCK_GUARD:
+			_event("guard.killed", "%s unsealed in %.1fs, %d volleys"
+				% [crystal_id, _now() - t_start, _shots])
+			return true
+		if not is_instance_valid(guard):
+			guard = _find_guard(crystal_id)
+			if guard == null:
+				await _frames(4)
+				continue
+		var player := _player() as Node3D
+		if player == null:
+			break
+		if bool(player.get("is_downed")):
+			_downs += 1
+			_fail("the guard on %s downed the player, who alone cannot be revived"
+				% crystal_id)
+			return false
+		var gap: float = player.global_position.distance_to((guard as Node3D).global_position)
+		if gap < 7.0:
+			await _hold("move_back", 0.5)
+		await _aim_at_point((guard as Node3D).global_position + Vector3(0.0, 1.0, 0.0))
+		_strafe = -_strafe
+		var side := "move_left" if _strafe > 0 else "move_right"
+		Input.action_press(side)
+		await _hold("fire", 0.55)
+		Input.action_release(side)
+		_shots += 1
+		await _frames(2)
+
+	_fail("the guard on %s was still standing after 90 s" % crystal_id)
+	return false
+
+
+## The Sentinel that guards a particular crystal, or null.
+func _find_guard(crystal_id: String) -> Node:
+	for node in get_tree().get_nodes_in_group(GameConfig.GROUP_GUARDIAN):
+		if node.is_in_group(GameConfig.GROUP_BOSS):
+			continue
+		if String(node.get("guards_crystal_id")) == crystal_id:
+			return node
+	return null
 
 
 ## What this player is holding, asked of the same peer the game asks about.

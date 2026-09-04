@@ -61,7 +61,10 @@ func _dirty_the_session() -> void:
 	GameManager.snapshot["star_map_state"] = MissionRules.MAP_AVAILABLE
 	GameManager.host_apply_star_map_pickup(GameConfig.HOST_PEER_ID)
 	await wait_frames(2)
-	check_eq(_session.guardian_count(), 1, "a Sentinel is alive before the reset")
+	# Something has to be alive for the reset to have work to do. The Warden is
+	# the reliable one: taking the Star Map always wakes exactly one, whereas how
+	# many crystal guards exist is a per-mission design decision.
+	check_eq(_session.boss_count(), 1, "the Warden is awake before the reset")
 
 	# Drop the map so a dropped entity exists too.
 	var player := _session.host_player()
@@ -101,9 +104,25 @@ func _check_clean_slate(attempt: int) -> void:
 		"%s: no crystal is still held" % tag)
 
 	# --- Nodes ---
-	check_eq(_session.guardian_count(), 0, "%s: no Sentinel survives" % tag)
+	#
+	# NOT zero, and that is the point. A retry re-enters the level, and the fresh
+	# mission legitimately spawns its own crystal guards on the way in - so
+	# "nothing is alive" would fail on correct behaviour. What must be true is
+	# that the only things alive are the ones the NEW mission just created:
+	# exactly one guard per guard lock, no boss, no projectiles, and nothing
+	# else session-bound. A leaked Warden, a leaked projectile or a second guard
+	# all still break this.
+	var expected_guards := 0
+	for cid in GameManager.snapshot.get("crystal_locks", {}):
+		if String(GameManager.snapshot["crystal_locks"][cid]) == MissionRules.LOCK_GUARD:
+			expected_guards += 1
+	check_eq(_session.boss_count(), 0, "%s: no Warden survives" % tag)
+	check_eq(_session.temple_sentinel_count(), 0, "%s: no temple Sentinel survives" % tag)
+	check_eq(_session.crystal_guard_count(), expected_guards,
+		"%s: exactly one guard per guard lock, and no more" % tag)
 	check_eq(_session.projectile_count(), 0, "%s: no projectile survives" % tag)
-	check_eq(_session.session_bound_count(), 0, "%s: no session-bound entity survives" % tag)
+	check_eq(_session.session_bound_count(), expected_guards,
+		"%s: the only session-bound entities are the new mission's own guards" % tag)
 
 	# --- Players ---
 	var players := SpawnManager.all_players()
