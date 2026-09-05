@@ -770,22 +770,24 @@ behind the campaign scoring 5 while one mission scores 7 - and it is a level
 authoring job, not a systems one: the locks, the guards and the hazard already
 differ, and the geometry they hang on does not.
 
-**The crystal guard costs a solo player almost exactly all of their health, on
-both planets that have one in the open.** Measured, not felt: the driver reached
-`crystal.taken crystal_ruins` on **1 hp of 100** on Cinder and again on Hallow,
-and on a third run a projectile already in the air when the guard died finished
-the job and downed them. 1 is not a coincidence - the guard's projectile does 33
-and three of them is 99 - so the fight is decided by whether you take three hits
-or four, with nothing in between and no way back afterwards, because health does
-not regenerate on the surface.
+**The crystal guard costs a dodging player one hit. It was the instrument, for
+the seventh time.** This entry previously read that the guard cost a solo player
+almost all of their health - the driver reached `crystal.taken crystal_ruins` on
+**1 hp of 100** on both planets with an open guard - and it said the thing to do
+was measure what the fight costs a player who strafes, rather than change a
+number.
 
-Two things make this a hypothesis rather than a finding. The driver is not a
-good player: it closes on a navigation path and does not dodge while walking, so
-some of those three hits are its own. And the same fight on Nerava, where the
-approach starts closer, costs far less. Before anyone changes a number here, the
-thing to measure is what the fight costs a player who strafes on the approach -
-if that is comfortably two hits, the fight is fine and the driver is the story,
-which is how six of the last ten "balance problems" turned out.
+Measured: **67 hp**, on Nerava and on Cinder alike. One projectile, not three.
+The driver had been reversing its strafe on every volley, which is oscillating
+in place rather than dodging (I39), and it was standing where each previous shot
+had been aimed. The crystal guard needs no balance change at all.
+
+Recording the near-miss as well as the result. The 1 hp reading was real, it was
+reproduced on two planets, and the arithmetic behind it was clean - the guard's
+projectile does 33 and three of them is 99. Every part of it was true except the
+conclusion. What stopped it becoming a difficulty change was the standing rule
+that an apparent balance problem gets one more measurement before it gets a
+number, and the tally is now seven of eleven.
 
 **The pre-flight act is the right length.** 22 seconds solo for a course, three
 stations, a refused lever, a seat and a launch. It has a shape - set up, be
