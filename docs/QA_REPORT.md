@@ -705,17 +705,27 @@ place. The guard standing over `crystal_ruins` takes 0 to 2 hits in 60 volleys
 and the fight times out at 90 seconds. Nerava's guard, which is the same
 Sentinel with the same stats, dies in 9.
 
-What has been ruled out: it is not the guard being wedged (defect 79's fix took
-its stuck-recoveries from 18 in a run to 0, and the hits did not improve), and
-it is not the driver failing to engage or to reposition (it now does both, and
-logs each attempt). What is left is the geometry: the guard spawns on the ruins
-floor 3.4 m from a ruin pillar and 4.8 m from `RuinsBack`, a 16 x 8 x 4 wall,
-in an alcove none of the other two levels put a guard in.
+What has been ruled out: it is not the driver failing to engage or to
+reposition - it now does both, and logs every attempt.
 
-The likeliest reading is that this is defects 56, 57 and 75 once more - set
-dressing too close to an objective - and that the fix is to move the guard's
-anchor or the pillars around it. That is a claim about level layout that should
-be checked by looking at where the shots actually land, not asserted here.
+What is NOT ruled out, and is stated here because it is a risk this pass
+introduced: defect 79 gave the guard a collision mask of 0 so scenery could not
+trap it. That fixed what it was aimed at - stuck-recoveries went from 18 in a
+run to 0 - but it did not improve the hit rate, and it may have made it worse
+(Cinder went from 2 hits in 60 volleys to 0). A hovering body with no collision
+mask can drift INSIDE solid geometry, and the guard's alcove has `RuinsBack`, a
+16 x 8 x 4 wall, 4.8 m away. A guard floating inside that wall would be
+unhittable in exactly this way. The same change on the Warden is not in doubt -
+it fights in an open colonnade, and it demonstrably works - but for the guard it
+should be re-examined before it is trusted.
+
+The other candidate is the geometry the guard sits in: it spawns on the ruins
+floor 3.4 m from a ruin pillar, in an alcove neither of the other two levels
+puts a guard in, which would make this defects 56, 57 and 75 once more - set
+dressing too close to an objective.
+
+Distinguishing the two needs one measurement nobody has taken: where the shots
+actually stop. That is the next thing to do here, not another fix.
 
 **None known elsewhere.** That is a statement about what has been tested, not a claim of
 correctness: everything in the "not executed" table above is untested, and
