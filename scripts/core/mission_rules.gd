@@ -263,15 +263,15 @@ static func locked_crystals(mission_id: String) -> Dictionary:
 			GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
 			GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
 		}
-	# Hallow rotates the assignment. Cinder and Hallow were built from one
+	# Cinder and Hallow each rotate the assignment. They were built from one
 	# template and it showed: of the 96 nodes they share by name, 91 sit at
 	# identical coordinates, and both ran the same three locks on the same three
 	# crystals in the same order. Two planets that differ only in palette are
 	# one planet, and the second one taught a player nothing.
 	#
-	# Same three locks, different trips. The fight, the errand and the hazard
-	# each move to a crystal they do not gate on Cinder, so the order the three
-	# planets are played in changes what each of them is about. The props that
+	# Same three locks, different trips. No two planets put the fight, the
+	# errand and the hazard on the same crystals, so the order they are played
+	# in changes what each of them is about rather than only its colour. The props that
 	# belong to a lock move with it - the coupling socket sits beside the
 	# crystal it powers and the hazard field stands over the one it covers -
 	# and `test_scene_integrity` now asserts the socket and this table agree,
@@ -283,6 +283,13 @@ static func locked_crystals(mission_id: String) -> Dictionary:
 			GameConfig.CRYSTAL_CAVE: LOCK_GUARD,
 			GameConfig.CRYSTAL_RUINS: LOCK_HAZARD,
 		}
+	if mission_id == MissionCatalog.CINDER:
+		return {
+			GameConfig.CRYSTAL_RUINS: LOCK_COUPLING,
+			GameConfig.CRYSTAL_GROVE: LOCK_GUARD,
+			GameConfig.CRYSTAL_CAVE: LOCK_HAZARD,
+		}
+	# Nerava's own arrangement, and the fallback for any mission added later.
 	return {
 		GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
 		GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
