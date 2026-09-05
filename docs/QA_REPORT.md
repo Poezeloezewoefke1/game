@@ -66,6 +66,7 @@ mouse, because that was measured, repeatedly, on the shipped build.
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
 | Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
 | Automated playtest, all 3 planets end to end | PASS - Nerava 181.5 s, Cinder 195.3 s, Hallow 199.9 s, 0 downs each |
+| Solo Warden fight, 5 runs on one build | 4 killed it, 1 downed |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
 | Played by a person | NOT DONE (VERIFY-008) |
 
@@ -750,23 +751,41 @@ this document for that reason. Each names the evidence it rests on. Nobody has
 played this game - see VERIFY-008 in `docs/KNOWN_LIMITATIONS.md` - so treat
 these as hypotheses for the first human playtest, not as findings.
 
-**The Warden fight has no margin: one volley that lands is the whole health
-bar.** The boss fires `BOSS_VOLLEY_PROJECTILES` = 3 projectiles per volley, and
-each does `GUARDIAN_PROJECTILE_DAMAGE` = 33 against a player's 100. Nothing
-restores health after the altar. So a solo player's entire boss fight is "do not
-take three hits", and a single volley that connects fully does it in one go.
+**The Warden is not a coin flip on the current build: 4 wins in 5 solo runs.
+And the "one volley kills" claim published two commits ago was wrong.**
 
-Every loss measured this session has that exact shape - 100, then 34, then
-downed - and the wins differ only in which volleys missed. That is not by itself
-a defect: dodging is the mechanic, and the fight is meant to be close-run. It
-does mean the difficulty has no gradient. There is no such thing as *nearly*
-losing this fight, or winning it hurt; a run is decided by a single binary event
-and the player has no way to spend a small mistake.
+The rate first. Five solo cautious runs on one build, which is what this needed
+instead of the five runs across three different driver builds that raised the
+question: **4 killed the Warden, 1 was downed.** The earlier 2-in-5 was a mix of
+builds, two of which had driver defects that have since been fixed. So there is
+no solo-boss balance defect to fix, and the observation that produced this
+paragraph joins the seven others that turned out to be the instrument or the
+sample.
 
-Whether the resulting loss rate is acceptable is a real question and it is being
-given a denominator rather than an opinion - repeated solo runs on one build,
-because the five runs that produced this observation span three different driver
-builds and are an anecdote, not a rate.
+Now the correction. The previous version of this entry said a single volley that
+connects fully is lethal. It is not, and the arithmetic was there to be checked:
+33 damage takes 100 to 67 to 34 to **1**, and it is the *fourth* hit that downs
+a player. A full three-projectile volley does 99 - it leaves you on one point of
+health. So the fight turns on three hits against four, not two against three.
+
+The measured runs say so plainly, and two of the four wins finished on exactly
+1 hp:
+
+| Run | Result | Health through the fight |
+|---|---|---|
+| 1 | killed the Warden | 100 -> 100 -> 100 -> 67 |
+| 2 | killed the Warden | 100 -> 100 -> 100 -> 1 |
+| 3 | killed the Warden | 100 -> 100 -> 100 -> 67 |
+| 4 | **downed** | 100 -> 100 -> 67 -> 34 -> downed |
+| 5 | killed the Warden | 100 -> 100 -> 1 -> 1 |
+
+What stands is the shape rather than the severity. Health only ever takes the
+values 100, 67, 34 and 1, because one number divides the health bar into three
+and a bit. There is no winning slightly hurt and no nearly losing; a run's
+outcome is a small integer. That is a legitimate design choice for a dodging
+fight and it is worth knowing it is a choice, because it means difficulty here
+cannot be tuned gently - the only moves available are changing how often the
+boss hits or changing what a hit is worth.
 
 **Cinder and Hallow are not two levels. They are one level with two palettes.**
 This is the campaign-repetition problem stated as a number rather than an
