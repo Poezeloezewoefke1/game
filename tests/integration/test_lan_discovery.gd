@@ -176,6 +176,32 @@ func _test_entries_expire() -> void:
 					% [LanDiscovery.sessions().size(), GameConfig.DISCOVERY_MAX_SESSIONS]):
 			return
 
+	# Present is not the same as FRESH, and this test measures from the stop.
+	# An entry ages from its last packet, so stopping the announcer while the
+	# entry is already three seconds old leaves it 0.6 s of life and the test
+	# reads that as a flicker. It happened twice - "waited 0.3s", then "waited
+	# 0.6s" once the entry was re-established but not waited for - because the
+	# flood test that runs first injects sixty-four packets and the legitimate
+	# announcements do not get through promptly afterwards.
+	#
+	# So: wait for a fresh packet before starting the clock, and say how long
+	# that took, because the staleness is the interesting number if it is ever
+	# large.
+	var fresh_wait := Time.get_ticks_msec()
+	var fresh := false
+	while float(Time.get_ticks_msec() - fresh_wait) / 1000.0 < 6.0:
+		var entry: Variant = _find_session(SESSION_NAME)
+		if entry != null:
+			var age: float = float(Time.get_ticks_msec()
+				- int((entry as Dictionary)["last_seen"])) / 1000.0
+			if age <= GameConfig.DISCOVERY_ANNOUNCE_INTERVAL:
+				fresh = true
+				break
+		await tree.process_frame
+	if not check(fresh, "the entry is freshly announced before its expiry is timed (waited %.1fs)"
+			% (float(Time.get_ticks_msec() - fresh_wait) / 1000.0)):
+		return
+
 	LanDiscovery.host_stop_announcing()
 	check_false(LanDiscovery.is_announcing(), "the host stopped announcing")
 
