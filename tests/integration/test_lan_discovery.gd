@@ -155,12 +155,20 @@ func _test_entries_expire() -> void:
 	LanDiscovery.host_stop_announcing()
 	check_false(LanDiscovery.is_announcing(), "the host stopped announcing")
 
+	# Measure the CLOCK, not a sum of frame deltas. Godot clamps the reported
+	# delta when a frame runs long, so under load the sum drifts behind real
+	# time - and this assertion is about real time. It failed three times in one
+	# session, always while other work was running, always passing on the
+	# immediate re-run, and each time it cost someone the trouble of proving it
+	# had nothing to do with what they had changed. A test that measures the
+	# wrong thing is worse than no test: it spends attention and returns noise.
 	var gone := false
+	var started := Time.get_ticks_msec()
 	var waited := 0.0
 	var limit: float = GameConfig.DISCOVERY_ENTRY_TIMEOUT + 3.0
 	while waited < limit:
 		await tree.process_frame
-		waited += tree.root.get_process_delta_time()
+		waited = float(Time.get_ticks_msec() - started) / 1000.0
 		if _find_session(SESSION_NAME) == null:
 			gone = true
 			break
@@ -172,13 +180,13 @@ func _test_entries_expire() -> void:
 # --------------------------------------------------------------------------
 
 func _await_session(name: String, timeout: float) -> Variant:
-	var waited := 0.0
-	while waited < timeout:
+	# Clock, not summed deltas - see _test_entries_expire.
+	var started := Time.get_ticks_msec()
+	while float(Time.get_ticks_msec() - started) / 1000.0 < timeout:
 		var entry: Variant = _find_session(name)
 		if entry != null:
 			return entry
 		await tree.process_frame
-		waited += tree.root.get_process_delta_time()
 	return null
 
 

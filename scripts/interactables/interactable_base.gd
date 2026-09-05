@@ -25,6 +25,30 @@ class_name Interactable
 var _registered_id: String = ""
 
 
+## The point on this object that the player's interact ray actually hits: the
+## centre of its collision shape.
+##
+## The host validates line of sight to an interactable before allowing a press,
+## and it used to aim at `global_position + 0.6 m` - the object's ORIGIN, which
+## for anything standing on the ground is its feet, the most obstructed point on
+## it and the one least like where the player is looking. The client's ray hits
+## the collision SHAPE. So the two could disagree, and when they did the player
+## was shown "Press E to Fit Power Coupling" for something the host would refuse
+## every single time - measured on Cinder, where a piece of set dressing 0.2 m
+## in front of the coupling socket sealed the cave crystal permanently and made
+## the mission unfinishable.
+##
+## Aiming at the same thing the client's ray hits makes them agree by
+## construction, on every level and every prop, rather than one escape hatch at
+## a time.
+func interaction_point() -> Vector3:
+	for child in find_children("*", "CollisionShape3D", true, false):
+		var shape := child as CollisionShape3D
+		if shape != null and shape.shape != null:
+			return shape.global_position
+	return global_position + Vector3.UP * 0.6
+
+
 ## Is this node part of a mounted level, as opposed to a prefab someone loaded
 ## on its own to look at? SceneManager owns the level root; anything under it is
 ## in the game, anything else is being inspected.

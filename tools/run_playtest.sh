@@ -29,11 +29,16 @@ mkdir -p "$(dirname "$OUT_PATH")"
 # One session at a time. Two of these at once fight over the ENet port and the
 # loser reports "hosting did not reach the lobby", which reads exactly like a
 # game defect and is not one.
+# Match the ENGINE running the playtest scene, not the string "playtest.tscn"
+# wherever it appears. `pgrep -f playtest.tscn` also matches any shell whose own
+# command line mentions it - including the one asking - so the guard deadlocked
+# against itself and refused three runs that had nothing to wait for.
+running() { pgrep -f "Godot_v.*playtest\.tscn" >/dev/null 2>&1; }
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  pgrep -f "playtest.tscn" >/dev/null 2>&1 || break
+  running || break
   sleep 2
 done
-if pgrep -f "playtest.tscn" >/dev/null 2>&1; then
+if running; then
   echo "another playtest is already running; refusing to start a second" >&2
   exit 2
 fi

@@ -252,6 +252,11 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-021 | The enraged Warden can actually damage a player it closes on | `Warden._host_contact_damage` (horizontal range) | `test_combat_and_revive` | AUTO |
 | MIS-022 | **A hovering boss is never trapped by scenery** - it flew into a temple pillar and stopped there for the rest of the fight | `Warden._ready` collision mask | playtest | PLAY |
 | MIS-023 | Contact damage is sized to the crew, like the boss's health and volleys | `MissionRules.boss_contact_damage` | `test_mission_rules` | AUTO |
+| MIS-024 | **The game never shows a prompt for something the host will always refuse** | `Interactable.interaction_point`, `GameManager._host_clear_line` | `test_scene_integrity` (12 approaches per interactable) | AUTO |
+| MIS-025 | The temple is discovered by walking into the clearing, not by being spawned | `temple_trigger.gd` (confirms the overlap a physics step later) | playtest on all three planets | PLAY |
+| MIS-026 | **A player can step onto what the navigation bake says they can climb** | `Player._try_step_up` | playtest | PLAY |
+| MIS-027 | Every objective on every planet can be reached on foot | level geometry (plateau approach steps) | playtest per mission | PLAY |
+| MIS-028 | No hovering enemy is trapped by scenery | `Warden._ready`, `Sentinel._ready` collision masks | playtest | PLAY |
 
 ## Quality gates (QA)
 

@@ -1004,7 +1004,12 @@ func _host_clear_line(a: Node, b: Node) -> bool:
 	if not (a is Node3D) or not (b is Node3D):
 		return false
 	var from: Vector3 = _authoritative_position(a) + Vector3.UP * 1.2
-	var to: Vector3 = _authoritative_position(b) + Vector3.UP * 0.6
+	# Aim at what the player's interact ray actually hits - the collision shape -
+	# not at the object's origin plus a guess. See Interactable.interaction_point:
+	# the two rays disagreeing is how Cinder shipped a coupling socket that
+	# showed a prompt and refused every press.
+	var to: Vector3 = b.call("interaction_point") if b.has_method("interaction_point") \
+		else _authoritative_position(b) + Vector3.UP * 0.6
 	var space := (a as Node3D).get_world_3d().direct_space_state
 	if space == null:
 		return true

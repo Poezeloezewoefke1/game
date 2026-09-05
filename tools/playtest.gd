@@ -478,17 +478,23 @@ func _play_the_surface() -> bool:
 		var t_start := _now()
 		var want: String = String(crystal_id)
 		var crystal_object: String = "%s_%s" % [mission_id, crystal_id]
+		var guarded: bool = MissionRules.crystal_lock(GameManager.snapshot, want) \
+			== MissionRules.LOCK_GUARD
+
+		# Deal with the guard BEFORE walking into its field of fire, not after
+		# arriving. Walking the last thirty metres to a Sentinel that is already
+		# shooting, without shooting back, is not caution - it is standing still
+		# with extra steps. Measured on Cinder, where the hazard errand costs a
+		# third of your health first: the driver was downed en route having
+		# fired ZERO shots, and reported the crystal unreachable. A player who
+		# can see something shooting at them shoots back.
+		if guarded:
+			if not await _kill_the_guard(want):
+				return false
+
 		if not await _nav_walk_to_object(crystal_object, "to %s" % crystal_id):
 			_fail("could not reach %s" % crystal_id)
 			return false
-
-		# A guarded crystal cannot be taken until its Sentinel is down, and the
-		# prompt says so. Fight it first, the way a player who read the prompt
-		# would - the alternative is a driver that presses E at a locked crystal
-		# fourteen times and reports the game broken.
-		if MissionRules.crystal_lock(GameManager.snapshot, want) == MissionRules.LOCK_GUARD:
-			if not await _kill_the_guard(want):
-				return false
 
 		if not await _approach_and_use(crystal_object, "the %s" % crystal_id,
 				func() -> bool: return _carrying() == want):
@@ -561,6 +567,8 @@ func _kill_the_guard(crystal_id: String) -> bool:
 		_fail("%s is locked by a guard that never spawned" % crystal_id)
 		return false
 	_event("guard.found", "%s is guarded" % crystal_id)
+	_guard_hits_seen = -1
+	_guard_fruitless = 0
 
 	var t_start := _now()
 	var deadline := _now() + 90.0
@@ -585,7 +593,42 @@ func _kill_the_guard(crystal_id: String) -> bool:
 		var gap: float = player.global_position.distance_to((guard as Node3D).global_position)
 		if gap < 7.0:
 			await _hold("move_back", 0.5)
+		elif gap > 22.0:
+			# Close to a range where the shot is worth taking. The fight can now
+			# start from wherever the driver first sees the guard, which is
+			# thirty metres out on the bigger maps, and firing into the haze at
+			# that distance is how a fight times out looking unwinnable.
+			await _look_at_point((guard as Node3D).global_position)
+			Input.action_press("sprint")
+			await _hold("move_forward", 0.7)
+			Input.action_release("sprint")
 		await _aim_at_point((guard as Node3D).global_position + Vector3(0.0, 1.0, 0.0))
+
+		# Volleys that land nothing mean something is in the way. The guard's
+		# own hit count is the only progress signal there is - the lock state is
+		# binary - and without watching it the driver emptied 69 volleys into
+		# terrain on Hallow and reported the guard unkillable. Same lesson as
+		# the Warden: aimed and ineffective is a THIRD outcome, distinct from
+		# missing and from not firing, and only moving fixes it.
+		var hits := int(guard.get("_guard_hits")) if guard.has_method("get") else 0
+		if hits > _guard_hits_seen:
+			_guard_hits_seen = hits
+			_guard_fruitless = 0
+		else:
+			_guard_fruitless += 1
+			if _guard_fruitless >= 8:
+				_guard_fruitless = 0
+				_event("guard.reposition",
+					"8 volleys with %s still on %d hits - moving for a line"
+						% [crystal_id, hits])
+				await _look_at_point((guard as Node3D).global_position)
+				Input.action_press("move_left" if _strafe > 0 else "move_right")
+				Input.action_press("sprint")
+				await _hold("move_forward", 0.8)
+				Input.action_release("sprint")
+				Input.action_release("move_left" if _strafe > 0 else "move_right")
+				continue
+
 		_strafe = -_strafe
 		var side := "move_left" if _strafe > 0 else "move_right"
 		Input.action_press(side)
@@ -1170,6 +1213,9 @@ func _my_health() -> int:
 var _last_aim_error: float = 0.0
 ## Whether the last fight aim actually reached its target.
 var _aim_converged: bool = true
+## Guard hits landed so far, and volleys since the last one. See _kill_the_guard.
+var _guard_hits_seen: int = -1
+var _guard_fruitless: int = 0
 ## Volleys fired since the last strafe reversal. See _fight_the_warden.
 var _strafe_volleys: int = 0
 ## Best boss progress seen (nodes weighted above health), and aimed volleys
@@ -1626,6 +1672,7 @@ func _approach_and_use(object_id: String, what: String = "",
 		var pl := _player()
 		var h: Variant = pl.get("_hovered") if pl != null else null
 		_event("press.trace", "%s %s" % [label, " ".join(_trace)])
+		_event("press.blocked", "%s: %s" % [label, _why_the_host_refuses(object_id)])
 		_fail("%s: five presses while aimed at it did not take (last frame: ray='%s' latch=%s pending=%d)"
 			% [label,
 				("none" if h == null or not is_instance_valid(h)
@@ -1634,6 +1681,40 @@ func _approach_and_use(object_id: String, what: String = "",
 				int(pl.get("_interact_pending_until_ms")) if pl != null else -1])
 		return false
 	return true
+
+
+## Run the HOST's own line-of-sight query and name what it hits.
+##
+## The client's interact ray and the host's validation ray are different rays -
+## the client's leaves the camera and stops at whatever it touches, the host's
+## goes from the player's chest to a point 0.6 m above the object's ORIGIN and
+## is blocked only by world geometry. When they disagree the player is shown a
+## prompt for something that will always be refused, which is as bad as a bug
+## gets: `REJECTED reason=interact_no_line_of_sight` five times while the HUD
+## said "Press E to Fit Power Coupling". Naming the obstruction is the
+## difference between a bug report and a bug fix.
+func _why_the_host_refuses(object_id: String) -> String:
+	var node := SpawnManager.find_interactable(object_id) as Node3D
+	var player := _player() as Node3D
+	if node == null or player == null:
+		return "no node to test"
+	var space := player.get_world_3d().direct_space_state
+	if space == null:
+		return "no physics space"
+	var from: Vector3 = player.global_position + Vector3.UP * 1.2
+	var to: Vector3 = node.global_position + Vector3.UP * 0.6
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = GameConfig.LAYER_WORLD
+	query.collide_with_areas = false
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return "the host's line of sight is CLEAR from %s to %s - the refusal is something else" \
+			% [str(from.snapped(Vector3.ONE * 0.1)), str(to.snapped(Vector3.ONE * 0.1))]
+	var who: Node = hit.get("collider")
+	return "the host's line of sight %s -> %s is blocked by %s at %s" % [
+		str(from.snapped(Vector3.ONE * 0.1)), str(to.snapped(Vector3.ONE * 0.1)),
+		(who.name if who != null else "?"),
+		str((hit.get("position", Vector3.ZERO) as Vector3).snapped(Vector3.ONE * 0.1))]
 
 
 ## Has this pre-flight station been worked? Used as the `done` check above.

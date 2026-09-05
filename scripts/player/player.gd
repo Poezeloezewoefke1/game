@@ -328,6 +328,7 @@ func _local_physics(delta: float) -> void:
 	velocity.z = horizontal.z
 
 	move_and_slide()
+	_try_step_up(horizontal)
 
 	sync_position = global_position
 	sync_yaw = rotation.y
@@ -503,6 +504,46 @@ func _rpc_request_fire(origin: Vector3, direction: Vector3, epoch: int) -> void:
 ## THE authoritative shot decision. Returns true when the shot was taken.
 ## Called directly on the host and via _rpc_request_fire from a client, so both
 ## paths go through exactly the same checks.
+## Step up onto a low ledge instead of stopping dead against it.
+##
+## `move_and_slide()` has no step handling at all: a CharacterBody3D walks up
+## SLOPES and stops against any vertical face, however small. The levels are
+## authored against the navigation bake's `agent_max_climb` of 0.4 m, so
+## navigation happily routes a player over a lip the physics then refuses -
+## which is not a mismatch anyone notices until something walks the route.
+## Measured on Cinder: the ruins floor is a 0.3 m step with no ramp, the
+## navmesh routed straight onto it, and the player stopped dead 0.9 m from the
+## crystal standing on it. Unreachable, so the mission was unfinishable, on the
+## first mission ever flown there.
+##
+## Deliberately narrow: only while grounded, only when actually pressed against
+## something, only up to what the navigation bake already promises, and only
+## when there is ground to land on - a cliff edge is not a step.
+const STEP_HEIGHT: float = 0.4
+const STEP_PROBE: float = 0.35
+
+func _try_step_up(wish: Vector3) -> void:
+	if wish.length_squared() < 0.04 or not is_on_floor() or not is_on_wall():
+		return
+	var step := Vector3.UP * STEP_HEIGHT
+	var ahead: Vector3 = wish.normalized() * STEP_PROBE
+	# Headroom to rise into?
+	if test_move(global_transform, step):
+		return
+	var raised := global_transform
+	raised.origin += step
+	# Clear ahead once we are up there? If not, it is a wall, not a step.
+	if test_move(raised, ahead):
+		return
+	var landed := raised
+	landed.origin += ahead
+	# Something to stand on when we come back down? A cliff edge collides with
+	# nothing, and stepping onto it would be a hover.
+	if not test_move(landed, -step * 1.2):
+		return
+	global_position += step
+
+
 func host_process_fire_request(peer_id: int, origin: Vector3, direction: Vector3, epoch: int) -> bool:
 	if not _is_host():
 		return false

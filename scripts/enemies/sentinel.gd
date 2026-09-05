@@ -78,7 +78,17 @@ func _ready() -> void:
 	add_to_group(GameConfig.GROUP_GUARDIAN)
 	add_to_group(GameConfig.GROUP_SESSION_BOUND)
 	collision_layer = GameConfig.LAYER_ENEMY
-	collision_mask = GameConfig.LAYER_WORLD
+	# It HOVERS - see _host_move, which holds a constant height above whatever
+	# is below - so scenery must not trap it. This is defect 73 in a second
+	# body: the Warden drove into a temple pillar and stopped there for the
+	# rest of the fight, and the crystal guard on Cinder and Hallow did the
+	# same among the ruin pillars, logging "Stuck for 6.0s - returning to
+	# anchor" eighteen times in one run while the player's shots hit the pillar
+	# it was behind. Its own stuck-recovery is for losing a path, not for being
+	# wedged by masonry it should be floating over. Nothing depends on it
+	# colliding: the height hold keeps it off the ground, and its hurtbox stays
+	# on the enemy layer, so shooting it is unchanged.
+	collision_mask = 0
 	global_position = spawn_position
 	sync_position = spawn_position
 	_last_progress_position = spawn_position

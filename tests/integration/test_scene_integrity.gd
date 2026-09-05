@@ -90,6 +90,60 @@ func _check_common(key: String, level: Node) -> void:
 		check_eq(node.get("collision_layer"), GameConfig.LAYER_INTERACTABLE,
 			"%s: %s is on the interactable physics layer" % [key, node.name])
 
+		# The host validates line of sight to this point before allowing a
+		# press. It has to be a point ON the object - the collision shape's
+		# centre - and not the origin, which for anything standing on the
+		# ground is its feet. Cinder shipped a coupling socket with a piece of
+		# set dressing 0.2 m in front of its origin: the prompt appeared, the
+		# host refused every press, and the cave crystal was sealed for good.
+		if node.has_method("interaction_point"):
+			var aim: Vector3 = node.call("interaction_point")
+			var origin: Vector3 = (node as Node3D).global_position
+			check(aim.distance_to(origin) < 6.0,
+				"%s: %s aims the host's check at a point on itself (%.1f m from its origin)"
+					% [key, node.name, aim.distance_to(origin)])
+			_check_usable_from_somewhere(key, node as Node3D, aim)
+
+
+## An interactable the host will always refuse is worse than one that is missing.
+##
+## The host raycasts from the player's chest to the interaction point before
+## allowing a press, and refuses if world geometry is in the way. If EVERY
+## approach is blocked, the game shows a prompt for something that can never be
+## done - which is what Cinder shipped: a ruin pillar 1.0 m from the coupling
+## socket, "Press E to Fit Power Coupling" on screen, and five rejections with
+## `interact_no_line_of_sight`. The cave crystal behind it was sealed for good
+## and the mission was unfinishable, and no test could see it because nothing
+## asked this question.
+##
+## Sampled around the object rather than from one guessed direction: an
+## interactable set into a wall is legitimately blocked from three sides, and
+## only "blocked from ALL of them" is a defect.
+const APPROACH_SAMPLES: int = 12
+const APPROACH_RANGE: float = 2.6
+const APPROACH_CHEST: float = 1.2
+
+func _check_usable_from_somewhere(key: String, node: Node3D, aim: Vector3) -> void:
+	if not bool(node.get("needs_line_of_sight")):
+		return
+	var space := node.get_world_3d().direct_space_state
+	if space == null:
+		return
+	var clear := 0
+	for i in APPROACH_SAMPLES:
+		var angle: float = TAU * float(i) / float(APPROACH_SAMPLES)
+		var stand: Vector3 = node.global_position \
+			+ Vector3(cos(angle), 0.0, sin(angle)) * APPROACH_RANGE
+		var query := PhysicsRayQueryParameters3D.create(
+			stand + Vector3.UP * APPROACH_CHEST, aim)
+		query.collision_mask = GameConfig.LAYER_WORLD
+		query.collide_with_areas = false
+		if space.intersect_ray(query).is_empty():
+			clear += 1
+	check(clear > 0,
+		"%s: %s can be used from somewhere - the host's line of sight is clear from %d of %d approaches"
+			% [key, node.name, clear, APPROACH_SAMPLES])
+
 
 ## The player's interact ray must report shapes it STARTS INSIDE.
 ##
