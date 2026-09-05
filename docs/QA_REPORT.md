@@ -62,10 +62,10 @@ mouse, because that was measured, repeatedly, on the shipped build.
 |---|---|
 | Repository structure | PASS |
 | Import, compile, scene load | PASS, no script errors |
-| Automated suite | PASS - 133 checks, 1769 assertions, no engine errors |
+| Automated suite | PASS - 133 checks, 1801 assertions, no engine errors |
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
 | Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
-| Automated playtest, all 3 planets end to end | PASS - Nerava 181.5 s, Cinder 195.3 s, Hallow 199.9 s, 0 downs each |
+| Automated playtest, all 3 planets end to end | PASS - Nerava 162.0 s, Cinder 199.9 s, Hallow 204.5 s, 0 downs each |
 | Solo Warden fight, 5 runs on one build | 4 killed it, 1 downed |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
 | Played by a person | NOT DONE (VERIFY-008) |
@@ -104,11 +104,15 @@ evidence; the full case-by-case list is `docs/TEST_CHECKLIST.md`.
 The definitive run: one build, one batch, each planet start to finish with
 simulated keyboard and mouse only.
 
-| Planet | Result | Duration | Downs | Shots | Walked | Guard fight |
-|---|---|---|---|---|---|---|
-| Nerava | PASS | 181.5 s | 0 | 69 | 494 m | 16 volleys |
-| Cinder | PASS | 195.3 s | 0 | 48 | 659 m | 4 volleys |
-| Hallow | PASS | 199.9 s | 0 | 54 | 693 m | 5 volleys |
+| Planet | Result | Duration | Downs | Shots | Walked | Guard fight | Health at the crystals |
+|---|---|---|---|---|---|---|---|
+| Nerava | PASS | 162.0 s | 0 | 64 | 463 m | 18 volleys | 100 / 100 / 100 |
+| Cinder | PASS | 199.9 s | 0 | 50 | 673 m | 4 volleys | 67 / 67 / 67 |
+| Hallow | PASS | 204.5 s | 0 | 66 | 685 m | 11 volleys | 100 / 100 / 100 |
+
+Hallow's row is the one that runs the rotated locks: the coupling opens the
+grove, the hazard covers the ruins, and the guard stands over the cave. It is
+the same three locks as Cinder in a different order, and it flies.
 
 Read the spread rather than the totals. The guard fight ranges from 4 volleys to
 16 across three levels running identical enemy stats, which is what a fight
@@ -790,7 +794,8 @@ fight and it is worth knowing it is a choice, because it means difficulty here
 cannot be tuned gently - the only moves available are changing how often the
 boss hits or changing what a hit is worth.
 
-**Acting on it: Hallow now runs the same three locks on different trips.**
+**Acting on it: Hallow now runs the same three locks on different trips, and it
+flies - 204.5 s, no downs, every crystal taken at full health.**
 The measurement above says the campaign's problem is arrangement, not content -
 the locks, the guard and the hazard already differ from each other, and all
 three planets applied them to the same crystals in the same order. So Hallow

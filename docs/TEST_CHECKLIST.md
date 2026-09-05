@@ -166,6 +166,10 @@ The flight is three host-clock states rendered identically on every peer;
 | 26z6 | Cinder's and Hallow's plateau can be climbed, so the temple can be reached at all | [P] |
 | 26z7 | **A crystal guard stands somewhere it can be shot from** - the naive post pointed at a wall on all three planets | [A] `test_scene_integrity` (a physics probe, deliberately not the arithmetic that picks the post) |
 | 26z8 | The guard can see the crystal it is guarding from its post | [A] `test_scene_integrity` |
+| 26z14 | **A level's lock props agree with the mission's lock table** - a socket unlocking a crystal that is not locked seals the one that is | [A] `test_scene_integrity` |
+| 26z15 | The hazard field stands over the crystal it seals | [A] `test_scene_integrity` |
+| 26z16 | **Every interactable has 2.5 m of room from solid set dressing** - the generalisation of defects 55, 56, 57, 75 and 83 | [A] `test_scene_integrity` |
+| 26z17 | **The three planets do not run the same locks in the same order** - Hallow rotates them | [P] Hallow flown end to end at 204.5 s with the coupling on the grove, the guard on the cave and the hazard on the ruins |
 | 26z9 | **Shots at a guard can run at least 10 m along some bearing** - "clear of the scenery" is not the same as "shootable", and checking only the first moved a working guard behind a column | [A] `test_scene_integrity` |
 | 26z10 | **Every crystal is outside the walls** - the grove crystal sat 0.03 m inside GroveBack on two planets | [A] `test_scene_integrity` (the usable-from-somewhere probe, now with `hit_from_inside`) |
 | 26z11 | **A ray that starts inside solid geometry counts as blocked, not clear** - without it the buried approach reads as the best of the twelve | [A] |
