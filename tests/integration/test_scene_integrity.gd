@@ -299,18 +299,29 @@ func _check_prop_clearance(key: String, level: Node) -> void:
 	if solids.is_empty():
 		return
 
+	# ONE assertion per interactable, against its nearest prop - not one per
+	# pair. The pairwise version was correct and reported the same failures, but
+	# it added 528 assertions to a suite of 1779 for a single property. The
+	# assertion count is quoted in this project as a measure of coverage, so
+	# inflating it thirty per cent with the same check repeated is not free: it
+	# devalues the number everywhere else it appears.
 	for node in _collect_interactables(level):
 		var target := node as Node3D
 		if target == null:
 			continue
 		var aim: Vector3 = target.call("interaction_point") \
 			if target.has_method("interaction_point") else target.global_position
+		var nearest: float = 1000.0
+		var nearest_name := ""
 		for prop in solids:
 			var at: Vector3 = (prop as Node3D).global_position
 			var flat: float = Vector2(at.x - aim.x, at.z - aim.z).length()
-			check(flat >= PROP_CLEARANCE,
-				"%s: %s stands %.2f m from %s, clear of the %.1f m an interactable needs"
-					% [key, (prop as Node3D).name, flat, target.name, PROP_CLEARANCE])
+			if flat < nearest:
+				nearest = flat
+				nearest_name = String((prop as Node3D).name)
+		check(nearest >= PROP_CLEARANCE,
+			"%s: %s has %.1f m of room - nearest solid prop is %s at %.2f m"
+				% [key, target.name, PROP_CLEARANCE, nearest_name, nearest])
 
 
 ## The level's lock props and the mission's lock table must name the same
