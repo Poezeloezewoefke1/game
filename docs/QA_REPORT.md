@@ -65,7 +65,7 @@ mouse, because that was measured, repeatedly, on the shipped build.
 | Automated suite | PASS - 133 checks, 1801 assertions, no engine errors |
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
 | Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
-| Automated playtest, all 3 planets end to end | PASS - Nerava 162.0 s, Cinder 199.9 s, Hallow 204.5 s, 0 downs each |
+| Automated playtest, all 3 planets end to end | PASS - Nerava 155.1 s, Cinder 197.3 s, Hallow 206.8 s, 0 downs each |
 | Solo Warden fight, 5 runs on one build | 4 killed it, 1 downed |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
 | Played by a person | NOT DONE (VERIFY-008) |
@@ -104,15 +104,27 @@ evidence; the full case-by-case list is `docs/TEST_CHECKLIST.md`.
 The definitive run: one build, one batch, each planet start to finish with
 simulated keyboard and mouse only.
 
-| Planet | Result | Duration | Downs | Shots | Walked | Guard fight | Health at the crystals |
-|---|---|---|---|---|---|---|---|
-| Nerava | PASS | 162.0 s | 0 | 64 | 463 m | 18 volleys | 100 / 100 / 100 |
-| Cinder | PASS | 199.9 s | 0 | 50 | 673 m | 4 volleys | 67 / 67 / 67 |
-| Hallow | PASS | 204.5 s | 0 | 66 | 685 m | 11 volleys | 100 / 100 / 100 |
+| Planet | Result | Duration | Downs | Shots | Walked | Guarded crystal | Guard fight | Post score |
+|---|---|---|---|---|---|---|---|---|
+| Nerava | PASS | 155.1 s | 0 | 52 | 457 m | ruins | 12 volleys | 5 of 12 |
+| Cinder | PASS | 197.3 s | 0 | 53 | 636 m | grove | 4 volleys | 12 of 12 |
+| Hallow | PASS | 206.8 s | 0 | 55 | 685 m | cave | 13 volleys | 10 of 12 |
 
-Hallow's row is the one that runs the rotated locks: the coupling opens the
-grove, the hazard covers the ruins, and the guard stands over the cave. It is
-the same three locks as Cinder in a different order, and it flies.
+Three different guarded crystals, three different lock arrangements, one build,
+one batch. Across the campaign each lock visits each crystal:
+
+| Planet | Coupling | Guard | Hazard |
+|---|---|---|---|
+| Nerava | cave | ruins | none - it is a jungle, not a furnace |
+| Cinder | ruins | grove | cave |
+| Hallow | grove | cave | ruins |
+
+One thing the post score does NOT do is finely rank a fight. Cinder's 12-of-12
+grove post gives the fastest guard fight measured anywhere - 4 volleys in 6.6 s
+- but Hallow's 10 of 12 took 13 volleys and Nerava's 5 of 12 took 12, which are
+indistinguishable. The score separates a post standing in the open from one that
+is not; it is not a difficulty dial, and reading it as one would be exactly the
+sort of pattern this document has had to retract before.
 
 Read the spread rather than the totals. The guard fight ranges from 4 volleys to
 16 across three levels running identical enemy stats, which is what a fight
@@ -726,10 +738,17 @@ correctness: everything in the "not executed" table above is untested, and
 
 ## Fun Evaluation
 
-**7 / 10 for one mission. 5 / 10 for the campaign.** Both are inferences, and
-neither can discharge a "is it fun" question on its own - nobody has played this
-(VERIFY-008), so what follows is reasoning from shape and timing, not from
-anyone's experience.
+**7 / 10 for one mission. 6 / 10 for the campaign, up from 5.** Both are
+inferences, and neither can discharge a "is it fun" question on its own - nobody
+has played this (VERIFY-008), so what follows is reasoning from shape and
+timing, not from anyone's experience.
+
+The campaign score moved because the three planets no longer run the same locks
+on the same crystals in the same order: each lock now visits each crystal across
+the campaign, so the trip that is a fight on one planet is an errand on the
+next. It moved one point rather than two because the thing underneath has not
+changed - Cinder and Hallow still share 91 of 96 node transforms. The order and
+the places differ now; the terrain does not.
 
 *One mission, flown once: 7.* It has three acts and they are different from each
 other. The pre-flight is 22 seconds of set-up, refusal and fix. The surface is
@@ -739,17 +758,24 @@ fight - and each ends with a walk home under a load. The boss escalates through
 four phases and changes its behaviour at the end rather than just its numbers.
 The beats land where a 3-minute mission needs them.
 
-*The campaign, all three: 5.* Nerava, Cinder and Hallow are the same mission
-with different colours. Same three locks in the same order, same temple, same
-altar, same boss, same extraction. The second planet teaches nothing the first
-did not, and the third teaches nothing the second did not. What changes is the
-palette, the crystal names, and how far you walk - 494 m against 693 m, which is
-felt as "longer", not as "different". This is what Recommendation 5 is about,
-and it is now the highest-value work left: the levels are finishable, so the
-next thing that would make the game better is not another fix.
+*The campaign, all three: 6, up from 5.* It was 5 because the three planets ran
+the same three locks on the same three crystals in the same order, so the second
+taught nothing the first did not. That is fixed: each lock now visits each
+crystal across the campaign, and the trip that is a fight on one planet is an
+errand on the next. The guarded crystal is the ruins on Nerava, the grove on
+Cinder and the cave on Hallow, and the guard fight measured 12, 4 and 13 volleys
+respectively - the same enemy in three different places, playing differently
+because of where it stands.
 
-The honest summary is that the mission is in decent shape and the campaign is
-one mission repeated. Fixing that is a design job, not a defect hunt.
+It is 6 rather than 7 because the thing underneath did not change. Cinder and
+Hallow still share 91 of 96 node transforms; the walls, mesas, plateau tiers,
+approach steps, crystals, pedestals and altar are all in the same coordinates.
+The order and the places differ now. The terrain does not, and the remaining
+gap between 6 and 7 is that terrain.
+
+The honest summary is that the mission is in good shape, the campaign is no
+longer one mission repeated, and what is left is that two of its three levels
+are still one level. Closing that is a level-authoring job, not a defect hunt.
 
 ## Design observations from the measured runs
 
