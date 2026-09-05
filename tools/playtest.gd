@@ -569,6 +569,13 @@ func _kill_the_guard(crystal_id: String) -> bool:
 	_event("guard.found", "%s is guarded" % crystal_id)
 	_guard_hits_seen = -1
 	_guard_fruitless = 0
+	_guard_last_report = _now()
+	# One baseline reading per fight, taken on the first properly aimed volley.
+	# It is here for the guard that WORKS as much as for the one that does not:
+	# a probe that says "THE GUARD" on Nerava, where the guard dies in nine
+	# volleys, is a probe whose "SCENERY" on Cinder can be believed. Without
+	# that pairing the reading is just another unverified claim.
+	var sighted := false
 
 	var t_start := _now()
 	var deadline := _now() + 90.0
@@ -594,15 +601,47 @@ func _kill_the_guard(crystal_id: String) -> bool:
 		if gap < 7.0:
 			await _hold("move_back", 0.5)
 		elif gap > 22.0:
-			# Close to a range where the shot is worth taking. The fight can now
-			# start from wherever the driver first sees the guard, which is
-			# thirty metres out on the bigger maps, and firing into the haze at
-			# that distance is how a fight times out looking unwinnable.
-			await _look_at_point((guard as Node3D).global_position)
-			Input.action_press("sprint")
-			await _hold("move_forward", 0.7)
-			Input.action_release("sprint")
+			# Close to a range where the shot is worth taking, ON THE NAVMESH.
+			#
+			# This used to hold move_forward toward the guard, which works only
+			# if the ground between here and there is empty. On Cinder and
+			# Hallow it is not: the approach from the south runs into Mesa4, a
+			# 12 x 4.5 x 9 block, and the driver spent sixty volleys with its
+			# face 0.5 m from that mesa, aimed to within a degree of a guard
+			# 26 m away on the far side of it. It reported the guard unkillable.
+			# Every other leg of the run routes with the navmesh; this one did
+			# not, and it was the one that decided whether two of the three
+			# planets could be finished.
+			# Walk to a FIRING position, not onto the guard. Routing to its exact
+			# position marches the player into contact, which then trips the
+			# too-close branch and backs straight out again - a there-and-back
+			# that burned most of a 90 s fight and fired five volleys in it.
+			var g_pos: Vector3 = (guard as Node3D).global_position
+			var stand: Vector3 = g_pos + (player.global_position - g_pos).normalized() * GUARD_FIGHT_RANGE
+			if not await _nav_walk_to(stand, "firing range of the guard"):
+				# Say which it was. A player downed while closing produces a
+				# failed walk, and reporting that as "could not reach the guard"
+				# would send the reader after a navigation bug instead of a
+				# survivability one - the same mistake the Warden fight already
+				# had to be taught out of.
+				var pl := _player()
+				if pl != null and is_instance_valid(pl) and bool(pl.get("is_downed")):
+					_downs += 1
+					_fail("the guard on %s downed the player while they closed, and alone they cannot be revived"
+						% crystal_id)
+				else:
+					_fail("could not walk to the guard on %s" % crystal_id)
+				return false
+			continue
 		await _aim_at_point((guard as Node3D).global_position + Vector3(0.0, 1.0, 0.0))
+		# Only once we are inside the range the driver actually fires from. The
+		# first version read on the FIRST aim, which on Nerava is 69.5 m out -
+		# past the blaster's 60 m range - so it dutifully reported "the shot
+		# hits NOTHING" about a shot no one was taking. A measurement taken at a
+		# moment the thing never happens measures nothing.
+		if not sighted and gap <= 22.0:
+			sighted = true
+			_event("guard.sight", _shot_report(guard))
 
 		# Volleys that land nothing mean something is in the way. The guard's
 		# own hit count is the only progress signal there is - the lock state is
@@ -611,6 +650,22 @@ func _kill_the_guard(crystal_id: String) -> bool:
 		# the Warden: aimed and ineffective is a THIRD outcome, distinct from
 		# missing and from not firing, and only moving fixes it.
 		var hits := int(guard.get("_guard_hits")) if guard.has_method("get") else 0
+
+		# Say what is happening on a CLOCK, not per volley. The reposition line
+		# below needs eight volleys to trigger, so a fight that is failing by
+		# NOT FIRING - five shots in ninety seconds, the player walking back and
+		# forth - printed nothing at all and reported only "still standing after
+		# 90 s". The Warden fight learned to log its position (defect 70); this
+		# one had never been given the same, and the one run where it mattered
+		# was unreadable for it.
+		if _now() - _guard_last_report >= 6.0:
+			_guard_last_report = _now()
+			_event("guard.pressing",
+				"%d volleys, %d hits, %.1f m away, me=%d hp, at %s guard at %s"
+					% [_shots, hits, gap, _my_health(),
+						str(player.global_position.snapped(Vector3.ONE * 0.1)),
+						str((guard as Node3D).global_position.snapped(Vector3.ONE * 0.1))])
+
 		if hits > _guard_hits_seen:
 			_guard_hits_seen = hits
 			_guard_fruitless = 0
@@ -621,6 +676,7 @@ func _kill_the_guard(crystal_id: String) -> bool:
 				_event("guard.reposition",
 					"8 volleys with %s still on %d hits - moving for a line"
 						% [crystal_id, hits])
+				_event("guard.blocked", _shot_report(guard))
 				await _look_at_point((guard as Node3D).global_position)
 				Input.action_press("move_left" if _strafe > 0 else "move_right")
 				Input.action_press("sprint")
@@ -682,6 +738,80 @@ func _run_from_the_warden(warden: Node) -> void:
 		await _look_at_point(player.global_position + away * 20.0)
 		await _hold("move_forward", 0.35)
 	Input.action_release("sprint")
+
+
+## Where does the shot actually STOP?
+##
+## The guard on Cinder and Hallow takes 0 hits in 60 aimed volleys while the
+## identical guard on Nerava dies in 9, and two explanations fit that equally
+## well: the guard has drifted inside RuinsBack (it has no collision mask, so
+## nothing stops it), or a piece of set dressing sits between the player and
+## the guard. Both predict "aimed and ineffective". They differ in exactly one
+## observable - what the ray hits - and nobody had looked.
+##
+## This is a REPLICA of the host's own query in host_process_fire_request:
+## same origin (the muzzle), same direction (the camera's forward), same mask,
+## same area/body flags, same exclusion. If that function's query ever changes,
+## this must change with it or it measures a shot the game does not fire.
+func _shot_report(guard: Node) -> String:
+	var player := _player() as Node3D
+	if player == null:
+		return "no player"
+	var muzzle := player.get("_muzzle") as Node3D
+	var camera := player.get("_camera") as Camera3D
+	if muzzle == null or camera == null:
+		return "no muzzle/camera"
+	var space := player.get_world_3d().direct_space_state
+	if space == null:
+		return "no space"
+
+	var origin: Vector3 = muzzle.global_position
+	var dir: Vector3 = -camera.global_transform.basis.z
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + dir * GameConfig.BLASTER_RANGE)
+	query.collision_mask = GameConfig.LAYER_WORLD | GameConfig.LAYER_ENEMY
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [player.get_rid()]
+	var hit := space.intersect_ray(query)
+
+	var g3 := guard as Node3D
+	var to_guard: float = origin.distance_to(g3.global_position) if g3 != null else -1.0
+	if hit.is_empty():
+		return "the shot hits NOTHING in %.0f m (guard %.1f m away, aim off by %.1f deg)" % [
+			GameConfig.BLASTER_RANGE, to_guard, _aim_error_deg(origin, dir, g3)]
+
+	var collider := hit["collider"] as Node
+	var where: Vector3 = hit["position"]
+	var hit_name: String = String(collider.name) if collider != null else "<freed>"
+	var owner_path: String = hit_name
+	if collider != null and collider.get_parent() != null:
+		owner_path = String(collider.get_parent().name) + "/" + hit_name
+	# Is what we hit the guard, something under it, or scenery?
+	var kind := "SCENERY"
+	var n: Node = collider
+	for _i in 6:
+		if n == null:
+			break
+		if n == guard:
+			kind = "THE GUARD"
+			break
+		n = n.get_parent()
+	return "the shot stops on %s (%s) at %.1f m, %.1f m short of the guard, which is %.1f m away; aim off by %.1f deg" % [
+		owner_path, kind, origin.distance_to(where),
+		maxf(to_guard - origin.distance_to(where), 0.0), to_guard,
+		_aim_error_deg(origin, dir, g3)]
+
+
+## Angle between where the camera points and where the guard actually is. A
+## large value here means the driver is missing, which is a different defect
+## from a blocked line and must not be reported as one.
+func _aim_error_deg(origin: Vector3, dir: Vector3, target: Node3D) -> float:
+	if target == null:
+		return -1.0
+	var want: Vector3 = (target.global_position + Vector3.UP - origin)
+	if want.length_squared() < 0.0001:
+		return -1.0
+	return rad_to_deg(dir.normalized().angle_to(want.normalized()))
 
 
 ## The Sentinel that guards a particular crystal, or null.
@@ -1020,7 +1150,15 @@ func _fight_the_warden() -> bool:
 		await _frames(2)
 		# A fight that is not progressing has to say so before the 180 s
 		# deadline, or the only evidence is "the boss did not die".
-		if _shots % 12 == 0:
+		#
+		# is_instance_valid FIRST. The volley just fired can be the one that
+		# kills the Warden, and a dead Warden is freed the same frame - so one
+		# run in twelve, the progress log casts a freed object and the whole
+		# driver aborts on the winning shot. That is exactly the failure that is
+		# worst to have: it reports "aborted without a reason" on a mission the
+		# player actually completed, and sends the reader hunting a game bug
+		# that is not there.
+		if _shots % 12 == 0 and is_instance_valid(warden):
 			var pl := _player() as Node3D
 			var pivot := pl.get_node_or_null("CameraPivot") as Node3D if pl != null else null
 			var boss3 := warden as Node3D
@@ -1216,6 +1354,11 @@ var _aim_converged: bool = true
 ## Guard hits landed so far, and volleys since the last one. See _kill_the_guard.
 var _guard_hits_seen: int = -1
 var _guard_fruitless: int = 0
+var _guard_last_report: float = 0.0
+
+## How far from a guard the driver tries to stand while shooting it. Inside the
+## Sentinel's own 22 m firing range, outside the 7 m the driver backs away from.
+const GUARD_FIGHT_RANGE: float = 12.0
 ## Volleys fired since the last strafe reversal. See _fight_the_warden.
 var _strafe_volleys: int = 0
 ## Best boss progress seen (nodes weighted above health), and aimed volleys

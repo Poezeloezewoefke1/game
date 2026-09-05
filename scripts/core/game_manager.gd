@@ -546,8 +546,10 @@ func _host_spawn_crystal_guards() -> void:
 				% [crystal_id, mission_id])
 			continue
 		# Stood off from the crystal, not on top of it, so the crystal is still
-		# visible and shootable past the thing defending it.
-		var at: Vector3 = (node as Node3D).global_position + Vector3(0.0, 0.0, 5.0)
+		# visible and shootable past the thing defending it - and to a side that
+		# is actually open. This was a bare +5 z on every level, which on Cinder
+		# and Hallow is inside a wall; see SpawnManager.guard_post.
+		var at: Vector3 = SpawnManager.guard_post(node as Node3D)
 		SpawnManager.host_spawn_crystal_guard(String(crystal_id), at)
 
 

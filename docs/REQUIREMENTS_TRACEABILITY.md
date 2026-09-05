@@ -257,6 +257,7 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-026 | **A player can step onto what the navigation bake says they can climb** | `Player._try_step_up` | playtest | PLAY |
 | MIS-027 | Every objective on every planet can be reached on foot | level geometry (plateau approach steps) | playtest per mission | PLAY |
 | MIS-028 | No hovering enemy is trapped by scenery | `Warden._ready`, `Sentinel._ready` collision masks | playtest | PLAY |
+| MIS-029 | **A crystal guard stands somewhere it can be shot from** - not inside the scenery, and in sight of the crystal it guards | `SpawnManager.guard_post` | `test_scene_integrity` asks the physics server, per level | AUTO |
 
 ## Quality gates (QA)
 
@@ -269,3 +270,5 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | QA-005 | The playtest cannot report a clean run after dying | `playtest.gd:_require_failure` | proven by a driver that died and was caught | AUTO |
 | QA-006 | The playtest routes come from each level's navigation mesh, so any mission can be driven | `tools/playtest.gd:_nav_walk_to` | playtest runs | PLAY |
 | QA-007 | The playtest can plot a course for a later planet the way an unlocked crew would | `tools/playtest.gd:_plot_the_course`, `--mission=` | playtest runs | PLAY |
+| QA-008 | The playtest closes on a guard using the navigation mesh, like every other leg of a run | `tools/playtest.gd:_kill_the_guard` | playtest runs | PLAY |
+| QA-009 | The playtest reports where a shot actually stops when volleys land nothing | `tools/playtest.gd:_shot_report` | playtest runs on all three planets | PLAY |

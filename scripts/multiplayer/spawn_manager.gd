@@ -261,6 +261,122 @@ func host_spawn_guardian() -> Node:
 	return _spawner.spawn({"kind": KIND_GUARDIAN, "pos": origin})
 
 
+## Where a crystal's guard should stand.
+##
+## This replaces `crystal + Vector3(0, 0, 5)`, which was applied on every level
+## without ever asking what was five metres north of the crystal. The answer was
+## "a wall" on all three: 0.447 m INSIDE RuinsBack on Cinder and Hallow, and
+## 1.0 m in front of the 10 m RuinsWallSouth on Nerava. The levels differed only
+## in how far into it, and Nerava was survivable - which is why the constant
+## lasted this long, and why the fix had to be checked against the planet that
+## worked as carefully as against the two that did not.
+##
+## What that cost is worth stating precisely, because the obvious story is not
+## the one the evidence supports. The runs where these guards took 0 hits in 60
+## volleys failed for a different reason - the driver was stuck against a mesa
+## 25 m away, see I34 in docs/QA_REPORT.md - so this placement has never been
+## observed to make a mission unwinnable. What it demonstrably did do is wedge
+## the guard: while the Sentinel still carried a world collision mask it was
+## trapped where it spawned and logged "Stuck for 6.0s - returning to anchor"
+## eighteen times in one run, returning each time to the same point inside the
+## wall. That is defect 79, and this is where it came from.
+##
+## It is fixed here rather than left alone because a guard spawning inside a
+## wall is wrong however it plays, and because no gate in the suite had ever
+## asked where a guard ends up.
+##
+## The check reads the level's COLLISION SHAPES, not the physics server. Guards
+## are spawned from the scene barrier, which can land before the space has
+## stepped with the new level in it - and a query that quietly returns "clear"
+## because the wall was not registered yet would put the guard back in the wall
+## and pass its own test. Everything on LAYER_WORLD in these levels is a
+## BoxShape3D (world_block.gd and set_dressing.gd both build one), so the tree
+## carries the whole truth and the timing question does not arise.
+func guard_post(crystal: Node3D) -> Vector3:
+	var home: Vector3 = crystal.global_position
+	var due_north: Vector3 = home + Vector3(0.0, 0.0, GameConfig.GUARD_STAND_OFF)
+	if crystal.get_tree() == null:
+		return due_north
+	var boxes := _solid_boxes(crystal)
+	if boxes.is_empty():
+		return due_north
+	for i in GameConfig.GUARD_POST_SAMPLES:
+		var angle: float = TAU * float(i) / float(GameConfig.GUARD_POST_SAMPLES)
+		# i == 0 is due north, so a crystal that stands in the open keeps the
+		# post it has always had and no working level moves its guard.
+		var post: Vector3 = home + Vector3(sin(angle), 0.0, cos(angle)) * GameConfig.GUARD_STAND_OFF
+		if _post_is_clear(boxes, post):
+			if i > 0:
+				# Name the crystal and the post. "Moved 60 degrees" on its own
+				# is not something anyone can check against a level file.
+				Logx.info("spawn", "Guard post for %s moved %.0f degrees off north to %s to clear the scenery"
+					% [crystal.name, rad_to_deg(angle), str(post.snapped(Vector3.ONE * 0.1))])
+			return post
+	# Say so rather than silently returning a bad post. A guard in the wrong
+	# place is still better than no guard, but nobody should have to rediscover
+	# this by playing the level.
+	Logx.warn("spawn", "No clear guard post around %s at %s - falling back to due north, which may be blocked"
+		% [crystal.name, str(home.snapped(Vector3.ONE * 0.1))])
+	return due_north
+
+
+## Every solid box in the level, as [global transform, half extents].
+##
+## Rooted by walking UP from the crystal, not from current_scene: in the game
+## the level hangs under the stage, and in the test suite it is added straight
+## to the tree root beside the runner. Walking up finds the level in both, which
+## is what stops this check from passing in tests and measuring nothing in play.
+func _solid_boxes(from: Node3D) -> Array:
+	var out: Array = []
+	var tree_root: Node = from.get_tree().root
+	var root: Node = from
+	while root.get_parent() != null and root.get_parent() != tree_root:
+		root = root.get_parent()
+	for node in root.find_children("*", "CollisionShape3D", true, false):
+		var cs := node as CollisionShape3D
+		if cs == null or cs.disabled:
+			continue
+		var box := cs.shape as BoxShape3D
+		if box == null:
+			continue
+		var body := cs.get_parent() as CollisionObject3D
+		if body == null or (body.collision_layer & GameConfig.LAYER_WORLD) == 0:
+			continue
+		out.append([cs.global_transform, box.size * 0.5])
+	return out
+
+
+## Is a guard standing here clear of the scenery? The guard is treated as a
+## column GUARD_BODY_HEIGHT tall and GUARD_CLEARANCE wide, because it hovers -
+## a check that only looked at the ground would call the inside of a wall clear
+## as long as the wall started above the guard's feet.
+func _post_is_clear(boxes: Array, post: Vector3) -> bool:
+	for entry in boxes:
+		var xform: Transform3D = entry[0]
+		var half: Vector3 = entry[1]
+		var local: Vector3 = xform.affine_inverse() * post
+		if absf(local.x) > half.x + GameConfig.GUARD_CLEARANCE:
+			continue
+		if absf(local.z) > half.z + GameConfig.GUARD_CLEARANCE:
+			continue
+		# Vertical overlap between the box, which spans -half.y..+half.y in its
+		# own frame, and the guard's column.
+		#
+		# The column starts ABOVE the post, not at it. Starting at the post made
+		# the check reject every position standing on RuinsFloor - the 18 x 0.3
+		# x 14 slab the ruins crystal sits on - because the floor a guard stands
+		# on overlaps a column that begins at its feet. Ground is not an
+		# obstruction; a wall through the chest is.
+		var column_bottom: float = local.y + GameConfig.GUARD_FOOT_CLEAR
+		var column_top: float = local.y + GameConfig.GUARD_BODY_HEIGHT
+		if column_bottom > half.y:
+			continue
+		if column_top < -half.y:
+			continue
+		return false
+	return true
+
+
 ## A crystal's guard: a Sentinel that stands at a named spot and can be killed.
 ## `at` is passed explicitly because a guard belongs beside its crystal, not at
 ## the temple's GuardianAnchor.

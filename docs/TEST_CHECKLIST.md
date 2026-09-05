@@ -164,6 +164,8 @@ The flight is three host-clock states rendered identically on every peer;
 | 26z4 | A cliff edge is still a cliff edge - the step-up needs ground to land on | [A] |
 | 26z5 | **A hovering enemy is never wedged by scenery** - the Warden and the crystal guard both were | [P] |
 | 26z6 | Cinder's and Hallow's plateau can be climbed, so the temple can be reached at all | [P] |
+| 26z7 | **A crystal guard stands somewhere it can be shot from** - the naive post pointed at a wall on all three planets | [A] `test_scene_integrity` (a physics probe, deliberately not the arithmetic that picks the post) |
+| 26z8 | The guard can see the crystal it is guarding from its post | [A] `test_scene_integrity` |
 
 ## Crystal locks: coupling, guard and hazard
 

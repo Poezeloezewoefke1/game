@@ -242,6 +242,32 @@ const GUARDIAN_PROJECTILE_SPEED: float = 13.0
 const GUARDIAN_PROJECTILE_LIFETIME: float = 6.0
 const GUARDIAN_PROJECTILE_RADIUS: float = 0.45
 
+## How far from its crystal a guard stands, and how much room it needs there.
+##
+## The stand-off used to be applied as a bare Vector3(0, 0, 5) - always due
+## north, on every level, without asking what was there. On Cinder and Hallow
+## that put both ruins guards 0.447 m INSIDE RuinsBack, a 16 x 8 x 4 wall,
+## which is where defect 79's wedged guard was being wedged. The direction is
+## now chosen rather than assumed - see SpawnManager.guard_post.
+const GUARD_STAND_OFF: float = 5.0
+
+## Horizontal room a guard needs around its post. The Sentinel's own body is
+## about a metre across; the rest is so it is not shooting from inside a pillar.
+const GUARD_CLEARANCE: float = 1.6
+
+## How tall a column the post has to be clear through. The guard hovers, so the
+## check has to care about what is above the ground, not only on it.
+const GUARD_BODY_HEIGHT: float = 3.0
+
+## Where that column starts, measured up from the post. The ground a guard
+## stands on is not an obstruction - without this the ruins floor slab rejects
+## every post on top of itself.
+const GUARD_FOOT_CLEAR: float = 0.5
+
+## Candidate posts tried around the crystal, evenly spaced. The first is due
+## north, so a crystal standing in the open keeps the placement it always had.
+const GUARD_POST_SAMPLES: int = 12
+
 ## Host-validated blaster hits required to stagger the Sentinel.
 const GUARDIAN_STAGGER_HIT_THRESHOLD: int = 10
 const GUARDIAN_STAGGER_DURATION: float = 3.0

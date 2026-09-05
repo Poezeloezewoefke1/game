@@ -41,7 +41,7 @@ func _check_level(key: String, path: String) -> void:
 	if key == GameConfig.SCENE_SHIP:
 		_check_ship(level)
 	else:
-		_check_surface(key, level)
+		await _check_surface(key, level)
 
 	level.queue_free()
 	await tree.process_frame
@@ -119,6 +119,13 @@ func _check_common(key: String, level: Node) -> void:
 ## Sampled around the object rather than from one guessed direction: an
 ## interactable set into a wall is legitimately blocked from three sides, and
 ## only "blocked from ALL of them" is a defect.
+## The probe used to ask the physics server whether a guard post is clear. The
+## radius is a little under the guard's own body, so a post that merely brushes
+## the scenery is not failed, and the height is chest-high on a hovering guard -
+## what is being tested is whether it can be SHOT from across the level.
+const GUARD_PROBE_RADIUS: float = 0.8
+const GUARD_PROBE_HEIGHT: float = 1.5
+
 const APPROACH_SAMPLES: int = 12
 const APPROACH_RANGE: float = 2.6
 const APPROACH_CHEST: float = 1.2
@@ -235,6 +242,78 @@ func _check_surface(key: String, level: Node) -> void:
 	for cid in GameConfig.ALL_CRYSTAL_IDS:
 		check(crystals.has(cid), "crystal '%s' exists in the level" % cid)
 		check(pedestals.has(cid), "a pedestal accepts '%s'" % cid)
+
+	await _check_guard_posts(key, level)
+
+
+## Every crystal's guard must stand somewhere a player can shoot it.
+##
+## The defect this exists for: guards were placed at crystal + Vector3(0, 0, 5)
+## on every level, and on Cinder and Hallow that is 0.447 m inside RuinsBack, a
+## 16 x 8 x 4 wall - so both ruins guards spawned inside solid rock, and nothing
+## in this suite had ever asked where a guard ends up. It is not what made those
+## two planets unfinishable (that was the playtest driver, see I34 in
+## docs/QA_REPORT.md), but it is what wedged the guard in place for as long as
+## the Sentinel collided with the world.
+##
+## The assertion deliberately does NOT reuse SpawnManager's own box arithmetic.
+## A test that checks a function against its own reasoning proves only that the
+## function is self-consistent, which is exactly what the broken version was.
+## This asks the PHYSICS SERVER instead: is there solid world geometry where the
+## guard is about to stand?
+func _check_guard_posts(key: String, level: Node) -> void:
+	# The physics server needs a step with this level in the tree before it can
+	# answer. process_frame is not enough.
+	await tree.physics_frame
+	await tree.physics_frame
+
+	# Only the crystals that ACTUALLY get a guard. The first version asserted
+	# this of every crystal on every level and failed four times over on the two
+	# crystals that are locked by a coupling and by a hazard - neither of which
+	# has anything standing near it. A test that fails on correct content spends
+	# attention and returns noise; scene keys are mission ids, so reading the
+	# locks here means the check follows the design instead of guessing at it.
+	var locks: Dictionary = MissionRules.locked_crystals(key)
+
+	for node in _collect_interactables(level):
+		var cid := String(node.get("crystal_id")) if "crystal_id" in node else ""
+		if cid.is_empty():
+			continue
+		if String(locks.get(cid, "")) != MissionRules.LOCK_GUARD:
+			continue
+		var crystal := node as Node3D
+		var post: Vector3 = SpawnManager.guard_post(crystal)
+
+		var space := crystal.get_world_3d().direct_space_state
+		if space == null:
+			continue
+		var shape := SphereShape3D.new()
+		shape.radius = GUARD_PROBE_RADIUS
+		var params := PhysicsShapeQueryParameters3D.new()
+		params.shape = shape
+		params.collision_mask = GameConfig.LAYER_WORLD
+		params.collide_with_areas = false
+		params.transform = Transform3D(Basis.IDENTITY, post + Vector3.UP * GUARD_PROBE_HEIGHT)
+		var blocking: Array = space.intersect_shape(params, 4)
+		var names := PackedStringArray()
+		for entry in blocking:
+			var collider := (entry as Dictionary).get("collider") as Node
+			if collider != null:
+				names.append(String(collider.name))
+		check(blocking.is_empty(),
+			"%s: the guard post for '%s' at %s is clear of the scenery%s" % [
+				key, cid, str(post.snapped(Vector3.ONE * 0.1)),
+				"" if names.is_empty() else " (inside " + ", ".join(names) + ")"])
+
+		# ...and the crystal it guards must be visible from there, or the guard
+		# is standing behind cover rather than in front of what it defends.
+		var ray := PhysicsRayQueryParameters3D.create(
+			post + Vector3.UP * GUARD_PROBE_HEIGHT,
+			crystal.global_position + Vector3.UP * GUARD_PROBE_HEIGHT)
+		ray.collision_mask = GameConfig.LAYER_WORLD
+		ray.collide_with_areas = false
+		check(space.intersect_ray(ray).is_empty(),
+			"%s: the guard on '%s' can see the crystal it is guarding" % [key, cid])
 
 
 func _collect_interactables(root: Node) -> Array:
