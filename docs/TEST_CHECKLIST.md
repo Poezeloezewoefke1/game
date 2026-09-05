@@ -156,7 +156,7 @@ The flight is three host-clock states rendered identically on every peer;
 | 26v | Each planet has its own sky, palette and crystal names | [M] / [A] `test_scene_integrity` |
 | 26w | Cinder and Hallow are reachable and walkable | [A] `test_level_reachability` |
 | 26x | **Every interactable id names its own level** - Cinder's altar and drop pod carried Nerava's | [A] `test_scene_integrity` |
-| 26y | Cinder and Hallow can be flown end to end, not just loaded | [P] `run_playtest.sh ... <mission>` - Hallow measured at 205.3 s, 0 downs; Cinder pending its own clean run |
+| 26y | **All three planets can be flown end to end**, not just loaded | [P] one batch, one build: Nerava 181.5 s / Cinder 195.3 s / Hallow 199.9 s, 0 downs each |
 | 26z | **Every interactable can be used from somewhere** - the host's line of sight is clear from at least one of twelve approaches | [A] `test_scene_integrity` |
 | 26z1 | The host aims its check at the collision shape the player's ray hits, not the object's origin | [A] |
 | 26z2 | **The temple is discovered by walking into the clearing, not by spawning** | [A] / [P] |

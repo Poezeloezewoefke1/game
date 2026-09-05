@@ -12,9 +12,14 @@ renders for real under Xvfb with a software rasteriser.
 
 ## Verdict
 
-**The game is complete and playable end to end, and it was not when this pass
-started.** Four defects made it impossible to finish, and none was visible to
-the assertion suite of its day:
+**All three planets can now be played from the main menu to extraction, and only
+one of them could when this pass started.** Nerava 181.5 s, Cinder 195.3 s,
+Hallow 199.9 s - one build, one batch, no downs. Cinder and Hallow had never
+been completed before: a guard spawned inside a wall, a crystal 0.03 m inside
+another wall, and a staircase you could stand beside but not on (defects 80-82).
+
+Earlier in the pass, four defects made even Nerava impossible to finish, and
+none was visible to the assertion suite of its day:
 
 * **58** - the launch lever sat 3.9 m behind the nearest flight seat and 168
   degrees round from it, against a 3.2 m interact ray and a 105 degree seated
@@ -57,11 +62,65 @@ mouse, because that was measured, repeatedly, on the shipped build.
 |---|---|
 | Repository structure | PASS |
 | Import, compile, scene load | PASS, no script errors |
-| Automated suite | PASS - 133 checks, 1634 assertions, no engine errors |
+| Automated suite | PASS - 133 checks, 1769 assertions, no engine errors |
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
 | Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
+| Automated playtest, all 3 planets end to end | PASS - Nerava 181.5 s, Cinder 195.3 s, Hallow 199.9 s, 0 downs each |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
 | Played by a person | NOT DONE (VERIFY-008) |
+
+---
+
+## Completion Checklist
+
+Every feature the brief asked for, and whether it has been *exercised* rather
+than merely written. "Measured" means a run or an assertion produced the
+evidence; the full case-by-case list is `docs/TEST_CHECKLIST.md`.
+
+| Feature | State | How it is known |
+|---|---|---|
+| Main menu, host, join by code, LAN browser | Measured | playtest reaches the lobby every run; `test_lan_discovery` exercises the real socket |
+| 1-4 player co-op, host-authoritative | Measured | 5-process multiplayer check, 81 assertions |
+| Ship interior, crew quarters, seats | Measured | playtest sits, launches |
+| Pre-flight tasks gating launch | Measured | the lever refuses while anyone is standing, and says so |
+| Flight: launch and landing sequences | Measured | every run flies |
+| Three planets with distinct palettes and crystal names | Measured | `test_scene_integrity` per level |
+| Temple discovery by walking into the clearing | Measured | `temple_trigger`, all three planets |
+| Three crystals, three different locks (coupling, hazard, guard) | Measured | all three exercised on Cinder and Hallow, two on Nerava |
+| Crystal guard fight | Measured | 4-16 volleys across the three planets |
+| Altar, Star Map, boss trigger | Measured | every run |
+| The Warden: four phases, shield nodes, enrage, contact damage | Measured | killed on all three planets |
+| Downed / revive | Measured | `test_combat_and_revive`; solo runs cannot be revived by design |
+| Extraction at the drop pod | Measured | `mission.complete` on all three planets |
+| **The whole campaign, menu to extraction, on every planet** | **Measured** | one batch, one build: 181.5 / 195.3 / 199.9 s, 0 downs |
+| Windows export | NOT verified | no Windows machine here (VERIFY-001) |
+| Played by a person | NOT done | no GPU, no audio device, nobody at a screen (VERIFY-008) |
+
+---
+
+## Playthrough Logs
+
+The definitive run: one build, one batch, each planet start to finish with
+simulated keyboard and mouse only.
+
+| Planet | Result | Duration | Downs | Shots | Walked | Guard fight |
+|---|---|---|---|---|---|---|
+| Nerava | PASS | 181.5 s | 0 | 69 | 494 m | 16 volleys |
+| Cinder | PASS | 195.3 s | 0 | 48 | 659 m | 4 volleys |
+| Hallow | PASS | 199.9 s | 0 | 54 | 693 m | 5 volleys |
+
+Read the spread rather than the totals. The guard fight ranges from 4 volleys to
+16 across three levels running identical enemy stats, which is what a fight
+whose difficulty comes from *where it happens* looks like - the same observation
+that produced defects 80 and 82. The distances differ by 40% for the same three
+errands, because Cinder and Hallow are the larger, more open maps.
+
+Before this run, Cinder and Hallow had never been completed. What stopped them
+was not difficulty: a guard placed inside a wall, a crystal 0.03 m inside a
+wall, and a staircase you could stand beside but not on. See defects 80-82.
+
+Earlier runs, including the three-strategy comparison on Nerava and the
+timings-per-act breakdown, are in the sections below.
 
 ---
 
@@ -474,7 +533,14 @@ Stated plainly. None of the following is claimed to work.
 
 ---
 
-## Defects found and fixed during development
+## Bugs & Issues
+
+Everything found, in three groups: defects in the game that were fixed, defects
+in the measuring instrument itself, and what is still open. The instrument group
+is not padding - it is the larger of the two by count, and on several occasions
+an instrument fault was one commit away from being fixed as a game fault.
+
+### Defects found and fixed during development
 
 Each of these was found by a test or a log, not by reading code hopefully. They
 are recorded because they are the reason the test suite looks the way it does.
@@ -566,7 +632,7 @@ are recorded because they are the reason the test suite looks the way it does.
 
 ---
 
-## Defects in the instrument, not the game
+### Defects in the instrument, not the game
 
 The automated playtest is a measuring device, and a measuring device that is
 wrong is worse than none - it produces confident false findings. These are the
@@ -612,6 +678,69 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I36 | **The driver walked INTO the guard it was shooting** | Same run: the navmesh fix (I34) routed to `(guard as Node3D).global_position`, and the fight spent its time closing to contact and backing out again | Fixing the approach to use the navmesh was right; routing it to the guard's own feet was not. Arriving trips the too-close branch, which backs away, which re-opens the gap, which walks in again. A player closes to a range they can shoot from, so the driver now routes to a point 12 m out along its own line to the guard - inside the Sentinel's 22 m firing range, outside the 7 m the driver retreats from |
 | I37 | **The test written to catch unusable interactables scored a ray from inside a wall as the clearest line of all** | It passed Cinder and Hallow for their whole history while their grove crystal sat 0.03 m inside `GroveBack` and could never be picked up | `_check_usable_from_somewhere` samples twelve approaches and passes if any has a clear ray. `PhysicsRayQueryParameters3D.hit_from_inside` defaults to FALSE, so the samples that were themselves buried in the wall reported no hit at all and counted as clear - the check answered "usable from six of twelve approaches" about an object usable from none. The docstring of the very next function in the same file is about the player's interact ray needing exactly this flag, for exactly this reason: the file carried the lesson and the check did not apply it. It sets `hit_from_inside` now, as does every ray in the new guard-post gate |
 | I38 | **Two guard-fight ranges crossed, and the driver walked in a circle firing nothing** | `PLAYTEST FAIL ... duration=176.8s walked=330m downs=0 shots=0` on Cinder and Hallow, 6 shots on Nerava, all three reported as "the guard was still standing after 90 s" | The fight walks when the gap exceeds 22 m and aims that walk at a fixed range. Moving the walk target to 20 m - a change made to spend less of the approach under fire - put it inside the navmesh arrive tolerance of the 22 m threshold, so arriving left the gap over the threshold and the driver walked to the same place forever. Zero shots in ninety seconds, reported as an unkillable guard: an instrument bug wearing the costume of a game bug, which is the failure this whole section exists for. It was also self-inflicted, chasing a secondary signal (the solo player finishing the fight on 1 hp) at the cost of the primary one. Same shape as defect 72, where the Warden's stand-off and contact radius crossed, and it gets the same treatment: the three ranges are named together, the required ordering is written down, and the driver refuses to run if they violate it rather than producing a confident wrong answer |
+
+### Open defects
+
+#### Closed: the crystal guard on Cinder and Hallow
+
+This section used to say the guard could not be hit, and offered two candidate
+causes: that defect 79's collision-mask change had let the guard drift inside
+`RuinsBack`, or that set dressing sat too close to the objective. It ended by
+saying the way to choose between them was to measure where the shots actually
+stop.
+
+That measurement was taken, and **both candidates were wrong**. The shots were
+stopping on `Mesa4`, a 12 x 4.5 x 9 block, **0.1 m from the muzzle** - the
+driver had walked into a mesa and was firing into it with the guard 25 m away
+on the far side, aimed to within two degrees. The guard approach was the one leg
+of a run that did not route on the navigation mesh (I34). Neither theory in this
+section survived contact with the reading, and the more confident of the two -
+the one written up as a risk introduced by the last fix - was the further off.
+
+Two real defects were found underneath it, both by the same measurement: every
+crystal guard was placed by a constant that pointed at a wall on all three
+planets (80), and Cinder's and Hallow's third crystal was 0.03 m inside
+`GroveBack`, so neither planet could be finished (81). Behind those, a staircase
+with no width margin (82). None of them was the thing this section named.
+
+The lesson is worth more than the fixes. A characterisation written before the
+decisive measurement reads exactly like one written after it, and this one was
+specific, plausible, argued from real numbers, and wrong in both branches. It
+was also two commits from being acted on. The reason it did not cost anything is
+that the next step recorded here was to measure rather than to fix.
+
+**None known elsewhere.** That is a statement about what has been tested, not a claim of
+correctness: everything in the "not executed" table above is untested, and
+`docs/KNOWN_LIMITATIONS.md` lists what that leaves unknown.
+
+---
+
+## Fun Evaluation
+
+**7 / 10 for one mission. 5 / 10 for the campaign.** Both are inferences, and
+neither can discharge a "is it fun" question on its own - nobody has played this
+(VERIFY-008), so what follows is reasoning from shape and timing, not from
+anyone's experience.
+
+*One mission, flown once: 7.* It has three acts and they are different from each
+other. The pre-flight is 22 seconds of set-up, refusal and fix. The surface is
+three errands that are genuinely not the same errand - one wants an object
+carried to a socket, one wants a hazard shut off somewhere else, one wants a
+fight - and each ends with a walk home under a load. The boss escalates through
+four phases and changes its behaviour at the end rather than just its numbers.
+The beats land where a 3-minute mission needs them.
+
+*The campaign, all three: 5.* Nerava, Cinder and Hallow are the same mission
+with different colours. Same three locks in the same order, same temple, same
+altar, same boss, same extraction. The second planet teaches nothing the first
+did not, and the third teaches nothing the second did not. What changes is the
+palette, the crystal names, and how far you walk - 494 m against 693 m, which is
+felt as "longer", not as "different". This is what Recommendation 5 is about,
+and it is now the highest-value work left: the levels are finishable, so the
+next thing that would make the game better is not another fix.
+
+The honest summary is that the mission is in decent shape and the campaign is
+one mission repeated. Fixing that is a design job, not a defect hunt.
 
 ## Design observations from the measured runs
 
@@ -719,39 +848,40 @@ In the order they would pay off.
    ordered walkthrough, rewritten for the ship-and-flight structure.
 2. **Run the Windows build workflow.** `build-windows.yml` is
    `workflow_dispatch` only and has never been triggered (VERIFY-001).
-3. **Take recommendation 5** - varying the journeys rather than the locks is the
-   last measured weakness in the crystal hunt.
+3. **Take recommendation 5** - varying the journeys rather than the locks. This
+   has moved up from "last measured weakness in the crystal hunt" to the most
+   valuable thing left to do at all. With all three planets finishable, the
+   campaign's problem is no longer that it breaks; it is that Cinder and Hallow
+   repeat Nerava beat for beat in different colours. See the Fun Evaluation:
+   one mission scores 7, three of the same mission score 5.
+4. **Measure what the crystal guard costs a player who dodges.** The driver
+   arrives at `crystal.taken` on 1 hp of 100 on two planets, but it closes on a
+   navigation path without strafing, so some of those hits are its own. Six of
+   the last ten apparent balance problems turned out to be the instrument, so
+   this is a measurement to take before it is a number to change.
 
-## Open defects
+## Change Log
 
-### Closed: the crystal guard on Cinder and Hallow
+This pass, in the order the work happened. Each line names what it changed and
+what proved it.
 
-This section used to say the guard could not be hit, and offered two candidate
-causes: that defect 79's collision-mask change had let the guard drift inside
-`RuinsBack`, or that set dressing sat too close to the objective. It ended by
-saying the way to choose between them was to measure where the shots actually
-stop.
+| Change | Proof |
+|---|---|
+| Guard posts chosen rather than assumed - `SpawnManager.guard_post` scores twelve posts by clearance and by how far shots can run outward from each | Nerava's guard went from a post 1.0 m inside a 10 m wall to one with 5 of 12 bearings open; the old placement now fails the new gate on Cinder and Hallow, naming `RuinsBack` |
+| `GroveBack` rotated 90 degrees on Cinder and Hallow, so the grove crystal is 5.97 m clear instead of 0.03 m inside it | the third crystal can be picked up; both planets finish |
+| The plateau approach tapered 13 / 11 / 9 so each tier overhangs the one above | the carry home no longer wedges beside the steps |
+| Driver: guard approach routes on the navigation mesh | the shot-stop probe reads `THE GUARD` instead of `Mesa4` at 0.1 m |
+| Driver: guard fight reports position, gap, health and hits every six seconds | a fight failing by not firing is now legible; it printed nothing before |
+| Driver: guard-fight ranges named together with a startup ordering check | a crossed pair had it walking in a circle firing nothing |
+| Driver: `_shot_report` - where does the shot actually stop | this is what found defects 80, 81 and I34 |
+| Driver: the Warden progress log no longer casts a freed node | one run in twelve aborted on the winning shot |
+| Driver: a downed player is named in every failure, once, centrally | "could not reach crystal_ruins" was really "was shot and is lying on the floor" |
+| `test_scene_integrity`: guard post clear of scenery, crystal visible from it, shootable along some bearing, approach rises within the level's own `agent_max_climb`, each tier overhangs the one above | +135 assertions; 1634 -> 1769 |
+| `test_scene_integrity`: `hit_from_inside` on the usable-from-somewhere probe | it had been scoring rays that start inside walls as the clearest of the twelve, which is how a crystal shipped inside one |
+| `test_lan_discovery`: the expiry bound derived from the announce interval and the timeout instead of a hard-coded 1.0 | the bound had exactly zero margin and failed in both directions |
 
-That measurement was taken, and **both candidates were wrong**. The shots were
-stopping on `Mesa4`, a 12 x 4.5 x 9 block, **0.1 m from the muzzle** - the
-driver had walked into a mesa and was firing into it with the guard 25 m away
-on the far side, aimed to within two degrees. The guard approach was the one leg
-of a run that did not route on the navigation mesh (I34). Neither theory in this
-section survived contact with the reading, and the more confident of the two -
-the one written up as a risk introduced by the last fix - was the further off.
-
-Two real defects were found underneath it, both by the same measurement: every
-crystal guard was placed by a constant that pointed at a wall on all three
-planets (80), and Cinder's and Hallow's third crystal was 0.03 m inside
-`GroveBack`, so neither planet could be finished (81). Behind those, a staircase
-with no width margin (82). None of them was the thing this section named.
-
-The lesson is worth more than the fixes. A characterisation written before the
-decisive measurement reads exactly like one written after it, and this one was
-specific, plausible, argued from real numbers, and wrong in both branches. It
-was also two commits from being acted on. The reason it did not cost anything is
-that the next step recorded here was to measure rather than to fix.
-
-**None known elsewhere.** That is a statement about what has been tested, not a claim of
-correctness: everything in the "not executed" table above is untested, and
-`docs/KNOWN_LIMITATIONS.md` lists what that leaves unknown.
+**Withdrawn this pass:** the open-defect entry claiming the crystal guard could
+not be hit, and both of the causes it proposed. The measurement it asked for was
+taken and refuted both. See "Open defects" above - it is kept rather than
+deleted, because a confident wrong diagnosis is worth more in the record than
+out of it.
