@@ -750,6 +750,24 @@ this document for that reason. Each names the evidence it rests on. Nobody has
 played this game - see VERIFY-008 in `docs/KNOWN_LIMITATIONS.md` - so treat
 these as hypotheses for the first human playtest, not as findings.
 
+**The Warden fight has no margin: one volley that lands is the whole health
+bar.** The boss fires `BOSS_VOLLEY_PROJECTILES` = 3 projectiles per volley, and
+each does `GUARDIAN_PROJECTILE_DAMAGE` = 33 against a player's 100. Nothing
+restores health after the altar. So a solo player's entire boss fight is "do not
+take three hits", and a single volley that connects fully does it in one go.
+
+Every loss measured this session has that exact shape - 100, then 34, then
+downed - and the wins differ only in which volleys missed. That is not by itself
+a defect: dodging is the mechanic, and the fight is meant to be close-run. It
+does mean the difficulty has no gradient. There is no such thing as *nearly*
+losing this fight, or winning it hurt; a run is decided by a single binary event
+and the player has no way to spend a small mistake.
+
+Whether the resulting loss rate is acceptable is a real question and it is being
+given a denominator rather than an opinion - repeated solo runs on one build,
+because the five runs that produced this observation span three different driver
+builds and are an anecdote, not a rate.
+
 **Cinder and Hallow are not two levels. They are one level with two palettes.**
 This is the campaign-repetition problem stated as a number rather than an
 impression, and the number is worse than the impression was. Comparing the two
@@ -777,7 +795,7 @@ almost all of their health - the driver reached `crystal.taken crystal_ruins` on
 was measure what the fight costs a player who strafes, rather than change a
 number.
 
-Measured: **67 hp**, on Nerava and on Cinder alike. One projectile, not three.
+Measured: **67 hp** on all three planets - Nerava, Cinder and Hallow. One projectile, not three.
 The driver had been reversing its strafe on every volley, which is oscillating
 in place rather than dodging (I39), and it was standing where each previous shot
 had been aimed. The crystal guard needs no balance change at all.
