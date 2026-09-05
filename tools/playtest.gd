@@ -594,6 +594,7 @@ func _kill_the_guard(crystal_id: String) -> bool:
 	_guard_hits_seen = -1
 	_guard_fruitless = 0
 	_guard_last_report = _now()
+	_guard_strafe_volleys = 0
 	# One baseline reading per fight, taken on the first properly aimed volley.
 	# It is here for the guard that WORKS as much as for the one that does not:
 	# a probe that says "THE GUARD" on Nerava, where the guard dies in nine
@@ -709,7 +710,19 @@ func _kill_the_guard(crystal_id: String) -> bool:
 				Input.action_release("move_left" if _strafe > 0 else "move_right")
 				continue
 
-		_strafe = -_strafe
+		# Hold a direction for three volleys before reversing. Flipping every
+		# volley is not dodging - it is oscillating in place, which is I24
+		# exactly, fixed for the Warden fight at the time and never applied
+		# here. The guard's projectile takes about a second to cross 12 m and a
+		# player moving sideways at 5 m/s is five metres clear by the time it
+		# lands; a player who reverses each volley is where the last shot was
+		# aimed. This is why the driver reached the ruins crystal on 1 hp of 100
+		# on two planets, and why that number was recorded as a measurement to
+		# re-take rather than a difficulty to tune away.
+		_guard_strafe_volleys += 1
+		if _guard_strafe_volleys >= 3:
+			_guard_strafe_volleys = 0
+			_strafe = -_strafe
 		var side := "move_left" if _strafe > 0 else "move_right"
 		Input.action_press(side)
 		await _hold("fire", 0.55)
@@ -1379,6 +1392,7 @@ var _aim_converged: bool = true
 var _guard_hits_seen: int = -1
 var _guard_fruitless: int = 0
 var _guard_last_report: float = 0.0
+var _guard_strafe_volleys: int = 0
 
 ## The three ranges the guard fight is built from. They have to keep their
 ## order, so they are defined together and checked at startup rather than left
