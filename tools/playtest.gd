@@ -994,12 +994,20 @@ func _do_coupling_errand(mission_id: String, crystal_id: String) -> bool:
 	if not await _nav_walk_to_object("%s_coupling_socket" % mission_id, "to the socket"):
 		_fail("the coupling socket is not reachable")
 		return false
+	# Watch the crystal this socket actually opens. This read CRYSTAL_CAVE by
+	# name, and the fix that made the CALLER ask "which crystal is behind a
+	# coupling?" stopped two lines short of the predicate that decides whether
+	# the errand worked. On Hallow, where the coupling now opens the grove, the
+	# presses all landed, the grove unsealed, and the driver went on watching
+	# the cave - which is behind a guard there and never opens - then reported
+	# "five presses while aimed at it did not take". A game defect that did not
+	# exist, produced by an incomplete fix to the very hard-coding it warns
+	# about in the comment above the call site.
 	if not await _approach_and_use("%s_coupling_socket" % mission_id, "the coupling socket",
 			func() -> bool:
-				return MissionRules.crystal_lock(
-					GameManager.snapshot, GameConfig.CRYSTAL_CAVE) == ""):
+				return MissionRules.crystal_lock(GameManager.snapshot, crystal_id) == ""):
 		return false
-	_event("coupling.fitted", "the cave crystal is open")
+	_event("coupling.fitted", "%s is open" % crystal_id)
 	return true
 
 
