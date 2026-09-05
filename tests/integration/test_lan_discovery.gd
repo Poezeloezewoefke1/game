@@ -13,6 +13,9 @@ extends TestCase
 const SESSION_NAME := "Star Battle"
 const GAME_PORT := 7000
 
+## Scheduling slack on top of the announce interval, for the expiry bound below.
+const EXPIRY_SLACK := 0.5
+
 var _injector: PacketPeerUDP = null
 
 
@@ -173,8 +176,21 @@ func _test_entries_expire() -> void:
 			gone = true
 			break
 	check(gone, "a host that stops announcing drops out of the browser (after %.1fs)" % waited)
-	check(waited >= GameConfig.DISCOVERY_ENTRY_TIMEOUT - 1.0,
-		"it stays listed for roughly the configured timeout rather than flickering")
+
+	# The lower bound is DERIVED, not chosen. An entry ages from its last
+	# PACKET, not from the moment the host stopped, so if the stop lands just
+	# before the next announcement the entry is already a full interval old and
+	# expires an interval sooner than this loop has been counting. The bound was
+	# a hard-coded 1.0 - exactly the announce interval - which left no margin at
+	# all and duly failed, in the opposite direction from the drift that I30 was
+	# about. Two separate causes, one assertion, and fixing the first made the
+	# second the next one to fire.
+	var floor_s: float = GameConfig.DISCOVERY_ENTRY_TIMEOUT \
+		- GameConfig.DISCOVERY_ANNOUNCE_INTERVAL - EXPIRY_SLACK
+	check(waited >= floor_s,
+		"it stays listed for at least %.1fs rather than flickering (waited %.1fs; timeout %.1f, announce every %.1f)"
+			% [floor_s, waited, GameConfig.DISCOVERY_ENTRY_TIMEOUT,
+				GameConfig.DISCOVERY_ANNOUNCE_INTERVAL])
 
 
 # --------------------------------------------------------------------------

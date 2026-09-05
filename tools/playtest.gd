@@ -115,8 +115,17 @@ func _event(kind: String, detail: String = "") -> void:
 
 
 func _fail(message: String) -> void:
-	_failures.append("%s (at %.1fs)" % [message, _now()])
-	_event("FAIL", message)
+	# A downed player is the dominant fact about any failure, so say it here
+	# rather than at each of the ten call sites - which is how "could not reach
+	# crystal_ruins" came to be the headline for a run where the player had been
+	# shot and was lying on the floor. The evidence was in the stuck line all
+	# along, four fields deep; the failure everyone reads said something else.
+	var text := message
+	var pl := _player()
+	if pl != null and is_instance_valid(pl) and bool(pl.get("is_downed")):
+		text += " - the player was DOWNED at the time"
+	_failures.append("%s (at %.1fs)" % [text, _now()])
+	_event("FAIL", text)
 
 
 # ==========================================================================
@@ -125,6 +134,21 @@ func _run() -> void:
 	_event("playtest.start", "strategy=%s mission=%s godot=%s"
 		% [_strategy, (_mission if _mission != "" else "first unlocked"),
 			Engine.get_version_info()["string"]])
+
+	# The driver's own constants, checked before it measures anything. A tuning
+	# change put the guard walk's target within the arrive tolerance of the gap
+	# that triggers the walk, and the result was a run that fired zero shots in
+	# ninety seconds and reported the guard unkillable - a bug in the instrument
+	# wearing the costume of a bug in the game, which is the failure this whole
+	# document is about. The same shape as defect 72's stand-off and contact
+	# radius crossing, and it gets the same treatment: state the ordering, and
+	# refuse to run rather than produce a confident wrong answer.
+	if GUARD_BACKOFF_RANGE >= GUARD_FIGHT_RANGE \
+			or GUARD_FIGHT_RANGE > GUARD_ENGAGE_RANGE - GUARD_RANGE_MARGIN:
+		_fail("the guard fight ranges are inconsistent: back off %.1f < fight %.1f < engage %.1f - %.1f"
+			% [GUARD_BACKOFF_RANGE, GUARD_FIGHT_RANGE,
+				GUARD_ENGAGE_RANGE, GUARD_RANGE_MARGIN])
+		return
 
 	LanDiscovery.local_teardown()
 	var packed: PackedScene = load("res://main.tscn") as PackedScene
@@ -598,9 +622,9 @@ func _kill_the_guard(crystal_id: String) -> bool:
 				% crystal_id)
 			return false
 		var gap: float = player.global_position.distance_to((guard as Node3D).global_position)
-		if gap < 7.0:
+		if gap < GUARD_BACKOFF_RANGE:
 			await _hold("move_back", 0.5)
-		elif gap > 22.0:
+		elif gap > GUARD_ENGAGE_RANGE:
 			# Close to a range where the shot is worth taking, ON THE NAVMESH.
 			#
 			# This used to hold move_forward toward the guard, which works only
@@ -639,7 +663,7 @@ func _kill_the_guard(crystal_id: String) -> bool:
 		# past the blaster's 60 m range - so it dutifully reported "the shot
 		# hits NOTHING" about a shot no one was taking. A measurement taken at a
 		# moment the thing never happens measures nothing.
-		if not sighted and gap <= 22.0:
+		if not sighted and gap <= GUARD_ENGAGE_RANGE:
 			sighted = true
 			_event("guard.sight", _shot_report(guard))
 
@@ -1356,9 +1380,28 @@ var _guard_hits_seen: int = -1
 var _guard_fruitless: int = 0
 var _guard_last_report: float = 0.0
 
-## How far from a guard the driver tries to stand while shooting it. Inside the
-## Sentinel's own 22 m firing range, outside the 7 m the driver backs away from.
-const GUARD_FIGHT_RANGE: float = 12.0
+## The three ranges the guard fight is built from. They have to keep their
+## order, so they are defined together and checked at startup rather than left
+## as three independent numbers that can quietly cross.
+##
+## GUARD_ENGAGE_RANGE is the gap above which the driver stops fighting and
+## walks. GUARD_FIGHT_RANGE is where that walk aims. GUARD_BACKOFF_RANGE is
+## where it decides it is too close.
+##
+## Setting the walk target to 20 with the threshold at 22 is what broke this:
+## the walk arrives within a couple of metres, that put the gap back OVER the
+## threshold, and the driver walked to the same place forever - 0 shots fired in
+## ninety seconds on two planets, 6 on the third. It was a change made to spend
+## less time under fire on the approach, and the health it was chasing is a
+## secondary signal; it cost the fight entirely. The margin below is what stops
+## the arrive tolerance from reaching the threshold.
+const GUARD_ENGAGE_RANGE: float = 22.0
+const GUARD_FIGHT_RANGE: float = 16.0
+const GUARD_BACKOFF_RANGE: float = 7.0
+
+## How much room the walk target must leave below the engage threshold. The
+## navmesh arrive radius is 2.6 m, so anything under about 4 can round-trip.
+const GUARD_RANGE_MARGIN: float = 4.0
 ## Volleys fired since the last strafe reversal. See _fight_the_warden.
 var _strafe_volleys: int = 0
 ## Best boss progress seen (nodes weighted above health), and aimed volleys

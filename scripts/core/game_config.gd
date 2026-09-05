@@ -264,9 +264,17 @@ const GUARD_BODY_HEIGHT: float = 3.0
 ## every post on top of itself.
 const GUARD_FOOT_CLEAR: float = 0.5
 
-## Candidate posts tried around the crystal, evenly spaced. The first is due
-## north, so a crystal standing in the open keeps the placement it always had.
+## Candidate posts tried around the crystal, evenly spaced, and the number of
+## approaches each is scored from. The first is due north, and ties keep the
+## lowest index, so a guard that is already well placed is never moved.
 const GUARD_POST_SAMPLES: int = 12
+
+## How far out a post's sightlines are traced when scoring it, and how far a
+## line has to run clear before that bearing counts as one a player could fight
+## from. Roughly the range the fight actually happens at: inside the Sentinel's
+## 22 m, outside the few metres it closes to.
+const GUARD_SIGHT_RANGE: float = 16.0
+const GUARD_SIGHT_MIN: float = 10.0
 
 ## Host-validated blaster hits required to stagger the Sentinel.
 const GUARDIAN_STAGGER_HIT_THRESHOLD: int = 10

@@ -145,6 +145,17 @@ func _check_usable_from_somewhere(key: String, node: Node3D, aim: Vector3) -> vo
 			stand + Vector3.UP * APPROACH_CHEST, aim)
 		query.collision_mask = GameConfig.LAYER_WORLD
 		query.collide_with_areas = false
+		# A ray that STARTS inside a solid body reports nothing by default, so
+		# without this an approach buried in a wall reads as the clearest one of
+		# the twelve. That is not a hypothetical: Cinder's and Hallow's grove
+		# crystal sits 0.03 m inside GroveBack, every real approach to it is
+		# blocked, and this check passed both levels for years because the
+		# samples on the far side were inside the wall and answered "clear".
+		# The docstring directly below this function is about the player's
+		# interact ray needing exactly this flag, for exactly this reason. The
+		# check written to catch unusable interactables did not apply the lesson
+		# the file already carried.
+		query.hit_from_inside = true
 		if space.intersect_ray(query).is_empty():
 			clear += 1
 	check(clear > 0,
@@ -244,6 +255,109 @@ func _check_surface(key: String, level: Node) -> void:
 		check(pedestals.has(cid), "a pedestal accepts '%s'" % cid)
 
 	await _check_guard_posts(key, level)
+	_check_plateau_approach(key, level)
+
+
+## The way up to the temple must match what the navigation bake promises.
+##
+## Two defects live here, both of which made a planet unfinishable and neither
+## of which any test could see. Defect 78: the four "ramps" were boxes topping
+## out at 1.05 m, so reaching one was a single 1.05 m step - nothing could climb
+## it, not the player and not the bake, and the crystals could be fetched but
+## never placed. This is the height half of that.
+##
+## The width half came later and cost another run. The staircase built to fix 78
+## had every tier exactly as wide as the one above it, so a player 0.22 m off
+## the centre line was beside the stairs rather than on them, facing the 0.70 m
+## SIDE of a step instead of its 0.35 m face - stuck, at 1 hp, carrying the
+## crystal home. Each tier now overhangs the one above, and this asserts it,
+## because "wide enough" is not something anyone will re-derive by eye the next
+## time a block moves.
+##
+## agent_max_climb is read from the level's own bake rather than repeated here:
+## the property is that the geometry and the navigation AGREE, and a copied
+## number would let them drift apart silently, which is how 78 happened.
+func _check_plateau_approach(key: String, level: Node) -> void:
+	var nav := level.get_node_or_null("NavigationRegion3D") as NavigationRegion3D
+	if nav == null or nav.navigation_mesh == null:
+		return
+	var climb: float = nav.navigation_mesh.agent_max_climb
+	var plateau := nav.get_node_or_null("Plateau") as Node3D
+	if plateau == null:
+		return  # Nerava's temple stands on the ground; there is nothing to climb.
+
+	for side in ["N", "E", "S", "W"]:
+		var tiers: Array = []
+		for tier_name in ["PlateauStepLow" + side, "PlateauStepMid" + side]:
+			var node := nav.get_node_or_null(tier_name) as Node3D
+			if node != null:
+				tiers.append(node)
+		for i in 4:
+			var ramp := nav.get_node_or_null("PlateauRamp%d" % (i + 1)) as Node3D
+			if ramp != null and _is_on_side(ramp, side):
+				tiers.append(ramp)
+		tiers.append(plateau)
+		if tiers.size() < 3:
+			continue
+
+		# The ground the staircase starts from, read from the level rather than
+		# assumed to be y = 0. It happens to be 0 on both planets that have a
+		# plateau, which is exactly why assuming it would go unnoticed until a
+		# level was built at a different height and the first step was measured
+		# against nothing - the same "copied number drifts apart" failure that
+		# agent_max_climb is read from the bake to avoid.
+		var basin := nav.get_node_or_null("Basin") as Node3D
+		var previous_top: float = 0.0
+		if basin != null:
+			var basin_box := _box_of(basin)
+			if basin_box != Vector3.ZERO:
+				previous_top = basin.global_position.y + basin_box.y * 0.5
+		var previous_width: float = 1000.0
+		for tier in tiers:
+			var box := _box_of(tier as Node3D)
+			if box == Vector3.ZERO:
+				continue
+			var top: float = (tier as Node3D).global_position.y + box.y * 0.5
+			check(top - previous_top <= climb + 0.001,
+				"%s: %s rises %.2f m from the tier below, within the bake's %.2f m climb"
+					% [key, tier.name, top - previous_top, climb])
+			# Measured ACROSS the approach, not along it: this is the width that
+			# stops a player who has drifted sideways ending up beside the steps.
+			#
+			# The plateau is exempt, and the first version of this check was
+			# wrong to include it. The property is "drift off a tier and you
+			# land on the tier below", which is about the staircase; the plateau
+			# is the top and the destination, and being 34 m wide is what makes
+			# it a temple courtyard rather than a ledge. Asserting the overhang
+			# there failed all four approaches on both planets while the levels
+			# were correct - a test that fails on good content, which is the
+			# thing this suite has now been bitten by twice.
+			var width: float = box.x if (side == "N" or side == "S") else box.z
+			if tier != plateau:
+				check(width <= previous_width + 0.001,
+					"%s: %s is %.1f m across, no wider than the %.1f m tier below it"
+						% [key, tier.name, width, previous_width])
+			previous_top = top
+			previous_width = width
+
+
+func _is_on_side(node: Node3D, side: String) -> bool:
+	var at: Vector3 = node.global_position
+	match side:
+		"N": return at.z < -1.0 and absf(at.x) < 1.0
+		"S": return at.z > 1.0 and absf(at.x) < 1.0
+		"E": return at.x > 1.0 and absf(at.z) < 1.0
+		"W": return at.x < -1.0 and absf(at.z) < 1.0
+	return false
+
+
+## The size of a world block's box, or ZERO if it has none.
+func _box_of(node: Node3D) -> Vector3:
+	for child in node.find_children("*", "CollisionShape3D", true, false):
+		var box := (child as CollisionShape3D).shape as BoxShape3D
+		if box != null:
+			return box.size
+	return Vector3.ZERO
 
 
 ## Every crystal's guard must stand somewhere a player can shoot it.
@@ -312,8 +426,42 @@ func _check_guard_posts(key: String, level: Node) -> void:
 			crystal.global_position + Vector3.UP * GUARD_PROBE_HEIGHT)
 		ray.collision_mask = GameConfig.LAYER_WORLD
 		ray.collide_with_areas = false
+		ray.hit_from_inside = true
 		check(space.intersect_ray(ray).is_empty(),
 			"%s: the guard on '%s' can see the crystal it is guarding" % [key, cid])
+
+		# ...and a player must be able to SHOOT it, which is not the same thing
+		# and is the property that actually decides whether the level can be
+		# finished. The first version of guard_post checked only that a post was
+		# clear of the scenery, and moved Nerava's guard - which died in seven
+		# volleys - behind RuinColumn2, where sixteen volleys in ninety seconds
+		# landed nothing. Two planets fixed by breaking the third, and no gate
+		# said a word. This one would have.
+		# Traced OUTWARD from the guard, the same property SpawnManager scores,
+		# arrived at independently: how far can a shot run along this bearing
+		# before it meets scenery? A ring of stances at one fixed radius cannot
+		# answer that in a corridor - most of the ring is inside the walls - and
+		# a check that cannot tell a good post from a bad one passed Nerava's
+		# guard standing directly behind RuinColumn2.
+		var body: Vector3 = post + Vector3.UP * GameConfig.GUARDIAN_HOVER_HEIGHT
+		var open_bearings := 0
+		for i in APPROACH_SAMPLES:
+			var angle: float = TAU * float(i) / float(APPROACH_SAMPLES)
+			var far: Vector3 = post \
+				+ Vector3(cos(angle), 0.0, sin(angle)) * GameConfig.GUARD_SIGHT_RANGE \
+				+ Vector3.UP * GameConfig.EYE_HEIGHT
+			var shot := PhysicsRayQueryParameters3D.create(body, far)
+			shot.collision_mask = GameConfig.LAYER_WORLD
+			shot.collide_with_areas = false
+			shot.hit_from_inside = true
+			var found: Dictionary = space.intersect_ray(shot)
+			var reach: float = body.distance_to(far) if found.is_empty() \
+				else body.distance_to(found["position"])
+			if reach >= GameConfig.GUARD_SIGHT_MIN:
+				open_bearings += 1
+		check(open_bearings > 0,
+			"%s: the guard on '%s' can be shot at from at least %.0f m - %d of %d bearings run clear"
+				% [key, cid, GameConfig.GUARD_SIGHT_MIN, open_bearings, APPROACH_SAMPLES])
 
 
 func _collect_interactables(root: Node) -> Array:

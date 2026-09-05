@@ -144,49 +144,49 @@ palette = "rock_dark"
 [node name="PlateauStepLowN" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, -26.500)
 script = ExtResource("2_block")
-size = Vector3(9.000, 0.700, 2.000)
+size = Vector3(13.000, 0.700, 2.000)
 palette = "rock_dark"
 
 [node name="PlateauStepMidN" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, -24.500)
 script = ExtResource("2_block")
-size = Vector3(9.000, 1.400, 2.000)
+size = Vector3(11.000, 1.400, 2.000)
 palette = "rock_dark"
 
 [node name="PlateauStepLowE" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 26.500, 0.000, 0.000)
 script = ExtResource("2_block")
-size = Vector3(2.000, 0.700, 9.000)
+size = Vector3(2.000, 0.700, 13.000)
 palette = "rock_dark"
 
 [node name="PlateauStepMidE" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 24.500, 0.000, 0.000)
 script = ExtResource("2_block")
-size = Vector3(2.000, 1.400, 9.000)
+size = Vector3(2.000, 1.400, 11.000)
 palette = "rock_dark"
 
 [node name="PlateauStepLowS" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 26.500)
 script = ExtResource("2_block")
-size = Vector3(9.000, 0.700, 2.000)
+size = Vector3(13.000, 0.700, 2.000)
 palette = "rock_dark"
 
 [node name="PlateauStepMidS" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 0.000, 24.500)
 script = ExtResource("2_block")
-size = Vector3(9.000, 1.400, 2.000)
+size = Vector3(11.000, 1.400, 2.000)
 palette = "rock_dark"
 
 [node name="PlateauStepLowW" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -26.500, 0.000, 0.000)
 script = ExtResource("2_block")
-size = Vector3(2.000, 0.700, 9.000)
+size = Vector3(2.000, 0.700, 13.000)
 palette = "rock_dark"
 
 [node name="PlateauStepMidW" type="StaticBody3D" parent="NavigationRegion3D"]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -24.500, 0.000, 0.000)
 script = ExtResource("2_block")
-size = Vector3(2.000, 1.400, 9.000)
+size = Vector3(2.000, 1.400, 11.000)
 palette = "rock_dark"
 
 [node name="TemplePillar1" type="StaticBody3D" parent="NavigationRegion3D"]
@@ -352,7 +352,7 @@ size = Vector3(18.000, 0.300, 14.000)
 palette = "rock_dark"
 
 [node name="GroveBack" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 53.795, 4.000, -4.706)
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1, 0, 1.0000, 0, 0.0000, 53.795, 4.000, -4.706)
 script = ExtResource("2_block")
 size = Vector3(16.000, 8.000, 4.000)
 palette = "basalt"

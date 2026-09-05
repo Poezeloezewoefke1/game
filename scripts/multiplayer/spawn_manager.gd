@@ -300,24 +300,109 @@ func guard_post(crystal: Node3D) -> Vector3:
 	var boxes := _solid_boxes(crystal)
 	if boxes.is_empty():
 		return due_north
+	# Clear is not enough - it has to be SHOOTABLE. The first version of this
+	# took the first post that was not inside anything, which on Nerava moved a
+	# guard that died in seven volleys to a spot behind RuinColumn2 where it
+	# could not be hit at all: two planets fixed by breaking the third. A post
+	# is scored by how much of the ground around it has a clear line to the
+	# guard, and the best one wins.
+	var best_post: Vector3 = due_north
+	var best_score: int = -1
+	var best_index: int = -1
 	for i in GameConfig.GUARD_POST_SAMPLES:
 		var angle: float = TAU * float(i) / float(GameConfig.GUARD_POST_SAMPLES)
-		# i == 0 is due north, so a crystal that stands in the open keeps the
-		# post it has always had and no working level moves its guard.
 		var post: Vector3 = home + Vector3(sin(angle), 0.0, cos(angle)) * GameConfig.GUARD_STAND_OFF
-		if _post_is_clear(boxes, post):
-			if i > 0:
-				# Name the crystal and the post. "Moved 60 degrees" on its own
-				# is not something anyone can check against a level file.
-				Logx.info("spawn", "Guard post for %s moved %.0f degrees off north to %s to clear the scenery"
-					% [crystal.name, rad_to_deg(angle), str(post.snapped(Vector3.ONE * 0.1))])
-			return post
-	# Say so rather than silently returning a bad post. A guard in the wrong
-	# place is still better than no guard, but nobody should have to rediscover
-	# this by playing the level.
-	Logx.warn("spawn", "No clear guard post around %s at %s - falling back to due north, which may be blocked"
-		% [crystal.name, str(home.snapped(Vector3.ONE * 0.1))])
-	return due_north
+		if not _post_is_clear(boxes, post):
+			continue
+		var score := sightline_score(boxes, post)
+		# Strictly greater, and i == 0 is due north - so a tie keeps the post
+		# the level has always used and no working guard is moved for nothing.
+		if score > best_score:
+			best_score = score
+			best_post = post
+			best_index = i
+	if best_score <= 0:
+		Logx.warn("spawn", "No guard post around %s at %s can be shot at from anywhere - falling back to due north"
+			% [crystal.name, str(home.snapped(Vector3.ONE * 0.1))])
+		return due_north
+	if best_index > 0:
+		# Name the crystal, the post and the score. "Moved 60 degrees" on its
+		# own is not something anyone can check against a level file.
+		Logx.info("spawn", "Guard post for %s moved %.0f degrees off north to %s (%d of %d approaches can see it)"
+			% [crystal.name, rad_to_deg(TAU * float(best_index) / float(GameConfig.GUARD_POST_SAMPLES)),
+				str(best_post.snapped(Vector3.ONE * 0.1)), best_score, GameConfig.GUARD_POST_SAMPLES])
+	return best_post
+
+
+## How many approaches around a post have a clear shot at a guard standing on
+## it. This is the property that actually matters, and the one nothing checked:
+## a guard can be perfectly clear of the scenery and still be tucked behind a
+## column from every direction a player arrives from.
+##
+## Measured OUTWARD from the guard, not inward from a ring of sample points.
+##
+## The ring version sampled twelve stances at a fixed 12 m and asked whether
+## each could see the post. In an open basin that works. In Nerava's ruins - a
+## corridor 12 m wide - ten of the twelve samples land inside the walls, so
+## every post there scores one or two and the score cannot tell a good post from
+## a bad one. It duly picked a post with RuinColumn2 directly between the guard
+## and the only approach, and the fight was lost to a shot that stopped 5.3 m
+## short. Measuring outward asks the question that actually matters: from this
+## post, along this bearing, how far can a shot travel before it meets scenery?
+## A bearing counts when a player could stand far enough out along it to fight.
+func sightline_score(boxes: Array, post: Vector3) -> int:
+	var body: Vector3 = post + Vector3.UP * GameConfig.GUARDIAN_HOVER_HEIGHT
+	var score := 0
+	for i in GameConfig.GUARD_POST_SAMPLES:
+		var angle: float = TAU * float(i) / float(GameConfig.GUARD_POST_SAMPLES)
+		# Out to the far end of the bearing, dropping to a standing player's eye
+		# height, because that is the line a shot at this guard travels along.
+		var far: Vector3 = post + Vector3(sin(angle), 0.0, cos(angle)) * GameConfig.GUARD_SIGHT_RANGE \
+			+ Vector3.UP * GameConfig.EYE_HEIGHT
+		var nearest := 1.0
+		for entry in boxes:
+			var t := _segment_box_entry(entry[0], entry[1], body, far)
+			if t >= 0.0 and t < nearest:
+				nearest = t
+		if nearest * body.distance_to(far) >= GameConfig.GUARD_SIGHT_MIN:
+			score += 1
+	return score
+
+
+## Where along the segment a..b does it first meet this box? Returns the
+## parameter in 0..1, or -1 when it misses. Slab method in the box's own space,
+## so rotated blocks are handled, and a segment that STARTS inside the box
+## returns 0 rather than missing - which is the whole point: a line that begins
+## in solid rock is the most blocked line there is, not the clearest.
+##
+## Verified against nine hand-worked cases before being trusted: straight
+## through, stopping short, starting inside, wholly inside, missing to the side,
+## ending on the face, through a corner, past a corner, and parallel outside.
+func _segment_box_entry(xform: Transform3D, half: Vector3, a: Vector3, b: Vector3) -> float:
+	var inv := xform.affine_inverse()
+	var la: Vector3 = inv * a
+	var d: Vector3 = (inv * b) - la
+	var tmin := 0.0
+	var tmax := 1.0
+	for axis in 3:
+		var origin: float = la[axis]
+		var delta: float = d[axis]
+		var h: float = half[axis]
+		if absf(delta) < 0.000001:
+			if origin < -h or origin > h:
+				return -1.0
+			continue
+		var t1: float = (-h - origin) / delta
+		var t2: float = (h - origin) / delta
+		if t1 > t2:
+			var swap := t1
+			t1 = t2
+			t2 = swap
+		tmin = maxf(tmin, t1)
+		tmax = minf(tmax, t2)
+		if tmin > tmax:
+			return -1.0
+	return tmin
 
 
 ## Every solid box in the level, as [global transform, half extents].
