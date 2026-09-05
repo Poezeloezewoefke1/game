@@ -123,6 +123,10 @@ func _check_common(key: String, level: Node) -> void:
 ## radius is a little under the guard's own body, so a post that merely brushes
 ## the scenery is not failed, and the height is chest-high on a hovering guard -
 ## what is being tested is whether it can be SHOT from across the level.
+## How close the hazard field has to stand to the crystal it seals. It is a
+## field, not a marker, so this is "over it", not "on it".
+const HAZARD_OVER_CRYSTAL: float = 3.0
+
 const GUARD_PROBE_RADIUS: float = 0.8
 const GUARD_PROBE_HEIGHT: float = 1.5
 
@@ -256,6 +260,64 @@ func _check_surface(key: String, level: Node) -> void:
 
 	await _check_guard_posts(key, level)
 	_check_plateau_approach(key, level)
+	_check_locks_agree(key, level)
+
+
+## The level's lock props and the mission's lock table must name the same
+## crystals.
+##
+## `MissionRules.locked_crystals` decides which crystal each lock holds, and the
+## level authors the props that release them: a coupling socket carries the
+## `unlocks_crystal_id` it powers, and the hazard field stands over the crystal
+## it covers. Nothing checked that the two agreed, and they are easy to move
+## apart - Hallow's locks were rotated in exactly this way.
+##
+## A socket pointing at a crystal that is not locked is not a cosmetic error. It
+## unlocks nothing, the crystal that IS locked has no way to open, and the
+## mission cannot be completed - the same failure as defects 75 and 81, arrived
+## at from the data side rather than the geometry side.
+func _check_locks_agree(key: String, level: Node) -> void:
+	var locks: Dictionary = MissionRules.locked_crystals(key)
+
+	var coupled := ""
+	var hazarded := ""
+	for crystal_id in locks:
+		match String(locks[crystal_id]):
+			MissionRules.LOCK_COUPLING: coupled = String(crystal_id)
+			MissionRules.LOCK_HAZARD: hazarded = String(crystal_id)
+
+	for node in _collect_interactables(level):
+		var unlocks := String(node.get("unlocks_crystal_id")) if "unlocks_crystal_id" in node else ""
+		if unlocks.is_empty():
+			continue
+		check_eq(unlocks, coupled,
+			"%s: the coupling socket unlocks the crystal the mission seals behind it" % key)
+
+	if hazarded.is_empty():
+		return
+	var field := level.get_node_or_null("HazardField") as Node3D
+	if not check(field != null, "%s runs a hazard, so it has a HazardField" % key):
+		return
+	var crystal: Node3D = null
+	for node in _collect_interactables(level):
+		# Guard the property first. Most interactables are not crystals, and
+		# String(null) is an engine error rather than an empty string - which
+		# the suite counted as a pass, because a script error does not fail an
+		# assertion. That is precisely what run_validation.sh greps the log for.
+		if not ("crystal_id" in node):
+			continue
+		if String(node.get("crystal_id")) == hazarded:
+			crystal = node as Node3D
+			break
+	if not check(crystal != null, "%s has the crystal '%s' its hazard covers" % [key, hazarded]):
+		return
+	# Flat distance: the field is authored at ground level and the crystal sits
+	# on whatever it stands on, so the heights legitimately differ.
+	var flat: float = Vector2(field.global_position.x - crystal.global_position.x,
+		field.global_position.z - crystal.global_position.z).length()
+	check(flat < HAZARD_OVER_CRYSTAL,
+		"%s: the hazard field stands over '%s', the crystal it seals (%.1f m away)"
+			% [key, hazarded, flat])
 
 
 ## The way up to the temple must match what the navigation bake promises.

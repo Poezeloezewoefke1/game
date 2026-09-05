@@ -155,6 +155,27 @@ func _test_the_browser_cannot_be_flooded() -> void:
 
 func _test_entries_expire() -> void:
 	set_current("expiry")
+
+	# Establish the precondition rather than inherit it. This test measures how
+	# long an entry SURVIVES after its host goes quiet, which is meaningless if
+	# the entry is not there when the measuring starts - and the test before it
+	# floods the browser with 64 injected sessions against a cap of 32. It duly
+	# reported "waited 0.3s", which is not a timing margin being missed, it is
+	# an entry that was already gone. Same shape as I15: a test left state that
+	# broke the next one, and the failure named the wrong subject.
+	#
+	# The browser size is reported on failure because the interesting question,
+	# if the entry cannot be re-established, is whether the flood LOCKED IT OUT:
+	# a full table rejects unknown keys, so a legitimate host that lapses while
+	# an attacker holds all 32 slots can never reappear.
+	if _find_session(SESSION_NAME) == null:
+		LanDiscovery.host_start_announcing(SESSION_NAME, GAME_PORT)
+		var back: Variant = await _await_session(SESSION_NAME, 6.0)
+		if not check(back != null,
+				"the session can be re-established before measuring its expiry (browser holds %d of %d)"
+					% [LanDiscovery.sessions().size(), GameConfig.DISCOVERY_MAX_SESSIONS]):
+			return
+
 	LanDiscovery.host_stop_announcing()
 	check_false(LanDiscovery.is_announcing(), "the host stopped announcing")
 

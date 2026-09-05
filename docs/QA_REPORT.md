@@ -680,6 +680,7 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I37 | **The test written to catch unusable interactables scored a ray from inside a wall as the clearest line of all** | It passed Cinder and Hallow for their whole history while their grove crystal sat 0.03 m inside `GroveBack` and could never be picked up | `_check_usable_from_somewhere` samples twelve approaches and passes if any has a clear ray. `PhysicsRayQueryParameters3D.hit_from_inside` defaults to FALSE, so the samples that were themselves buried in the wall reported no hit at all and counted as clear - the check answered "usable from six of twelve approaches" about an object usable from none. The docstring of the very next function in the same file is about the player's interact ray needing exactly this flag, for exactly this reason: the file carried the lesson and the check did not apply it. It sets `hit_from_inside` now, as does every ray in the new guard-post gate |
 | I38 | **Two guard-fight ranges crossed, and the driver walked in a circle firing nothing** | `PLAYTEST FAIL ... duration=176.8s walked=330m downs=0 shots=0` on Cinder and Hallow, 6 shots on Nerava, all three reported as "the guard was still standing after 90 s" | The fight walks when the gap exceeds 22 m and aims that walk at a fixed range. Moving the walk target to 20 m - a change made to spend less of the approach under fire - put it inside the navmesh arrive tolerance of the 22 m threshold, so arriving left the gap over the threshold and the driver walked to the same place forever. Zero shots in ninety seconds, reported as an unkillable guard: an instrument bug wearing the costume of a game bug, which is the failure this whole section exists for. It was also self-inflicted, chasing a secondary signal (the solo player finishing the fight on 1 hp) at the cost of the primary one. Same shape as defect 72, where the Warden's stand-off and contact radius crossed, and it gets the same treatment: the three ranges are named together, the required ordering is written down, and the driver refuses to run if they violate it rather than producing a confident wrong answer |
 | I39 | **The guard fight reversed its strafe every volley, which is not dodging** | The driver reached `crystal.taken crystal_ruins` on 1 hp of 100 on both planets with an open guard, and on a third run a projectile already in the air finished the job | I24 exactly, a second time. That defect was found in the Warden fight - alternating direction each volley oscillates in place, and a player who reverses is standing where the last shot was aimed - and fixed there by holding a direction for three volleys. The guard fight was never given the same treatment, so it spent every guard fight jinking on the spot while being shot. The "solo player finishes on 1 hp" observation was recorded in the design section as a measurement to re-take rather than a number to tune, on the grounds that six of the previous ten apparent balance problems had turned out to be the instrument. It was the instrument again. Seventh time |
+| I40 | **A new gate passed its own assertions while erroring on every run** | `RESULT: PASS (133 checks passed, 1774 assertions)` immediately followed by `RESULT: FAIL - the tests passed but the engine reported errors: SCRIPT ERROR: Invalid call 'String' constructor` | The lock-agreement check looped over a level's interactables asking `String(node.get("crystal_id"))`, which is `String(null)` for every pedestal, socket, altar and drop pod - an engine error, not an empty string. A script error does not fail an assertion, so the check reported itself green while erroring twice per run. It was caught in the first validation after it was written, by the log grep that exists for exactly this and whose own message says so: "these do not fail the runner on their own, which is why they are checked here". Worth recording because it is the cheapest possible demonstration of why that grep is in the pipeline, and because the surrounding file already guards this property with `if "crystal_id" in node` in four other places |
 
 ### Open defects
 
@@ -786,6 +787,30 @@ outcome is a small integer. That is a legitimate design choice for a dodging
 fight and it is worth knowing it is a choice, because it means difficulty here
 cannot be tuned gently - the only moves available are changing how often the
 boss hits or changing what a hit is worth.
+
+**Acting on it: Hallow now runs the same three locks on different trips.**
+The measurement above says the campaign's problem is arrangement, not content -
+the locks, the guard and the hazard already differ from each other, and all
+three planets applied them to the same crystals in the same order. So Hallow
+rotates the assignment: the coupling now powers the grove, the guard stands over
+the cave, and the hazard covers the ruins. Nothing is added and nothing is
+removed; what changes is which trip is a fight, which is an errand and which is
+a walk into a field.
+
+The props that belong to a lock moved with it, because a lock is not only a flag
+- the coupling socket sits beside the crystal it powers and the hazard field
+stands over the one it covers. Two transforms and one `unlocks_crystal_id`.
+
+Two things that were latent came out of making the change, and both are the
+shape this project keeps finding. The playtest asked "is the CAVE crystal behind
+a coupling?" rather than "which crystal is behind a coupling?", so the first
+level to rotate its locks would have had the errand silently skipped and its
+still-sealed crystal reported unreachable - a level edit presenting as a game
+bug, through the instrument. And nothing checked that the socket's
+`unlocks_crystal_id` matched the mission's lock table: a socket pointing at a
+crystal that is not locked unlocks nothing, while the one that IS locked has no
+way to open, which is defect 75 and defect 81 again from the data side.
+`test_scene_integrity` now asserts both, on every level.
 
 **Cinder and Hallow are not two levels. They are one level with two palettes.**
 This is the campaign-repetition problem stated as a number rather than an

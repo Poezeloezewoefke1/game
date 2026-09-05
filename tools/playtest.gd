@@ -479,10 +479,16 @@ func _play_the_surface() -> bool:
 		return false
 	_event("temple.found", "objective='%s'" % GameManager.objective_text())
 
-	# The coupling errand, if this mission seals a crystal behind one.
-	if MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_CAVE) \
-			== MissionRules.LOCK_COUPLING:
-		if not await _do_coupling_errand(mission_id):
+	# The coupling errand, if this mission seals a crystal behind one - WHICHEVER
+	# crystal that is. This used to ask about CRYSTAL_CAVE by name, which was
+	# true of every level that existed when it was written and stopped being
+	# true the moment one of them rotated its locks. The driver would have
+	# skipped the errand and then reported the still-sealed crystal unreachable:
+	# a level change presenting as a game bug, through the instrument.
+	var coupled: String = MissionRules.crystal_with_lock(
+		GameManager.snapshot, MissionRules.LOCK_COUPLING)
+	if coupled != "":
+		if not await _do_coupling_errand(mission_id, coupled):
 			return false
 
 	# The hazard errand, if this mission runs a hazard field over a crystal.
@@ -977,8 +983,8 @@ func _pedestal_letter(crystal_id: String) -> String:
 		_: return "c"
 
 
-func _do_coupling_errand(mission_id: String) -> bool:
-	_event("coupling.errand", "the cave crystal is sealed")
+func _do_coupling_errand(mission_id: String, crystal_id: String) -> bool:
+	_event("coupling.errand", "%s is sealed behind the coupling" % crystal_id)
 	if not await _nav_walk_to_object("%s_power_coupling" % mission_id, "to the coupling"):
 		_fail("the power coupling is not reachable")
 		return false

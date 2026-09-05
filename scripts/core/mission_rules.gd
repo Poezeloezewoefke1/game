@@ -263,11 +263,44 @@ static func locked_crystals(mission_id: String) -> Dictionary:
 			GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
 			GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
 		}
+	# Hallow rotates the assignment. Cinder and Hallow were built from one
+	# template and it showed: of the 96 nodes they share by name, 91 sit at
+	# identical coordinates, and both ran the same three locks on the same three
+	# crystals in the same order. Two planets that differ only in palette are
+	# one planet, and the second one taught a player nothing.
+	#
+	# Same three locks, different trips. The fight, the errand and the hazard
+	# each move to a crystal they do not gate on Cinder, so the order the three
+	# planets are played in changes what each of them is about. The props that
+	# belong to a lock move with it - the coupling socket sits beside the
+	# crystal it powers and the hazard field stands over the one it covers -
+	# and `test_scene_integrity` now asserts the socket and this table agree,
+	# because a socket unlocking a crystal that is not locked would leave the
+	# locked one sealed for good.
+	if mission_id == MissionCatalog.HALLOW:
+		return {
+			GameConfig.CRYSTAL_GROVE: LOCK_COUPLING,
+			GameConfig.CRYSTAL_CAVE: LOCK_GUARD,
+			GameConfig.CRYSTAL_RUINS: LOCK_HAZARD,
+		}
 	return {
 		GameConfig.CRYSTAL_CAVE: LOCK_COUPLING,
 		GameConfig.CRYSTAL_RUINS: LOCK_GUARD,
 		GameConfig.CRYSTAL_GROVE: LOCK_HAZARD,
 	}
+
+
+## The crystal a given lock is holding on this mission, or "" if none is.
+##
+## Added because the playtest asked "is CRYSTAL_CAVE behind a coupling?" rather
+## than "which crystal is behind a coupling?" - so the moment the answer changed
+## the driver would have skipped the errand entirely and reported the crystal
+## unreachable. A question with a level's name baked into it is not a question.
+static func crystal_with_lock(snap: Dictionary, lock: String) -> String:
+	for crystal_id in GameConfig.ALL_CRYSTAL_IDS:
+		if crystal_lock(snap, String(crystal_id)) == lock:
+			return String(crystal_id)
+	return ""
 
 
 const LOCK_COUPLING := "coupling"   ## needs a power coupling carried to it

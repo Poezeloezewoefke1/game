@@ -661,16 +661,16 @@ transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 29.826, 
 object_id = "hallow_power_coupling"
 
 [node name="CouplingSocket" parent="Interactables" instance=ExtResource("13_socket")]
-transform = Transform3D(-0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, -0.8660, -20.000, 0.000, -34.641)
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 40.500, 0.300, -4.000)
 object_id = "hallow_coupling_socket"
-unlocks_crystal_id = "crystal_cave"
+unlocks_crystal_id = "crystal_grove"
 
 [node name="HazardControl" parent="Interactables" instance=ExtResource("14_hazctl")]
 transform = Transform3D(0.0872, 0, -0.9962, 0, 1, 0, 0.9962, 0, 0.0872, -49.810, 0.000, 4.358)
 object_id = "hallow_hazard_control"
 
 [node name="HazardField" parent="." instance=ExtResource("15_hazfield")]
-transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 45.825, 0.000, -4.009)
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, -26.385, 0.000, 37.681)
 
 [node name="TempleTrigger" type="Area3D" parent="."]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.000, 3.000, 15.000)
