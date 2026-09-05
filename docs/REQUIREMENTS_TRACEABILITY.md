@@ -250,6 +250,8 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-019 | Every pre-flight station names its place, not just its job | `GameConfig.SHIP_TASK_LOCATIONS`, `MissionRules.ship_task_hint` | `test_mission_rules` | AUTO |
 | MIS-020 | **The Warden stays inside the angle a player is allowed to look up** | `Warden._host_think` height hold | `test_combat_and_revive`, playtest | AUTO + PLAY |
 | MIS-021 | The enraged Warden can actually damage a player it closes on | `Warden._host_contact_damage` (horizontal range) | `test_combat_and_revive` | AUTO |
+| MIS-022 | **A hovering boss is never trapped by scenery** - it flew into a temple pillar and stopped there for the rest of the fight | `Warden._ready` collision mask | playtest | PLAY |
+| MIS-023 | Contact damage is sized to the crew, like the boss's health and volleys | `MissionRules.boss_contact_damage` | `test_mission_rules` | AUTO |
 
 ## Quality gates (QA)
 

@@ -683,6 +683,18 @@ static func guard_hits_to_kill(crew: int) -> int:
 ## the point of a volley rather than a single shot is that it forces a decision
 ## about which way to go, and two projectiles still do that - and a full crew
 ## faces exactly what it faced before.
+## Contact damage scales with the crew for exactly the reason everything else
+## about the Warden does. Its health, its volley interval and the number of
+## projectiles per volley are all sized to how many people are shooting back;
+## the 18 a second it does for touching you was a flat number, so a solo player
+## took the whole of a four-player crew's punishment alone. That was invisible
+## for as long as the check that gates it could never pass (defect 71), and the
+## moment it could, the enraged phase went from harmless to lethal in eleven
+## seconds - measured, from full health, on the explorer driver.
+static func boss_contact_damage(crew: int) -> int:
+	return maxi(int(round(float(GameConfig.BOSS_CONTACT_DAMAGE) * boss_scale(crew))), 1)
+
+
 const BOSS_VOLLEY_BY_CREW: Array = [1, 2, 3, 3]
 
 

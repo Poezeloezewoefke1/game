@@ -408,3 +408,27 @@ func test_every_ship_task_says_where_it_is() -> void:
 	# label with an empty half-sentence hanging off a dash.
 	check_eq(MissionRules.ship_task_hint("task_nonexistent"), "task_nonexistent",
 		"an unknown task falls back to its id rather than a dangling dash")
+
+
+## The Warden's contact damage is sized to the crew, like everything else it has.
+##
+## Its health, its volley interval and the projectiles per volley are all scaled
+## by boss_scale; the 18 a second for touching you was flat, so a solo player
+## took the whole of a four-player crew's punishment alone. It was invisible for
+## as long as the check that gates it could never pass, and the moment it could,
+## the enraged phase killed a solo player from full health in eleven seconds.
+func test_boss_contact_damage_scales_with_crew() -> void:
+	check_eq(MissionRules.boss_contact_damage(4), GameConfig.BOSS_CONTACT_DAMAGE,
+		"a full crew takes the configured contact damage unchanged")
+	var previous := 0
+	for crew in [1, 2, 3, 4]:
+		var hit: int = MissionRules.boss_contact_damage(crew)
+		check(hit >= 1, "crew %d still takes real damage for being caught (%d)" % [crew, hit])
+		check(hit >= previous, "crew %d is hit no less hard than crew %d" % [crew, crew - 1])
+		check(hit <= GameConfig.BOSS_CONTACT_DAMAGE,
+			"crew %d never takes more than the configured contact damage" % crew)
+		previous = hit
+	check(MissionRules.boss_contact_damage(1) < MissionRules.boss_contact_damage(4),
+		"a solo player is not punished as hard as a full crew for the same mistake")
+	check_eq(MissionRules.boss_contact_damage(0), MissionRules.boss_contact_damage(1),
+		"crew 0 is treated as solo")

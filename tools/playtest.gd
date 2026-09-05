@@ -629,7 +629,14 @@ func _run_from_the_warden(warden: Node) -> void:
 		away.y = 0.0
 		if away.length() < 0.1:
 			away = Vector3(1.0, 0.0, 0.0)
-		await _look_at_point(player.global_position + away.normalized() * 20.0)
+		# SERPENTINE, not straight. Running dead away from something that shoots
+		# at you is the easiest target there is: no lateral motion means no
+		# dodge, and the driver was killed from a full 100 hp in eleven seconds
+		# doing exactly that, 24 m clear of the temple. Angling the run keeps
+		# the distance opening while still crossing the projectile's path.
+		_strafe = -_strafe
+		away = away.normalized().rotated(Vector3.UP, deg_to_rad(35.0 * _strafe))
+		await _look_at_point(player.global_position + away * 20.0)
 		await _hold("move_forward", 0.35)
 	Input.action_release("sprint")
 
@@ -912,8 +919,42 @@ func _fight_the_warden() -> bool:
 			_fail("the crew was wiped out by the Warden")
 			return false
 
-		_strafe = -_strafe
+		# Hold a direction for a few volleys instead of flipping every one.
+		# Alternating each volley is not moving: measured, the driver covered
+		# 0.6 m in four seconds of standing fire and ate every projectile. The
+		# Warden's shots take about a second to cross 12 m and a player moving
+		# sideways at 5 m/s is five metres away by the time they arrive - which
+		# is the whole reason the fight tells you to keep moving.
+		_strafe_volleys += 1
+		if _strafe_volleys >= 3:
+			_strafe_volleys = 0
+			_strafe = -_strafe
 		var strafe_action := "move_left" if _strafe > 0 else "move_right"
+
+		# Shots that are aimed and still do nothing mean something is IN THE
+		# WAY - a temple pillar between us, most likely. The driver once fired
+		# 480 volleys at a boss wedged behind one, with the aim dead on, and
+		# reported nothing but a deadline. A player would move; so does this.
+		# Progress is nodes FIRST, then health: while the shield stands, hitting
+		# the body is meant to do nothing, so health alone would read the whole
+		# shield phase as fruitless and send the driver wandering off mid-fight.
+		var boss_now := int(GameManager.snapshot.get("boss_nodes", 0)) * 10000 \
+			+ int(GameManager.snapshot.get("boss_health", 0))
+		if boss_now < _boss_health_seen:
+			_boss_health_seen = boss_now
+			_fruitless = 0
+		elif _aim_converged:
+			_fruitless += 1
+			if _fruitless >= 10:
+				_fruitless = 0
+				_event("warden.reposition",
+					"10 aimed volleys with no progress (%d nodes, %d health) - moving for a line"
+						% [int(GameManager.snapshot.get("boss_nodes", 0)),
+							int(GameManager.snapshot.get("boss_health", 0))])
+				Input.action_press(strafe_action)
+				await _hold("move_forward", 0.9)
+				Input.action_release(strafe_action)
+				continue
 
 		# No angle, no shot. When the aim cannot reach the Warden - the camera
 		# against its pitch clamp, or a pillar between us - firing is worse than
@@ -1129,6 +1170,12 @@ func _my_health() -> int:
 var _last_aim_error: float = 0.0
 ## Whether the last fight aim actually reached its target.
 var _aim_converged: bool = true
+## Volleys fired since the last strafe reversal. See _fight_the_warden.
+var _strafe_volleys: int = 0
+## Best boss progress seen (nodes weighted above health), and aimed volleys
+## since it last improved.
+var _boss_health_seen: int = 1 << 30
+var _fruitless: int = 0
 
 
 ## The pitch the camera WOULD need to look at a world point, in radians. Read

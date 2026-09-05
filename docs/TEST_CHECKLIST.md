@@ -191,6 +191,8 @@ The flight is three host-clock states rendered identically on every peer;
 | 26ao | The enraged Warden's contact damage can actually reach a player it closes on | [A] |
 | 26ap | **It holds station OUTSIDE that reach** - contact is a punishment, not an aura | [A] |
 | 26aq | Enraging still brings it closer than the ring it trades fire from | [A] |
+| 26ar | **The Warden cannot be wedged on temple geometry** - it hovers inside the colonnade | [P] |
+| 26as | **Its contact damage is sized to the crew**, like its health and its volleys | [A] `test_mission_rules` |
 
 ## Nerava mission
 

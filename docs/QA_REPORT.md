@@ -34,6 +34,15 @@ the assertion suite of its day:
   clamp for 84 volleys with the boss frozen on 50 health and the player
   untouched. Earlier runs passed only because they killed it before it closed.
 
+A fifth, **71**, was not a blocker but a hole: the enraged Warden's contact
+damage - 18 a second for letting it reach you, the phase's whole threat - had
+never once fired, because a 3.2 m *three-dimensional* range test can never be
+met by an enemy that hovers metres up. Fixing it exposed two more (**72**, the
+boss held station inside its own damage radius; **74**, contact damage was the
+one thing about it not sized to the crew), and fixing **70** exposed a third
+(**73**, at its authored height it could be wedged on a temple pillar and sit
+there for the rest of the fight). Each was hiding the next.
+
 All are fixed and all are gated by a test that fails if they come back.
 
 **What is NOT claimed.** Nobody has played it. There is no GPU, no audio device
@@ -48,7 +57,7 @@ mouse, because that was measured, repeatedly, on the shipped build.
 |---|---|
 | Repository structure | PASS |
 | Import, compile, scene load | PASS, no script errors |
-| Automated suite | PASS - 133 checks, 1614 assertions, no engine errors |
+| Automated suite | PASS - 133 checks, 1634 assertions, no engine errors |
 | Multi-process multiplayer | PASS - 81 assertions across 5 OS processes |
 | Automated playtest, 3 strategies | PASS - 0 failures, 0 deaths |
 | Windows executable launches | BLOCKED - no Windows machine (VERIFY-001) |
@@ -388,24 +397,23 @@ one kind of player: `cautious` keeps its distance, `aggressive` sprints
 everywhere and stands its ground, `explorer` tours the whole crew deck before
 starting work.
 
-| Strategy | Result | Duration | Walked | Downs | Shots |
-|---|---|---|---|---|---|
-| cautious | **PASS** | 158.2 s | 489 m | 0 | 35 |
-| aggressive | **PASS** | 113.9 s | 490 m | 0 | 34 |
-| explorer | **PASS** | 167.9 s | 538 m | 0 | 35 |
-| cautious (repeat) | **PASS** | 156.1 s | 489 m | 0 | 32 |
+| Strategy | Result | Duration | Walked | Downs | Shots | Warden killed at |
+|---|---|---|---|---|---|---|
+| cautious | **PASS** | 151.2 s | 452 m | 0 | 46 | 146.8 s |
+| aggressive | **PASS** | 107.9 s | 469 m | 0 | 46 | 103.3 s |
+| explorer | **PASS** | 156.8 s | 519 m | 0 | 44 | 149.2 s |
 
-Before the volley scaling of defect 61 the same strategies gave one win and
-three losses, every loss identical in shape - downed in the exposed phase with
-the Warden around 275 of 450. The table above is the same route afterwards:
-four consecutive complete runs, no deaths, and a boss that still takes about
-25 seconds and three phases to bring down.
+These are runs against the build carrying the Warden fixes (70-73) and a guard
+on Nerava's Ruins Crystal, which is a materially harder game than the one the
+earlier table measured: the enraged phase's contact damage now actually fires,
+having never once done so.
 
-That spread is also the strongest evidence available here that the fight has
-some depth: `aggressive` finishes 45 seconds faster than `explorer` by sprinting
-between objectives, and before the rebalance it was the first to die for
-standing its ground. Different play produces different results, which is what a
-fight is for.
+The spread is the strongest evidence available here that the fight has depth.
+`aggressive` finishes forty seconds sooner by sprinting between objectives and
+arrives at the altar untouched - and then wins the fight with **one hit point
+left**. `cautious` takes the guard fight at 67 hp, is restored to full at the
+altar, and finishes with 67. Same route, same boss, two quite different
+stories.
 
 Menu, name, host, lobby, crew deck, course, three stations, a refused lever,
 the pilot's seat, launch from the chair, flight, landing, the temple, the
@@ -545,6 +553,8 @@ are recorded because they are the reason the test suite looks the way it does.
 | 70 | **The Warden hovered 3.4 m higher than authored, which made the enraged phase a stalemate** | A run sat at the +65 degree pitch clamp for 84 volleys with the boss frozen on 50 of 450 health and the player untouched. Measured from the log the instrument was made to print: `me (6.0, 0.0, 1.6) boss (-1.8, 9.8, -6.2)` - the Warden at y=9.8 where the anchor plus its hover height is 6.4 | `SpawnManager.host_spawn_warden` adds `BOSS_HOVER_HEIGHT` to the anchor so the Warden appears at its hover height instead of dropping in; `Warden._host_think` then held `spawn_position.y + BOSS_HOVER_HEIGHT`, adding the same offset a second time. Two places each taking responsibility for one offset. Not cosmetic: the enraged Warden closes to a 3 m ring, and from 9.8 m up that needs 70 degrees of upward pitch against a 65 degree clamp - the boss parks overhead where it cannot be shot. Three earlier runs passed only because they killed it before it ever closed |
 | 71 | **The enraged Warden's contact damage had never once fired** | Found while reading the same code: `global_position.distance_to(player) > 3.2` on an enemy that hovers metres up | The vertical gap alone exceeds 3.2 m at any hover height the level authors, so the check could never pass and the enraged phase's signature threat - 18 damage a second for letting it reach you - was dead code. It now measures the HORIZONTAL distance, which is what "it is on top of you" means for something flying, against a named `BOSS_CONTACT_RANGE`. `test_combat_and_revive` asserts both that the Warden holds the height it spawned at and that a player on the ground can look up far enough to aim at it at the closest it ever comes |
 | 72 | **The enraged Warden held station INSIDE its own contact radius** | Exposed the moment 71 was fixed: with contact damage live, all three strategies died about four seconds into the enraged phase - the aggressive one from a full 100 hp, having taken no damage anywhere else in the run | The enraged ring was 3.0 m and the contact reach 3.2 m, so the boss parked inside the radius and dealt 18 damage a second for the entire phase unconditionally. That is not a punishment for letting it reach you, it is an aura, and no amount of playing well avoids it. The rings are now named constants (`BOSS_STAND_OFF`, `BOSS_ENRAGED_STAND_OFF`) with the enraged one at 4.5 m, outside the reach: enraging still halves the distance and closes fast, and contact is what happens when it CATCHES you. `test_combat_and_revive` asserts the ordering, so the two numbers cannot drift back past each other |
+| 73 | **The Warden could be wedged on a temple pillar, permanently** | Exposed by fixing 70: `480 volleys, phase=3 boss=150, 17.0 m away, pitch 17 (want 17), at (-0.9, 0.0, -22.6) boss at (-11.7, 6.4, -11.1)` - the boss motionless against `TemplePillar1` for four minutes, taking nothing, while the aim was dead on | The temple's pillars are 7 m and its lintels 7.4; the Warden hovers at 6.4, so it flies INSIDE the colonnade, which is the design - it is what makes the arena read as a temple. But it carried a world collision mask, so it drove into a pillar and stopped there. At the old doubled height it flew over everything, which is why this never showed: one bug was hiding the other. A hovering boss has no business being trapped by scenery, so it no longer collides with the world; the height hold keeps it off the floor and its hitboxes are unchanged, so nothing about shooting it changes |
+| 74 | **Contact damage was the one thing about the Warden not sized to the crew** | With 71 and 72 fixed, the enraged phase still killed the explorer driver from a full 100 hp in eleven seconds, and the aggressive one survived it with 1 | Its health, its volley interval and the projectiles per volley are all scaled by `MissionRules.boss_scale`; the 18 a second for touching you was a flat constant, so a solo player absorbed the whole of a four-player crew's punishment alone. Exactly the shape of defects 60 and 61, hidden for as long as the check that gates it could never pass. It now scales the same way, through `MissionRules.boss_contact_damage`, with a floor of 1 so it is never free |
 
 ---
 
@@ -579,6 +589,9 @@ times it was wrong, recorded for the same reason the game's defects are.
 | I21 | "Break away" was a 1.1 s dash | The driver reached the enraged phase with the Warden on 25 of 450 and was still caught and downed | A sprinting player gains 2.1 m/s on an enraged Warden, so 1.1 s of running buys 2.3 m and the boss is back inside contact range before the next volley leaves the barrel. Breaking away has to mean breaking away: the retreat now runs until the gap is genuinely open (14 m, beyond the boss's own stand-off ring) or four seconds have passed, re-facing away each step as the boss moves. The same discipline as I12, I13 and I19 - measure the game with a driver that plays it the way it is designed to be played, or measure the driver |
 | I22 | The driver fired three-shot bursts from a weapon that allows seven | With the retreat fixed it survived the enraged phase three times longer and took the boss from 150 to 75 instead of to 25 - it lived longer and did LESS damage | A fixed 0.55 s on the trigger is three shots. The blaster holds 100 heat, spends 14 a shot and cools at 26 a second, so after a four-second retreat it is stone cold and good for seven. The fixed burst threw away more than half the damage of every window the retreat had just bought, which turns a fight built on kiting into a war of attrition the player loses. The burst is now sized from the heat the weapon actually has left |
 | I23 | Two playtests at once, and the loser blamed the game | `hosting did not reach the lobby` on three consecutive runs, from `ERROR: Couldn't create an ENet host` | A second batch was started while the first was still going; both bound the same ENet port and the loser reported a clean-looking game failure fifteen seconds in. `run_playtest.sh` now waits for any other playtest to finish and refuses rather than starting a second, so a scheduling mistake cannot come back as a bug report about the lobby |
+| I24 | "Keep moving while firing" flipped direction every volley, which is not moving | Measured from the driver's own position: 0.6 m covered in four seconds of standing fire, eating every projectile | Alternating left and right each volley oscillates in place. The Warden's shots take about a second to cross 12 m and a player moving sideways at 5 m/s is five metres clear by the time they land - dodging is the whole reason the fight tells you to move. The driver now holds a direction for three volleys before reversing. I12 fixed the driver standing still; this is the same mistake wearing the fix as a disguise |
+| I25 | Aimed shots that did nothing were fired 480 times without comment | `480 volleys, phase=3 boss=150, pitch 17 (want 17)` - the aim dead on and the boss untouched for four minutes | The aim converging says the camera is pointed at the boss, not that anything can travel between them; a pillar in the line is invisible to it. The fight now watches the boss's health, and ten aimed volleys that change nothing make it move for a line instead of emptying the blaster into masonry. This is what turned defect 73 from "the deadline ran out" into a position and a cause |
+| I26 | The retreat ran dead away from something that shoots | Downed from a full 100 hp in eleven seconds, 24 m clear of the temple, while sprinting | Running in a straight line directly away is the easiest target there is: no lateral motion means no dodge, so every projectile lands. The retreat now serpentines, angling 35 degrees either side of dead-away and alternating each step, which opens the same distance while still crossing the shot's path. Fourth time this harness has measured itself instead of the game by not moving the way the fight is built around (I12, I19, I21, I24) |
 
 ## Design observations from the measured runs
 

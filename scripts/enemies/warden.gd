@@ -61,7 +61,16 @@ func _ready() -> void:
 	add_to_group(GameConfig.GROUP_BOSS)
 	add_to_group(GameConfig.GROUP_SESSION_BOUND)
 	collision_layer = GameConfig.LAYER_ENEMY
-	collision_mask = GameConfig.LAYER_WORLD
+	# It FLIES, and it must not be wedged by scenery. The temple's pillars are
+	# 7 m tall and its lintels sit at 7.4; the Warden hovers at 6.4, which is
+	# inside the colonnade by design - that is what makes the arena read as a
+	# temple rather than an open field. With a world collision mask it drove
+	# into a pillar and stopped there for the rest of the fight, out of the
+	# player's line and taking no damage: a stalemate that looks exactly like a
+	# boss that cannot be killed. Nothing else depends on it colliding - the
+	# height hold keeps it off the floor, and the player's shots hit its own
+	# body and shield nodes, which stay on the enemy layer.
+	collision_mask = 0
 	PropBuilder.build_warden(self, _hull, _eye, _shield, _ring)
 	_configure_replication()
 	if _is_host():
@@ -241,7 +250,7 @@ func _host_contact_damage(delta: float) -> void:
 		if to_player.length() > GameConfig.BOSS_CONTACT_RANGE:
 			continue
 		if node.has_method("host_apply_damage"):
-			node.host_apply_damage(GameConfig.BOSS_CONTACT_DAMAGE)
+			node.host_apply_damage(MissionRules.boss_contact_damage(_crew()))
 			_contact_timer = 1.0
 
 
