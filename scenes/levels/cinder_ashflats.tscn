@@ -398,7 +398,7 @@ variant = 2
 solid = true
 
 [node name="D03_ruin_pillar" type="Node3D" parent="NavigationRegion3D/Dressing"]
-transform = Transform3D(0.9781, 0, 0.2079, 0, 1, 0, -0.2079, 0, 0.9781, -23.500, 0.000, -38.200)
+transform = Transform3D(0.9781, 0, 0.2079, 0, 1, 0, -0.2079, 0, 0.9781, -28.500, 0.000, -35.000)
 script = ExtResource("10_dress")
 kind = "ruin_pillar"
 variant = 3

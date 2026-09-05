@@ -123,6 +123,11 @@ func _check_common(key: String, level: Node) -> void:
 ## radius is a little under the guard's own body, so a post that merely brushes
 ## the scenery is not failed, and the height is chest-high on a hovering guard -
 ## what is being tested is whether it can be SHOT from across the level.
+## Room a solid prop must leave around an interactable. Everything on the three
+## levels clears 4.0 m once the three offenders are moved, so this is not a
+## number the content is straining against.
+const PROP_CLEARANCE: float = 2.5
+
 ## How close the hazard field has to stand to the crystal it seals. It is a
 ## field, not a marker, so this is "over it", not "on it".
 const HAZARD_OVER_CRYSTAL: float = 3.0
@@ -261,6 +266,51 @@ func _check_surface(key: String, level: Node) -> void:
 	await _check_guard_posts(key, level)
 	_check_plateau_approach(key, level)
 	_check_locks_agree(key, level)
+	_check_prop_clearance(key, level)
+
+
+## No solid set dressing may stand on top of an interactable.
+##
+## This is the generalisation of five separate defects, and it should have been
+## written after the first. 55: crew-deck furniture on the ship's spine. 56: two
+## props narrowing the Nerava approach. 57: a ruin pillar in the only route back
+## from the coupling socket. 75: a pillar 1.0 m from that socket, which made the
+## host refuse every press and sealed Cinder's cave crystal for good. And then
+## the fix for 75 MOVED that pillar to within 1.71 m of the cave crystal, where
+## it sat harmlessly until Hallow's guard began the fight on that side - at
+## which point the host's ray was blocked and the crystal could not be taken.
+##
+## Each of those was fixed by moving one prop. None of them added a rule, so the
+## next prop was free to land in the same place. The rule is: an interactable
+## needs room around it, and the measured levels agree - once these three are
+## moved, the closest solid prop to any interactable is 4.0 m.
+##
+## Nerava has no solid dressing at all, which is exactly why this class of
+## defect has never appeared there.
+func _check_prop_clearance(key: String, level: Node) -> void:
+	var dressing := level.get_node_or_null("NavigationRegion3D/Dressing")
+	if dressing == null:
+		return
+	var solids: Array = []
+	for child in dressing.get_children():
+		var prop := child as Node3D
+		if prop != null and bool(prop.get("solid")):
+			solids.append(prop)
+	if solids.is_empty():
+		return
+
+	for node in _collect_interactables(level):
+		var target := node as Node3D
+		if target == null:
+			continue
+		var aim: Vector3 = target.call("interaction_point") \
+			if target.has_method("interaction_point") else target.global_position
+		for prop in solids:
+			var at: Vector3 = (prop as Node3D).global_position
+			var flat: float = Vector2(at.x - aim.x, at.z - aim.z).length()
+			check(flat >= PROP_CLEARANCE,
+				"%s: %s stands %.2f m from %s, clear of the %.1f m an interactable needs"
+					% [key, (prop as Node3D).name, flat, target.name, PROP_CLEARANCE])
 
 
 ## The level's lock props and the mission's lock table must name the same
