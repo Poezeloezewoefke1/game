@@ -750,6 +750,26 @@ this document for that reason. Each names the evidence it rests on. Nobody has
 played this game - see VERIFY-008 in `docs/KNOWN_LIMITATIONS.md` - so treat
 these as hypotheses for the first human playtest, not as findings.
 
+**Cinder and Hallow are not two levels. They are one level with two palettes.**
+This is the campaign-repetition problem stated as a number rather than an
+impression, and the number is worse than the impression was. Comparing the two
+scene files node by node: of the 96 nodes they share by name, **91 have byte-
+identical transforms**. The five that differ are the sun and four pieces of
+scatter. Every wall, mesa, plateau tier, approach step, crystal, pedestal,
+altar and drop pod is in exactly the same place on both planets.
+
+The crystal layout says the same thing across all three. Every one of the nine
+crystals sits between 42 and 48 m from its altar - a spread of about 2 m across
+nine trips on three planets. Nerava places them on a symmetric three-point star
+at bearings 267 / 93 / 0; Cinder and Hallow both use 214 / 329 / 87, the same
+numbers as each other.
+
+So "vary the journeys, not just the locks" is not a matter of taste. Nine trips
+of the same length, six of them from identical positions, is the measurement
+behind the campaign scoring 5 while one mission scores 7 - and it is a level
+authoring job, not a systems one: the locks, the guards and the hazard already
+differ, and the geometry they hang on does not.
+
 **The crystal guard costs a solo player almost exactly all of their health, on
 both planets that have one in the open.** Measured, not felt: the driver reached
 `crystal.taken crystal_ruins` on **1 hp of 100** on Cinder and again on Hallow,
