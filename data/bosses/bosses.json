@@ -1,0 +1,74 @@
+{
+  "_schema": {
+    "note": "Gameplay boss definitions. Combat stats live with the enemy definitions in data/enemies/enemies.json (bosses are spawned through the same pool); this file carries encounter scripting, presentation and the phase table the HUD and codex read.",
+    "controller": "Script that drives the encounter. 'saparata' is implemented by scripts/bosses/saparata_encounter.gd."
+  },
+  "bosses": [
+    {
+      "id": "saparata",
+      "name": "Saparata",
+      "title": "Leader of Cindercrest · Second King of Unstable",
+      "enemy": "saparata",
+      "controller": "res://scripts/bosses/saparata_encounter.gd",
+      "maps": ["fort_feather"],
+      "music": "boss_saparata",
+      "intro_line": "You gave the server to the new players, Parrot. I'm taking it back.",
+      "defeat_line": "History says this fort fell. Today it didn't.",
+      "mini_boss": "shoebilly",
+      "reward_emeralds": 2500,
+      "phases": [
+        {"index": 1, "name": "Cindercrest Vanguard", "desc": "The ground assault begins.",
+         "basis": "Cindercrest's ground assault on Fort Feather, which the fort initially repelled.",
+         "mechanic": "Dense netherite waves; Saparata is not yet on the field.",
+         "minions": ["chungie_t5", "chungie_t6"], "budget": 22, "spawn_interval": 0.7},
+        {"index": 2, "name": "Elite Strike", "desc": "ShoeBilly_ leads the assassins.",
+         "basis": "ShoeBilly's assassinations at Skymore and his mace fighting at Merchant City and Steampunk City.",
+         "mechanic": "Mini-boss ShoeBilly stuns towers he passes; his helmet breaks at half health and he speeds up.",
+         "minions": ["assassin"], "budget": 10, "spawn_interval": 1.3},
+        {"index": 3, "name": "The Redstone Blimp", "desc": "Paratroopers behind the walls.",
+         "basis": "The Redstone Blimp that dropped slow-falling paratroopers into Fort Feather.",
+         "mechanic": "A destructible blimp crosses the map dropping paratroopers deep in the path; shooting it down ends the drops.",
+         "minions": ["chungie_t5", "chungie_t6"], "budget": 12, "spawn_interval": 1.0},
+        {"index": 4, "name": "Saparata Enters", "desc": "The King of Unstable takes the field.",
+         "basis": "Saparata personally confronting King ParrotX2 at the Battle for Capital City.",
+         "mechanic": "Ember Strike stuns the nearest tower every 6 seconds; Revanchist Call heals him while his soldiers are near. Transitions at 50% health.",
+         "minions": ["chungie_t6"], "budget": 14, "spawn_interval": 1.6},
+        {"index": 5, "name": "The Usurper King", "desc": "He turns your own army against you.",
+         "basis": "Persuading Parrot's Royal Army to defect, and crowning himself King.",
+         "mechanic": "Persuasion turns one tower against you for 5 seconds; Royal Defectors join the waves; below 25% health Old Players' Wrath grants speed and armor.",
+         "minions": ["royal_defector", "chungie_t6"], "budget": 18, "spawn_interval": 1.1}
+      ],
+      "lore_ref": "saparata",
+      "confidence": "canon_confirmed (basis) / GAME MECHANIC (phase design)",
+      "sources": [
+        "https://unstable-universe-mc.fandom.com/wiki/Saparata",
+        "https://unstable-universe-mc.fandom.com/wiki/Cindercrest",
+        "https://unstable-universe-mc.fandom.com/wiki/Fort_Feather",
+        "https://unstable-universe-mc.fandom.com/wiki/Unstable_SMP:_Civil_War_FINALE"
+      ]
+    },
+    {
+      "id": "shoebilly",
+      "name": "ShoeBilly_",
+      "title": "The Assassin of Skymore",
+      "enemy": "shoebilly",
+      "controller": null,
+      "maps": ["fort_feather", "merchant_city"],
+      "music": "boss_generic",
+      "intro_line": "Nine hundred and ninety-nine. One expedition at a time.",
+      "defeat_line": "His armour broke. He'll be back.",
+      "reward_emeralds": 600,
+      "phases": [
+        {"index": 1, "name": "Full Netherite", "desc": "Enchanted netherite, mace in hand.",
+         "basis": "ShoeBilly as a renowned assassin and talented mace player.",
+         "mechanic": "Sabotage stuns towers he passes; regenerates while unharmed."},
+        {"index": 2, "name": "Helmet Broken", "desc": "Faster, weaker, retreating.",
+         "basis": "Wemmbu trapped him in webs and broke his helmet with stab shots at Steampunk City.",
+         "mechanic": "Loses the helmet tier: less armor, more speed."}
+      ],
+      "lore_ref": "shoebilly",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/ShoeBilly", "https://unstable-universe-mc.fandom.com/wiki/Skymore_Civilization"]
+    }
+  ]
+}

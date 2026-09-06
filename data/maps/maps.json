@@ -1,0 +1,188 @@
+{
+  "_schema": {
+    "note": "Maps are built procedurally by scripts/maps/map_builder.gd from this data: a block-based terrain, a path polyline, build zones, decoration and lighting.",
+    "path": "World-space polyline. Enemies enter at the first point and reach the base at the last.",
+    "build_zones": "Circular areas where towers may be placed. type: ground | wall | tower | keep. elevation raises the platform (mace/height bonuses apply).",
+    "terrain": "Painted from a list of rectangular patches evaluated in order; 'base' fills everything first."
+  },
+  "maps": [
+    {
+      "id": "fort_feather",
+      "name": "Fort Feather",
+      "subtitle": "The First Battle of the Civil War",
+      "arc": "kingdoms_saga",
+      "location": "fort_feather",
+      "faction": "cindercrest",
+      "boss": "saparata",
+      "difficulty": "Beginner",
+      "unlocked": true,
+      "waves": "res://data/waves/fort_feather_waves.json",
+      "start_emeralds": 700,
+      "lives": 100,
+      "recommended_heroes": ["parrotx2", "wemmbu", "flamefrags", "spokeishere"],
+      "music": "map_fort_feather",
+      "intro": {
+        "title": "FORT FEATHER",
+        "subtitle": "Cindercrest is coming. Hold the fort.",
+        "lines": [
+          {"speaker": "parrotx2", "text": "This is where we train the army. If Fort Feather falls, the road to Merchant City is open."},
+          {"speaker": "theobaldthebird", "text": "Then we don't let it fall. I've got carts."},
+          {"speaker": "saparata", "text": "The old players are starving. Every one of these new spawns is why."}
+        ]
+      },
+      "outro_victory": {
+        "title": "FORT FEATHER HOLDS",
+        "lines": [{"speaker": "parrotx2", "text": "History says this fort fell. Today it didn't."}]
+      },
+      "outro_defeat": {
+        "title": "THE FORT HAS FALLEN",
+        "lines": [{"speaker": "saparata", "text": "Retreat through your tunnel, Parrot. Merchant City is next."}]
+      },
+      "environment": {
+        "sky_top": [0.31, 0.42, 0.62], "sky_horizon": [0.72, 0.63, 0.55], "ground_color": [0.28, 0.3, 0.24],
+        "sun_angle": [-46, 145, 0], "sun_color": [1.0, 0.93, 0.82], "sun_energy": 1.35,
+        "ambient_color": [0.55, 0.6, 0.72], "ambient_energy": 0.55,
+        "fog": true, "fog_color": [0.62, 0.58, 0.56], "fog_density": 0.0035
+      },
+      "terrain": {
+        "size": [96, 96], "origin": [-48, 0, -48], "base": "grass",
+        "patches": [
+          {"rect": [-48, -48, 96, 26], "block": "dirt", "height": 0},
+          {"rect": [-48, -48, 96, 14], "block": "gravel", "height": 0},
+          {"rect": [-14, 14, 28, 34], "block": "stone_bricks", "height": 1},
+          {"rect": [-10, 18, 20, 26], "block": "cobble", "height": 2},
+          {"rect": [18, -20, 20, 24], "block": "sand", "height": 0},
+          {"rect": [-46, -6, 18, 22], "block": "path", "height": 0}
+        ]
+      },
+      "path": [
+        [0, 0, -46], [0, 0, -34], [-8, 0, -28], [-20, 0, -24], [-26, 0, -14],
+        [-22, 0, -4], [-10, 0, 2], [2, 0, 4], [14, 0, 2], [22, 0, -4],
+        [26, 0, 6], [20, 0, 16], [8, 0, 22], [0, 0, 26], [0, 0, 34]
+      ],
+      "path_width": 3.2,
+      "path_block": "path",
+      "base_position": [0, 0, 38],
+      "spawn_position": [0, 0, -46],
+      "build_zones": [
+        {"pos": [-8, 0, -36], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [8, 0, -34], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [-14, 1.5, -30], "radius": 3.0, "type": "tower", "elevation": 1.5},
+        {"pos": [-30, 0, -22], "radius": 4.0, "type": "ground", "elevation": 0},
+        {"pos": [-16, 0, -16], "radius": 4.0, "type": "ground", "elevation": 0},
+        {"pos": [-32, 2.5, -8], "radius": 3.0, "type": "tower", "elevation": 2.5},
+        {"pos": [-14, 0, -6], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [-4, 0, -6], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [8, 0, -6], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [16, 0, -10], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [30, 1.5, -2], "radius": 3.0, "type": "tower", "elevation": 1.5},
+        {"pos": [12, 0, 10], "radius": 4.0, "type": "ground", "elevation": 0},
+        {"pos": [26, 0, 14], "radius": 3.5, "type": "ground", "elevation": 0},
+        {"pos": [-8, 2.0, 12], "radius": 4.5, "type": "wall", "elevation": 2.0},
+        {"pos": [-8, 2.0, 22], "radius": 4.0, "type": "wall", "elevation": 2.0},
+        {"pos": [10, 2.0, 30], "radius": 4.0, "type": "wall", "elevation": 2.0},
+        {"pos": [-10, 2.0, 30], "radius": 4.0, "type": "wall", "elevation": 2.0},
+        {"pos": [0, 3.5, 32], "radius": 3.0, "type": "keep", "elevation": 3.5}
+      ],
+      "structures": [
+        {"kind": "fort_wall", "pos": [-14, 0, 14], "size": [28, 5, 1], "block": "stone_bricks"},
+        {"kind": "fort_wall", "pos": [-14, 0, 14], "size": [1, 5, 20], "block": "stone_bricks"},
+        {"kind": "fort_wall", "pos": [13, 0, 14], "size": [1, 5, 20], "block": "stone_bricks"},
+        {"kind": "fort_wall", "pos": [-14, 0, 33], "size": [10, 5, 1], "block": "stone_bricks"},
+        {"kind": "fort_wall", "pos": [4, 0, 33], "size": [10, 5, 1], "block": "stone_bricks"},
+        {"kind": "tower", "pos": [-14, 0, 14], "size": [4, 9, 4], "block": "stone_bricks"},
+        {"kind": "tower", "pos": [11, 0, 14], "size": [4, 9, 4], "block": "stone_bricks"},
+        {"kind": "tower", "pos": [-14, 0, 30], "size": [4, 9, 4], "block": "stone_bricks"},
+        {"kind": "tower", "pos": [11, 0, 30], "size": [4, 9, 4], "block": "stone_bricks"},
+        {"kind": "keep", "pos": [-5, 0, 34], "size": [10, 8, 8], "block": "stone_bricks"},
+        {"kind": "banner", "pos": [0, 8, 34], "color": "royal"},
+        {"kind": "watchtower", "pos": [-32, 0, -10], "height": 8},
+        {"kind": "watchtower", "pos": [30, 0, -4], "height": 7},
+        {"kind": "watchtower", "pos": [-14, 0, -32], "height": 6},
+        {"kind": "camp", "pos": [0, 0, -44], "faction": "cindercrest"},
+        {"kind": "trees", "area": [-46, -46, 30, 20], "count": 14, "kind_block": "log_side"},
+        {"kind": "trees", "area": [20, -46, 26, 22], "count": 10, "kind_block": "log_side"},
+        {"kind": "trees", "area": [-46, 20, 26, 26], "count": 12, "kind_block": "log_side"},
+        {"kind": "rocks", "area": [-46, -46, 96, 96], "count": 30},
+        {"kind": "training_dummies", "pos": [6, 0, 18], "count": 4}
+      ],
+      "boss_arena": {"pos": [0, 0, 20], "radius": 12.0},
+      "blimp_route": {"from": [-46, 9, -30], "to": [40, 9, 26], "drop_range": [0.35, 0.85]}
+    },
+    {
+      "id": "merchant_city",
+      "name": "Merchant City",
+      "subtitle": "The Eastern Gateway",
+      "arc": "kingdoms_saga",
+      "location": "merchant_city",
+      "faction": "cindercrest",
+      "boss": null,
+      "mini_boss": "shoebilly",
+      "difficulty": "Intermediate",
+      "unlocked": false,
+      "unlock_requires": {"map": "fort_feather", "completed": true},
+      "waves": "res://data/waves/merchant_city_waves.json",
+      "start_emeralds": 850,
+      "lives": 80,
+      "recommended_heroes": ["parrotx2", "wemmbu", "flamefrags", "spokeishere"],
+      "music": "map_merchant_city",
+      "intro": {
+        "title": "MERCHANT CITY",
+        "subtitle": "The Fort Feather legion retreated here through the tunnel.",
+        "lines": [
+          {"speaker": "parrotx2", "text": "Dancho's guards fight for us now. Let's not waste that."},
+          {"speaker": "theobaldthebird", "text": "ShoeBilly's out there. Watch the rooftops."}
+        ]
+      },
+      "outro_victory": {"title": "THE MARKETS HOLD", "lines": [{"speaker": "parrotx2", "text": "The east gate is still ours."}]},
+      "outro_defeat": {"title": "MERCHANT CITY BURNS", "lines": [{"speaker": "saparata", "text": "Take the markets. Take everything."}]},
+      "environment": {
+        "sky_top": [0.24, 0.3, 0.5], "sky_horizon": [0.85, 0.6, 0.4],
+        "ground_color": [0.34, 0.32, 0.28], "sun_angle": [-28, 200, 0],
+        "sun_color": [1.0, 0.82, 0.62], "sun_energy": 1.2,
+        "ambient_color": [0.5, 0.5, 0.65], "ambient_energy": 0.5,
+        "fog": true, "fog_color": [0.7, 0.55, 0.45], "fog_density": 0.004
+      },
+      "terrain": {
+        "size": [88, 88], "origin": [-44, 0, -44], "base": "cobble",
+        "patches": [
+          {"rect": [-44, -44, 88, 30], "block": "path", "height": 0},
+          {"rect": [-30, -6, 60, 30], "block": "stone_bricks", "height": 0},
+          {"rect": [-12, 20, 24, 24], "block": "planks", "height": 1}
+        ]
+      },
+      "path": [
+        [-42, 0, -20], [-30, 0, -18], [-20, 0, -22], [-8, 0, -20], [0, 0, -12],
+        [-6, 0, -2], [-4, 0, 8], [6, 0, 14], [18, 0, 12], [26, 0, 4],
+        [30, 0, -6], [22, 0, -14], [10, 0, -16], [2, 0, -8], [0, 0, 6],
+        [0, 0, 20], [0, 0, 32]
+      ],
+      "path_width": 3.0,
+      "path_block": "path",
+      "base_position": [0, 0, 36],
+      "spawn_position": [-42, 0, -20],
+      "build_zones": [
+        {"pos": [-34, 0, -26], "radius": 3.5, "type": "ground"},
+        {"pos": [-24, 0, -12], "radius": 3.5, "type": "ground"},
+        {"pos": [-12, 2.5, -10], "radius": 3.0, "type": "tower", "elevation": 2.5},
+        {"pos": [8, 0, -24], "radius": 3.5, "type": "ground"},
+        {"pos": [14, 2.5, -6], "radius": 3.0, "type": "tower", "elevation": 2.5},
+        {"pos": [-14, 0, 4], "radius": 4.0, "type": "ground"},
+        {"pos": [12, 0, 2], "radius": 3.5, "type": "ground"},
+        {"pos": [30, 0, 14], "radius": 3.5, "type": "ground"},
+        {"pos": [-12, 3.0, 22], "radius": 4.0, "type": "wall", "elevation": 3.0},
+        {"pos": [12, 3.0, 22], "radius": 4.0, "type": "wall", "elevation": 3.0},
+        {"pos": [0, 3.5, 32], "radius": 3.0, "type": "keep", "elevation": 3.5}
+      ],
+      "structures": [
+        {"kind": "market_stalls", "area": [-30, -6, 60, 24], "count": 18},
+        {"kind": "tower", "pos": [-14, 0, 20], "size": [4, 12, 4], "block": "stone_bricks"},
+        {"kind": "tower", "pos": [10, 0, 20], "size": [4, 12, 4], "block": "stone_bricks"},
+        {"kind": "keep", "pos": [-5, 0, 32], "size": [10, 9, 8], "block": "stone_bricks"},
+        {"kind": "banner", "pos": [0, 9, 32], "color": "royal"},
+        {"kind": "rocks", "area": [-44, -44, 88, 88], "count": 20}
+      ],
+      "boss_arena": {"pos": [0, 0, 18], "radius": 10.0}
+    }
+  ]
+}

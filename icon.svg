@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="14" fill="#140507"/>
+  <rect x="10" y="10" width="108" height="108" rx="10" fill="none" stroke="#ff5a1f" stroke-width="4"/>
+  <!-- blocky head silhouette -->
+  <rect x="40" y="26" width="48" height="48" fill="#c9843c"/>
+  <rect x="40" y="26" width="48" height="16" fill="#3b2314"/>
+  <rect x="48" y="46" width="10" height="10" fill="#ffffff"/>
+  <rect x="70" y="46" width="10" height="10" fill="#ffffff"/>
+  <rect x="52" y="48" width="6" height="8" fill="#1a1a2e"/>
+  <rect x="70" y="48" width="6" height="8" fill="#1a1a2e"/>
+  <rect x="56" y="62" width="16" height="4" fill="#6b3a1e"/>
+  <!-- crown crack / unstable glitch -->
+  <path d="M20 96 L44 82 L52 100 L64 78 L76 104 L88 84 L108 96" fill="none" stroke="#ff5a1f" stroke-width="6" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,1126 @@
+{
+  "assets": [
+    {
+      "id": "4cvit",
+      "asset": "assets/skins/4cvit.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "arachn1d",
+      "asset": "assets/skins/arachn1d.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "armor_pattern",
+      "asset": "assets/textures/armor_pattern.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original",
+      "usage": "Armor/weapon surface detail",
+      "placeholder": false
+    },
+    {
+      "id": "ashswagg",
+      "asset": "assets/skins/ashswagg.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "audio_ability",
+      "asset": "assets/audio/ability.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_armor_break",
+      "asset": "assets/audio/armor_break.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_blimp",
+      "asset": "assets/audio/blimp.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_boss_down",
+      "asset": "assets/audio/boss_down.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_boss_generic",
+      "asset": "assets/audio/boss_generic.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_boss_intro",
+      "asset": "assets/audio/boss_intro.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_boss_saparata",
+      "asset": "assets/audio/boss_saparata.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_bow",
+      "asset": "assets/audio/bow.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_cannon",
+      "asset": "assets/audio/cannon.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_click",
+      "asset": "assets/audio/click.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_coin",
+      "asset": "assets/audio/coin.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_combat_caves",
+      "asset": "assets/audio/combat_caves.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_combat_cindercrest",
+      "asset": "assets/audio/combat_cindercrest.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_combat_law",
+      "asset": "assets/audio/combat_law.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_combat_mafia",
+      "asset": "assets/audio/combat_mafia.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_defeat",
+      "asset": "assets/audio/defeat.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_denied",
+      "asset": "assets/audio/denied.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_drop",
+      "asset": "assets/audio/drop.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_ember",
+      "asset": "assets/audio/ember.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_explosion",
+      "asset": "assets/audio/explosion.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_leak",
+      "asset": "assets/audio/leak.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_levelup",
+      "asset": "assets/audio/levelup.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_magic",
+      "asset": "assets/audio/magic.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_map_fort_feather",
+      "asset": "assets/audio/map_fort_feather.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_map_merchant_city",
+      "asset": "assets/audio/map_merchant_city.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_menu",
+      "asset": "assets/audio/menu.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_place",
+      "asset": "assets/audio/place.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_relationship",
+      "asset": "assets/audio/relationship.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_sell",
+      "asset": "assets/audio/sell.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_swing",
+      "asset": "assets/audio/swing.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_totem",
+      "asset": "assets/audio/totem.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_upgrade",
+      "asset": "assets/audio/upgrade.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "audio_victory",
+      "asset": "assets/audio/victory.wav",
+      "type": "music",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Music track",
+      "placeholder": false
+    },
+    {
+      "id": "audio_wave_start",
+      "asset": "assets/audio/wave_start.wav",
+      "type": "sfx",
+      "source": "generated",
+      "creator": "UNSTABLE: LAST STAND build tools (tools/gen_audio.py)",
+      "license": "Project-original. Synthesised from scratch; no sampled or third-party audio.",
+      "usage": "Sound effect",
+      "placeholder": false
+    },
+    {
+      "id": "block_basalt",
+      "asset": "assets/textures/block_basalt.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_blackstone",
+      "asset": "assets/textures/block_blackstone.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_cobble",
+      "asset": "assets/textures/block_cobble.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_crying",
+      "asset": "assets/textures/block_crying.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_dark_planks",
+      "asset": "assets/textures/block_dark_planks.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_dead_leaves",
+      "asset": "assets/textures/block_dead_leaves.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_dirt",
+      "asset": "assets/textures/block_dirt.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_glass",
+      "asset": "assets/textures/block_glass.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_gold_block",
+      "asset": "assets/textures/block_gold_block.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_grass_side",
+      "asset": "assets/textures/block_grass_side.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_grass_top",
+      "asset": "assets/textures/block_grass_top.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_gravel",
+      "asset": "assets/textures/block_gravel.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_iron_block",
+      "asset": "assets/textures/block_iron_block.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_lava",
+      "asset": "assets/textures/block_lava.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_leaves",
+      "asset": "assets/textures/block_leaves.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_log_side",
+      "asset": "assets/textures/block_log_side.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_log_top",
+      "asset": "assets/textures/block_log_top.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_magma",
+      "asset": "assets/textures/block_magma.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_netherrack",
+      "asset": "assets/textures/block_netherrack.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_obsidian",
+      "asset": "assets/textures/block_obsidian.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_path",
+      "asset": "assets/textures/block_path.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_planks",
+      "asset": "assets/textures/block_planks.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_sand",
+      "asset": "assets/textures/block_sand.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_snow",
+      "asset": "assets/textures/block_snow.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_stone",
+      "asset": "assets/textures/block_stone.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_stone_bricks",
+      "asset": "assets/textures/block_stone_bricks.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_tnt_side",
+      "asset": "assets/textures/block_tnt_side.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_tnt_top",
+      "asset": "assets/textures/block_tnt_top.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_water",
+      "asset": "assets/textures/block_water.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_wool_black",
+      "asset": "assets/textures/block_wool_black.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_wool_blue",
+      "asset": "assets/textures/block_wool_blue.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_wool_gold",
+      "asset": "assets/textures/block_wool_gold.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_wool_red",
+      "asset": "assets/textures/block_wool_red.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "block_wool_white",
+      "asset": "assets/textures/block_wool_white.png",
+      "type": "texture",
+      "source": "generated",
+      "creator": "build tools",
+      "license": "Project-original pixel art",
+      "usage": "Map block texture",
+      "placeholder": false
+    },
+    {
+      "id": "chungie",
+      "asset": "assets/skins/chungie.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "chungie_b",
+      "asset": "assets/skins/chungie_b.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "chungie_c",
+      "asset": "assets/skins/chungie_c.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "slim",
+      "placeholder": true
+    },
+    {
+      "id": "cindercrest_soldier",
+      "asset": "assets/skins/cindercrest_soldier.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "clownpierce",
+      "asset": "assets/skins/clownpierce.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "deputy_ace",
+      "asset": "assets/skins/deputy_ace.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "eggchan",
+      "asset": "assets/skins/eggchan.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "flamefrags",
+      "asset": "assets/skins/flamefrags.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "fymada",
+      "asset": "assets/skins/fymada.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "jaden_man",
+      "asset": "assets/skins/jaden_man.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "lawman",
+      "asset": "assets/skins/lawman.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "leow0ok",
+      "asset": "assets/skins/leow0ok.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "slim",
+      "placeholder": true
+    },
+    {
+      "id": "lettucek",
+      "asset": "assets/skins/lettucek.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "lomedy",
+      "asset": "assets/skins/lomedy.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "mafia_invis",
+      "asset": "assets/skins/mafia_invis.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "mapicc",
+      "asset": "assets/skins/mapicc.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "minutetech",
+      "asset": "assets/skins/minutetech.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "parrotx2",
+      "asset": "assets/skins/parrotx2.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "pirate",
+      "asset": "assets/skins/pirate.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "princezam",
+      "asset": "assets/skins/princezam.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "purpled",
+      "asset": "assets/skins/purpled.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "reddoons",
+      "asset": "assets/skins/reddoons.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "reinadrop",
+      "asset": "assets/skins/reinadrop.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "slim",
+      "placeholder": true
+    },
+    {
+      "id": "royal_soldier",
+      "asset": "assets/skins/royal_soldier.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "saparata",
+      "asset": "assets/skins/saparata.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "sargelaw",
+      "asset": "assets/skins/sargelaw.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "shoebilly",
+      "asset": "assets/skins/shoebilly.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "spepticle",
+      "asset": "assets/skins/spepticle.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "spokeishere",
+      "asset": "assets/skins/spokeishere.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "slim",
+      "placeholder": true
+    },
+    {
+      "id": "theobaldthebird",
+      "asset": "assets/skins/theobaldthebird.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "uv_test",
+      "asset": "assets/skins/uv_test.png",
+      "type": "skin",
+      "source": "generated_test",
+      "creator": "build tools",
+      "license": "Project-original",
+      "usage": "Automated UV-mapping test",
+      "placeholder": true
+    },
+    {
+      "id": "uv_test_legacy",
+      "asset": "assets/skins/uv_test_legacy.png",
+      "type": "skin",
+      "source": "generated_test",
+      "creator": "build tools",
+      "license": "Project-original",
+      "usage": "Automated UV-mapping test",
+      "placeholder": true
+    },
+    {
+      "id": "wemmbu",
+      "asset": "assets/skins/wemmbu.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "yungyx",
+      "asset": "assets/skins/yungyx.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "classic",
+      "placeholder": true
+    },
+    {
+      "id": "zoe",
+      "asset": "assets/skins/zoe.png",
+      "type": "skin",
+      "source": "generated_placeholder",
+      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
+      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "usage": "Character 3D model texture",
+      "model": "slim",
+      "placeholder": true
+    }
+  ],
+  "notes": [
+    "Placeholder skins are procedurally generated and are NOT the real creators' skins.",
+    "To use a real skin: place a Minecraft-compatible 64x64 (or 64x32 / HD) PNG at assets/skins/<id>.png (or user://skins/<id>.png at runtime) and update this manifest's source/license fields. Supplied files are never overwritten by tools/gen_assets.py.",
+    "No Mojang/Minecraft game assets are included. Block textures, item models, character geometry and all audio are original, generated by tools/gen_assets.py and tools/gen_audio.py.",
+    "This is an unofficial fan project. It is not affiliated with, endorsed by, or sponsored by the Unstable Universe creators or Mojang/Microsoft."
+  ],
+  "summary": {
+    "total": 107,
+    "by_type": {
+      "skin": 38,
+      "texture": 35,
+      "sfx": 23,
+      "music": 11
+    },
+    "placeholders": 38
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "map": "merchant_city",
+  "faction": "cindercrest",
+  "waves": [
+    {"name": "Through the Gate", "reward": 110, "groups": [
+      {"enemy": "chungie_t2", "count": 12, "interval": 0.6, "delay": 0.0}
+    ], "events": [{"type": "dialogue", "at": 0.5, "speaker": "parrotx2", "text": "They followed us through the tunnel. Of course they did."}]},
+    {"name": "Market Raiders", "reward": 130, "groups": [
+      {"enemy": "chungie_t2", "count": 10, "interval": 0.5, "delay": 0.0},
+      {"enemy": "speedster", "count": 8, "interval": 0.5, "delay": 3.0}
+    ]},
+    {"name": "Rooftop Archers", "reward": 150, "groups": [
+      {"enemy": "chungie_t3", "count": 10, "interval": 0.6, "delay": 0.0},
+      {"enemy": "archer", "count": 6, "interval": 1.2, "delay": 3.0}
+    ]},
+    {"name": "Diamond Column", "reward": 180, "groups": [
+      {"enemy": "chungie_t3", "count": 16, "interval": 0.5, "delay": 0.0},
+      {"enemy": "potion_brewer", "count": 3, "interval": 2.0, "delay": 6.0}
+    ]},
+    {"name": "Invisible in the Crowd", "reward": 210, "groups": [
+      {"enemy": "invisible_player", "count": 8, "interval": 0.9, "delay": 0.0},
+      {"enemy": "chungie_t3", "count": 12, "interval": 0.5, "delay": 4.0}
+    ], "events": [{"type": "announce", "at": 0.5, "text": "INVISIBLE", "subtitle": "In a crowded market, nobody sees them coming."}]},
+    {"name": "Pearl Runners", "reward": 240, "groups": [
+      {"enemy": "pearl_runner", "count": 10, "interval": 0.7, "delay": 0.0},
+      {"enemy": "chungie_t4", "count": 10, "interval": 0.8, "delay": 4.0}
+    ]},
+    {"name": "Enchanted Push", "reward": 280, "groups": [
+      {"enemy": "chungie_t4", "count": 16, "interval": 0.6, "delay": 0.0},
+      {"enemy": "shield_bearer", "count": 4, "interval": 2.0, "delay": 5.0}
+    ]},
+    {"name": "Cart Assault", "reward": 320, "groups": [
+      {"enemy": "minecart_rider", "count": 10, "interval": 0.6, "delay": 0.0},
+      {"enemy": "tnt_minecart", "count": 6, "interval": 1.6, "delay": 4.0}
+    ]},
+    {"name": "Netherite in the Streets", "reward": 380, "groups": [
+      {"enemy": "chungie_t5", "count": 14, "interval": 0.8, "delay": 0.0},
+      {"enemy": "assassin", "count": 8, "interval": 1.0, "delay": 5.0}
+    ]},
+    {"name": "The Maces Come Out", "reward": 450, "groups": [
+      {"enemy": "chungie_t6", "count": 8, "interval": 1.3, "delay": 0.0},
+      {"enemy": "chungie_t5", "count": 12, "interval": 0.5, "delay": 4.0},
+      {"enemy": "elytra_glider", "count": 8, "interval": 0.8, "delay": 8.0}
+    ]},
+    {"name": "ShoeBilly_ Returns", "reward": 900, "boss": true, "groups": [
+      {"enemy": "chungie_t6", "count": 12, "interval": 0.8, "delay": 0.0},
+      {"enemy": "shoebilly", "count": 1, "interval": 1.0, "delay": 4.0, "lateral": 0.0, "hp_mult": 1.6},
+      {"enemy": "assassin", "count": 10, "interval": 0.9, "delay": 6.0},
+      {"enemy": "chungie_t7", "count": 2, "interval": 4.0, "delay": 12.0}
+    ], "events": [
+      {"type": "minibossintro", "at": 4.0, "enemy": "shoebilly", "name": "ShoeBilly_", "title": "He maces until they retreat"},
+      {"type": "dialogue", "at": 4.5, "speaker": "theobaldthebird", "text": "His armour broke last time. He came back anyway."}
+    ]}
+  ]
+}

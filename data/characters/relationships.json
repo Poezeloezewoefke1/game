@@ -1,0 +1,152 @@
+{
+  "_schema": {
+    "note": "Relationship bonuses activate when both members are placed on the map (a hero counts as their character). Every pair is grounded in a sourced relationship from the research database — none are invented. The BONUS EFFECT is a game mechanic; the relationship itself is the researched part.",
+    "effects": "damage_mult, rate_mult, range_add, income_add, armor_pen_add, applies_to (both|a|b), plus optional special flags."
+  },
+  "relationships": [
+    {
+      "id": "parrot_theo", "a": "parrotx2", "b": "theobaldthebird", "name": "Best Friend and Bodyguard",
+      "basis": "Theo is Parrot's best friend and loyal bodyguard, highly protective of him. They met in the Far Lands, Theo helped him lead the Warriors District, saved him from two withers at spawn, and fought beside him through the Kings Arc and the Civil War.",
+      "confidence": "canon_confirmed",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/TheobaldTheBird", "https://unstable-universe-mc.fandom.com/wiki/ParrotX2/Relationships"],
+      "effects": {"damage_mult": 1.25, "rate_mult": 0.88, "applies_to": "both"},
+      "flavor": "\"Theo would protect him at all costs.\""
+    },
+    {
+      "id": "wemmbu_egg", "a": "wemmbu", "b": "eggchan", "name": "Egg and Wemm",
+      "basis": "Eggchan is Wemmbu's best friend, teammate and comic relief, one of the few people he trusts. They co-founded the Egg Civilization and stuck together after the Mafia fell.",
+      "confidence": "canon_confirmed",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Eggchan", "https://unstable-universe-mc.fandom.com/wiki/Wemmbu/Relationships"],
+      "effects": {"damage_mult": 1.2, "income_add": 40, "applies_to": "both"},
+      "flavor": "\"He always allies himself with Wemmbu.\""
+    },
+    {
+      "id": "flame_lomedy", "a": "flamefrags", "b": "lomedy", "name": "The Farmer and the Duelist",
+      "basis": "Lomedy gave Flame his old teammate's mace and built the TNT cannons that won the Toxic War. Flame later broke into a Law prison for him, apologised, and returned the mace.",
+      "confidence": "canon_confirmed",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Lomedy", "https://unstable-universe-mc.fandom.com/wiki/FlameFrags/Relationships", "https://unstable-universe-mc.fandom.com/wiki/Toxic_War_Arc"],
+      "effects": {"damage_mult": 1.3, "armor_pen_add": 0.15, "applies_to": "both"},
+      "flavor": "\"He was right about me needing to change.\""
+    },
+    {
+      "id": "spoke_mapicc", "a": "spokeishere", "b": "mapicc", "name": "Spoke and Mapicc",
+      "basis": "Mapicc is Spoke's best friend and deuteragonist — loyal, gullible and silly. They infiltrated the Mafia together and broke into the spawn prison. Spoke later wind-charged him into the void.",
+      "confidence": "canon_confirmed",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Mapicc", "https://unstable-universe-mc.fandom.com/wiki/SpokeIsHere/Relationships"],
+      "effects": {"damage_mult": 1.28, "rate_mult": 0.9, "applies_to": "both"},
+      "flavor": "\"Loyal to a fault. That was always the problem.\""
+    },
+    {
+      "id": "spoke_leo", "a": "spokeishere", "b": "leow0ok", "name": "Bounty Assassin Team",
+      "basis": "Leo led the Bounty Assassin Team, of which Spoke was a member; they worked together through the Invisible Mafia arc and both ranked inside the Mafia.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Bounty_Assassin_Team", "https://unstable-universe-mc.fandom.com/wiki/Leow0ok"],
+      "effects": {"damage_mult": 1.15, "range_add": 2.0, "applies_to": "both"},
+      "flavor": "\"Investigate. Neutralise. Collect.\""
+    },
+    {
+      "id": "spoke_minute", "a": "spokeishere", "b": "minutetech", "name": "The Double Agent",
+      "basis": "MinuteTech saved Spoke and Mapicc from a Mafia ambush and, posing as a diamond-rank player, let them escape.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Invisible_Mafia_Arc"],
+      "effects": {"damage_mult": 1.15, "rate_mult": 0.9, "applies_to": "both"},
+      "flavor": "\"He only works with people who prove it twice.\""
+    },
+    {
+      "id": "mapicc_minute", "a": "mapicc", "b": "minutetech", "name": "Saved Twice",
+      "basis": "MinuteTech rescued Mapicc alongside Spoke and agreed to work with them after a second attack.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Invisible_Mafia_Arc"],
+      "effects": {"rate_mult": 0.9, "applies_to": "both"},
+      "flavor": "\"Second time's the charm.\""
+    },
+    {
+      "id": "parrot_reina", "a": "parrotx2", "b": "reinadrop", "name": "The Last of Skymore",
+      "basis": "Reina is the tritagonist of Parrot's Kingdoms Saga POV and one of only two survivors of the Skymore civilization he founded.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/ReinaDrop", "https://unstable-universe-mc.fandom.com/wiki/Skymore_Civilization"],
+      "effects": {"damage_mult": 1.18, "special": ["repair_bonus"], "repair_bonus": 1, "applies_to": "both"},
+      "flavor": "\"A thousand went. Two came back.\""
+    },
+    {
+      "id": "parrot_ace", "a": "parrotx2", "b": "deputy_ace", "name": "I'd Rather Die Standing",
+      "basis": "Deputy_Ace freed Parrot and Theo from LettuceK's execution and was killed by SargeLAW for it.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Deputy_Ace", "https://unstable-universe-mc.fandom.com/wiki/The_Kings_Arc"],
+      "effects": {"damage_mult": 1.2, "special": ["leak_reduction"], "leak_reduction": 1, "applies_to": "both"},
+      "flavor": "\"I'd rather die standing than live kneeling.\""
+    },
+    {
+      "id": "parrot_spepticle", "a": "parrotx2", "b": "spepticle", "name": "The Owl",
+      "basis": "Spepticle sent Parrot the notes that led into the Kings Arc as 'The Owl', and was executed in Parrot's place.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Spepticle"],
+      "effects": {"damage_mult": 1.15, "range_add": 2.5, "applies_to": "both"},
+      "flavor": "\"Attend the meeting. — The Owl\""
+    },
+    {
+      "id": "theo_flame", "a": "theobaldthebird", "b": "flamefrags", "name": "Trained by a TNT Master",
+      "basis": "Flame sought Theo out to train in TNT minecart combat.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/I_Got_Trained_By_a_Minecraft_TNT_Master"],
+      "effects": {"damage_mult": 1.18, "applies_to": "both"},
+      "flavor": "\"Timing and feet placement. That's all carting is.\""
+    },
+    {
+      "id": "wemmbu_theo", "a": "wemmbu", "b": "theobaldthebird", "name": "Secretly Helping",
+      "basis": "During the Pirate Arc, Theo revealed he had been secretly helping Wemmbu and Eggchan against Jaden all along.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Pirate_Arc"],
+      "effects": {"damage_mult": 1.15, "applies_to": "both"},
+      "flavor": "\"Who do you think blew up the castle?\""
+    },
+    {
+      "id": "wemmbu_jaden", "a": "wemmbu", "b": "jaden_man", "name": "Enemy, Ally, Enemy",
+      "basis": "Jaden has been both antagonist and ally to Wemmbu several times over, and was the tritagonist of Wemmbu's Kingdoms POV.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Jaden_MAN"],
+      "effects": {"damage_mult": 1.22, "special": ["loyal"], "applies_to": "both"},
+      "flavor": "\"He stops switching sides when Wemmbu is watching.\""
+    },
+    {
+      "id": "flame_jaden", "a": "flamefrags", "b": "jaden_man", "name": "Back and Forth",
+      "basis": "Jaden was an antagonist for both Wemmbu and Flame as well as an ally for both, switching several times.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Wemmbu/Relationships", "https://unstable-universe-mc.fandom.com/wiki/Jaden_MAN"],
+      "effects": {"damage_mult": 1.15, "applies_to": "both"},
+      "flavor": "\"Whichever way the wind blows.\""
+    },
+    {
+      "id": "parrot_purpled", "a": "parrotx2", "b": "purpled", "name": "Warriors Council",
+      "basis": "Purpled led the Warriors District in the Far Lands before the council vote made Parrot leader.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Purpled", "https://unstable-universe-mc.fandom.com/wiki/Warriors_Council"],
+      "effects": {"damage_mult": 1.15, "range_add": 1.5, "applies_to": "both"},
+      "flavor": "\"The council voted. The warriors still fight.\""
+    },
+    {
+      "id": "parrot_fymada", "a": "parrotx2", "b": "fymada", "name": "Evacuate the City",
+      "basis": "Parrot instructed Fymada, Mayor of Capitol City, to evacuate all citizens during the Battle for Capital City.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Unstable_SMP:_Civil_War_FINALE", "https://unstable-universe-mc.fandom.com/wiki/Fymada"],
+      "effects": {"income_add": 50, "special": ["lives_bonus"], "lives_bonus": 5, "applies_to": "both"},
+      "flavor": "\"Get them out. All of them.\""
+    },
+    {
+      "id": "parrot_4cvit", "a": "parrotx2", "b": "4cvit", "name": "Steampunk City",
+      "basis": "4CVIT is the mayor of Steampunk City, one of the major cities of Parrot's Kingdom.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Steampunk_City", "https://unstable-universe-mc.fandom.com/wiki/Parrot's_Kingdom"],
+      "effects": {"rate_mult": 0.9, "applies_to": "both"},
+      "flavor": "\"Every gate in the city is wired.\""
+    },
+    {
+      "id": "lomedy_theo", "a": "lomedy", "b": "theobaldthebird", "name": "Cannons and Carts",
+      "basis": "GAME MECHANIC pairing of two sourced TNT specialists: Lomedy built the TNT cannons of the Toxic War, and Theo is the server's cart master who trained Flame.",
+      "confidence": "supported",
+      "sources": ["https://unstable-universe-mc.fandom.com/wiki/Toxic_War_Arc", "https://unstable-universe-mc.fandom.com/wiki/Blog:Cart_PvP/Carting"],
+      "effects": {"damage_mult": 1.2, "special": ["splash_bonus"], "splash_bonus": 0.6, "applies_to": "both"},
+      "flavor": "\"One aims. One rolls.\""
+    }
+  ]
+}

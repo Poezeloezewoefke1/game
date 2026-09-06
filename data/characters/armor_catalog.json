@@ -1,0 +1,15 @@
+{
+  "armor": {
+    "leather": {"name": "Leather", "points": 1, "color": "#94592b", "note": "Dyed leather. Fresh spawns."},
+    "chainmail": {"name": "Chainmail", "points": 2, "color": "#8c919e", "note": "Rare drop-tier armor."},
+    "gold": {"name": "Gold", "points": 2, "color": "#f7c738", "note": "Fast but flimsy; used by speedsters and totem carriers."},
+    "iron": {"name": "Iron", "points": 3, "color": "#dbdbe0", "note": "The Royal Army standard."},
+    "diamond": {"name": "Diamond", "points": 4, "color": "#54ded9", "note": "Mid-war standard."},
+    "netherite": {"name": "Netherite", "points": 5, "color": "#4d454a", "note": "Cindercrest equips thousands in it."},
+    "royal": {"name": "Royal Livery", "points": 3, "color": "#406bd9", "note": "GAME PALETTE for Parrot's Kingdom troops."},
+    "cinder": {"name": "Cindercrest Livery", "points": 4, "color": "#9e2914", "note": "GAME PALETTE for Cindercrest capes and banners."}
+  },
+  "suffixes": {"_enchanted": "Adds Protection-style glint: +1 armor point per piece and shimmer."},
+  "slots": ["helmet", "chestplate", "leggings", "boots", "cape", "crown", "elytra"],
+  "damage_formula": "effective = max(min_damage, damage * (1 - armor_pct * (1 - armor_pen)) )   (see scripts/enemies/damage_calc.gd)"
+}

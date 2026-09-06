@@ -1,0 +1,110 @@
+{
+  "_schema": {
+    "note": "The player picks exactly ONE hero per run. Heroes level up during a run (XP from kills) and gain abilities at set levels.",
+    "abilities": "slot 0-2 = actives (keys 1/2/3), slot 3 = ultimate (key 4/R). Each has cooldown, unlock level and an effect block resolved in scripts/heroes/hero.gd.",
+    "lore_marking": "Every ability description states whether it is drawn from a sourced event or is a GAME MECHANIC invented for the tower-defense format.",
+    "levels": "Level 1-20. xp_curve(level) = 60 + level*45."
+  },
+  "heroes": [
+    {
+      "id": "wemmbu", "name": "Wemmbu", "title": "The Strongest Player",
+      "character": "wemmbu", "difficulty": "Medium", "role": "Aggressive Damage",
+      "cost": 0, "damage": 34, "range": 7.0, "attack_time": 0.7, "damage_type": "melee",
+      "attack_style": "slam", "targeting": "strong", "pierce": 2, "splash": 1.2, "armor_pen": 0.35,
+      "weapon": "netherite_mace_enchanted", "armor": {"chestplate": "netherite_enchanted", "leggings": "netherite", "boots": "netherite"},
+      "detect_invisible": false, "hit_air": true, "projectile": "melee_slam",
+      "summary": "Loud, reckless and impossible to finish off. Wemmbu fights with the mace Gambit and calls down Orbital Strike Cannons when he is outnumbered.",
+      "lore": "One of the four protagonists. He holds two of the last maces on the server — Gambit (Density V, Mending, Unbreaking III, Fire Aspect II, Wind Burst II) and Crucible (Breach) — and the orbital strike cannons. He has been betrayed by PrinceZam, imprisoned by ClownPierce, dropped into a pit by Arachn1d with nothing but a Golden Apple and a Totem, and still ended the Battle for Capital City by annihilating thousands of Cindercrest soldiers.",
+      "lore_confidence": "canon_confirmed",
+      "strengths": ["Highest single-target damage of the four", "Scales into late waves", "Ultimate clears an entire section of path"],
+      "weaknesses": ["No support or economy", "Short range until levelled", "Ultimate has a long cooldown"],
+      "level_stats": {"damage_per_level": 6.5, "range_per_level": 0.12, "rate_per_level": 0.012},
+      "passives": [
+        {"name": "Gambit", "unlock": 1, "desc": "The mace hits harder the higher the ground it strikes from. +35% damage per unit of elevation over the target, up to +150%. (From the mace's Density mechanic.)", "effect": {"type": "mace_height"}},
+        {"name": "Wind Burst", "unlock": 5, "desc": "Every third hit knocks enemies back down the path. (From Gambit's Wind Burst II enchantment.)", "effect": {"type": "periodic_knockback", "every": 3, "force": 2.0}},
+        {"name": "Totem of Undying", "unlock": 12, "desc": "GAME MECHANIC: when the base would take a fatal leak, Wemmbu stops it once per run. Inspired by the pit Arachn1d dropped him into.", "effect": {"type": "death_save", "uses": 1}}
+      ],
+      "abilities": [
+        {"slot": 0, "name": "Stab Shot", "unlock": 1, "cooldown": 14.0, "desc": "Calls a focused orbital strike on the strongest enemy: 260 explosive damage in a 3-unit blast, shattering armor. (Wemmbu used stab shots to break ShoeBilly's helmet at Steampunk City.)", "lore_confidence": "supported", "effect": {"type": "strike", "damage": 260, "radius": 3.0, "damage_type": "explosive", "armor_pen": 0.7, "target": "strongest", "shake": 0.5}},
+        {"slot": 1, "name": "Cobweb Trap", "unlock": 4, "cooldown": 18.0, "desc": "GAME MECHANIC: throws cobwebs over a stretch of path, cutting enemy speed by 70% for 5 seconds. (Wemmbu trapped ShoeBilly in webs.)", "lore_confidence": "supported", "effect": {"type": "area_slow", "radius": 5.0, "slow_mult": 0.3, "duration": 5.0, "at": "self"}},
+        {"slot": 2, "name": "Clutch", "unlock": 8, "cooldown": 30.0, "desc": "GAME MECHANIC: Golden Apple and Totem. For 8 seconds Wemmbu attacks twice as fast and cannot be disabled.", "lore_confidence": "supported", "effect": {"type": "self_buff", "duration": 8.0, "rate_mult": 0.5, "damage_mult": 1.3, "stun_immune": true}},
+        {"slot": 3, "name": "Orbital Strike: Nuke Shot", "unlock": 10, "cooldown": 70.0, "desc": "ULTIMATE. Hundreds of TNT fall along the whole lane in front of Wemmbu: 900 explosive damage in a 9-unit radius, ignoring most armor. (The nuke shot at the Battle for Capital City.)", "lore_confidence": "canon_confirmed", "effect": {"type": "strike", "damage": 900, "radius": 9.0, "damage_type": "explosive", "armor_pen": 0.85, "target": "densest", "shake": 1.2, "delay": 1.1, "telegraph": true}}
+      ]
+    },
+    {
+      "id": "flamefrags", "name": "FlameFrags", "title": "The Duelist",
+      "character": "flamefrags", "difficulty": "Easy", "role": "Duelist / Survivability",
+      "cost": 0, "damage": 26, "range": 6.5, "attack_time": 0.45, "damage_type": "melee",
+      "attack_style": "slash", "targeting": "first", "pierce": 1, "splash": 0.0, "armor_pen": 0.25,
+      "weapon": "netherite_sword_enchanted", "armor": {"helmet": "diamond", "chestplate": "diamond", "leggings": "diamond", "boots": "diamond"},
+      "detect_invisible": false, "hit_air": false, "projectile": "melee_swing",
+      "summary": "The best duelist on the server. Flame wins fights nobody expects him to and gets stronger the longer he stands his ground.",
+      "lore": "The fourth protagonist, uploading since Season 2. He survived a toxic civilization with a borrowed mace, beat their leader 1v1, fought the Farm War in netherite armor with no weapons, broke into a Law prison for Lomedy, trained in TNT minecarts with Theo, and joined Cindercrest in Season 3 only to protect Lomedy.",
+      "lore_confidence": "canon_confirmed",
+      "strengths": ["Fastest attack speed", "Excellent sustained single-target damage", "Duel ability shuts down a mini-boss"],
+      "weaknesses": ["Poor against crowds", "No air coverage without levels", "Low utility for the team"],
+      "level_stats": {"damage_per_level": 4.8, "range_per_level": 0.1, "rate_per_level": 0.016},
+      "passives": [
+        {"name": "1v1 Me", "unlock": 1, "desc": "GAME MECHANIC: +40% damage against whichever enemy Flame has been attacking longest, growing to +120% over 4 seconds.", "effect": {"type": "focus_ramp", "max_bonus": 1.2, "ramp_time": 4.0}},
+        {"name": "Lomedy's Mace", "unlock": 6, "desc": "GAME MECHANIC: every 6th hit lands as a mace blow with a 2-unit blast. (Lomedy gave Flame his old teammate's mace.)", "effect": {"type": "periodic_splash", "every": 6, "radius": 2.0, "mult": 1.8}},
+        {"name": "Trained by Theo", "unlock": 14, "desc": "GAME MECHANIC: Flame's kills drop a TNT minecart that explodes for 120 damage. (He trained in cart combat with TheobaldTheBird.)", "effect": {"type": "kill_explosion", "damage": 120, "radius": 2.4}}
+      ],
+      "abilities": [
+        {"slot": 0, "name": "Duel Challenge", "unlock": 1, "cooldown": 16.0, "desc": "GAME MECHANIC: locks the nearest elite, mini-boss or boss into a duel — it stops moving for 3 seconds and takes 220 damage.", "lore_confidence": "supported", "effect": {"type": "duel", "damage": 220, "stun": 3.0, "prefer_boss": true}},
+        {"slot": 1, "name": "Farm War", "unlock": 4, "cooldown": 22.0, "desc": "GAME MECHANIC: no weapons, just netherite. For 7 seconds Flame takes no disables and every hit heals the base by 1 life (max 6). (From the Farm War, fought in armor with no weapons.)", "lore_confidence": "supported", "effect": {"type": "self_buff", "duration": 7.0, "stun_immune": true, "lifesteal_lives": 1, "lifesteal_cap": 6, "rate_mult": 0.7}},
+        {"slot": 2, "name": "Prison Break", "unlock": 8, "cooldown": 26.0, "desc": "GAME MECHANIC: Flame charges 8 units down the path, hitting everything for 180 and stunning for 1.5 seconds. (He broke into the Law prison for Lomedy.)", "lore_confidence": "supported", "effect": {"type": "dash", "distance": 8.0, "damage": 180, "stun": 1.5, "radius": 2.5}},
+        {"slot": 3, "name": "The Better Fighter", "unlock": 10, "cooldown": 60.0, "desc": "ULTIMATE. For 12 seconds Flame attacks three times as fast with +100% damage and full armor pierce — the skill that beat the toxic civilization's leader 1v1.", "lore_confidence": "supported", "effect": {"type": "self_buff", "duration": 12.0, "rate_mult": 0.34, "damage_mult": 2.0, "armor_pen_add": 0.75, "stun_immune": true, "aura": true}}
+      ]
+    },
+    {
+      "id": "parrotx2", "name": "ParrotX2", "title": "The First King",
+      "character": "parrotx2", "difficulty": "Easy", "role": "Leadership / Strategy",
+      "cost": 0, "damage": 16, "range": 8.5, "attack_time": 1.0, "damage_type": "ranged",
+      "attack_style": "point", "targeting": "first", "pierce": 2, "splash": 0.0, "armor_pen": 0.1,
+      "weapon": "royal_banner", "armor": {"helmet": "gold", "chestplate": "royal", "cape": "royal", "crown": "gold"},
+      "detect_invisible": true, "hit_air": true, "projectile": "arrow",
+      "summary": "A king, not a brawler. Parrot makes every tower around him better, funds the defence, and calls in the Royal Army when the line breaks.",
+      "lore": "The first King of the Unstable SMP. He led the Warriors District in the Far Lands, founded District 13 after the Mafia destroyed it, refused LettuceK's bribe and won the restarted election, built Fort Feather to train an army, and lost his kingdom to Saparata at the Battle for Capital City.",
+      "lore_confidence": "canon_confirmed",
+      "strengths": ["Buffs and funds the entire defence", "Detects invisible enemies from level 1", "Summons allies that block the path"],
+      "weaknesses": ["Weak personal damage", "Depends on having towers to buff", "Expensive to position well"],
+      "level_stats": {"damage_per_level": 2.4, "range_per_level": 0.25, "rate_per_level": 0.008},
+      "passives": [
+        {"name": "The King's Banner", "unlock": 1, "desc": "GAME MECHANIC: towers within 9 units gain +15% damage and +10% attack speed, rising with Parrot's level.", "effect": {"type": "aura", "radius": 9.0, "damage": 0.15, "rate": 0.10, "per_level_damage": 0.012, "per_level_rate": 0.008}},
+        {"name": "Kingdom Treasury", "unlock": 3, "desc": "GAME MECHANIC: +30 emeralds every 8 seconds, growing with level. (Parrot's kingdom ran on organised cities and trade.)", "effect": {"type": "income", "amount": 30, "interval": 8.0, "per_level": 6}},
+        {"name": "First 100 Days", "unlock": 15, "desc": "GAME MECHANIC: every wave cleared restores 3 lives. (Parrot promised to resign if new players could not spawn safely in 100 days.)", "effect": {"type": "wave_repair", "lives": 3}}
+      ],
+      "abilities": [
+        {"slot": 0, "name": "Royal Decree", "unlock": 1, "cooldown": 20.0, "desc": "GAME MECHANIC: for 8 seconds every tower on the map attacks 45% faster.", "lore_confidence": "supported", "effect": {"type": "global_buff", "duration": 8.0, "rate_mult": 0.55}},
+        {"slot": 1, "name": "Fort Feather", "unlock": 4, "cooldown": 26.0, "desc": "GAME MECHANIC: raises a fortified wall on the path with 2000 HP that blocks the advance. (Parrot built Fort Feather to hold Cindercrest, then blew it up with TNT.)", "lore_confidence": "canon_confirmed", "effect": {"type": "wall", "hp": 2000, "detonate_damage": 300, "detonate_radius": 4.0}},
+        {"slot": 2, "name": "Royal Army", "unlock": 8, "cooldown": 34.0, "desc": "GAME MECHANIC: summons four Royal Army soldiers who fight along the path for 18 seconds.", "lore_confidence": "canon_confirmed", "effect": {"type": "summon", "count": 4, "duration": 18.0, "damage": 45, "rate": 0.9, "range": 6.0, "character": "royal_soldier"}},
+        {"slot": 3, "name": "I Became King", "unlock": 10, "cooldown": 75.0, "desc": "ULTIMATE. For 15 seconds every tower gains +100% damage, +60% attack speed and +3 range, and the base cannot lose more than 1 life per leak.", "lore_confidence": "canon_confirmed", "effect": {"type": "global_buff", "duration": 15.0, "rate_mult": 0.4, "damage_mult": 2.0, "range_add": 3.0, "leak_cap": 1}}
+      ]
+    },
+    {
+      "id": "spokeishere", "name": "SpokeIsHere", "title": "Leader of the NULL",
+      "character": "spokeishere", "difficulty": "Hard", "role": "Manipulation / Control",
+      "cost": 0, "damage": 20, "range": 9.5, "attack_time": 0.9, "damage_type": "magic",
+      "attack_style": "cast", "targeting": "strong", "pierce": 3, "splash": 1.6, "armor_pen": 0.2,
+      "weapon": "totem", "armor": {"chestplate": "netherite", "boots": "netherite"},
+      "detect_invisible": true, "hit_air": true, "projectile": "wind_charge",
+      "summary": "Wins by making the other side lose. Spoke turns enemies against each other, drops them off the path, and takes over the wave itself.",
+      "lore": "One of the four protagonists. He infiltrated Ashswagg's Invisible Mafia, spared Ash rather than prove him right, founded the Spoke Galactic Empire with 1,000 players, forced JamatoP to surrender the Totem of NULL, and rebuilt the NULL from scattered bounty hunters into an army. He also wind-charged his best friend Mapicc into the void.",
+      "lore_confidence": "canon_confirmed",
+      "strengths": ["Best crowd control of the four", "Turns elite enemies into temporary allies", "Sees everything invisible"],
+      "weaknesses": ["Lowest direct damage", "Abilities need good timing to pay off", "Punished by fast waves if misplayed"],
+      "level_stats": {"damage_per_level": 3.6, "range_per_level": 0.22, "rate_per_level": 0.01},
+      "passives": [
+        {"name": "Invisible Player", "unlock": 1, "desc": "Sees invisible enemies and grants that sight to towers within 8 units. (Spoke operated invisibly when he contacted Flame.)", "effect": {"type": "detect_aura", "radius": 8.0}},
+        {"name": "Wind Charge", "unlock": 5, "desc": "Every hit pushes enemies slightly back down the path. (Spoke wind-charged Mapicc into the void.)", "effect": {"type": "hit_knockback", "force": 0.35}},
+        {"name": "Totem of NULL", "unlock": 13, "desc": "GAME MECHANIC: enemies killed by Spoke have a 20% chance to leave a NULL mark that makes nearby enemies take +25% damage for 4 seconds.", "effect": {"type": "kill_mark", "chance": 0.2, "vulnerability": 0.25, "radius": 3.5, "duration": 4.0}}
+      ],
+      "abilities": [
+        {"slot": 0, "name": "Turncoat", "unlock": 1, "cooldown": 20.0, "desc": "GAME MECHANIC: converts the strongest non-boss enemy in range into an ally that fights for 10 seconds. (From his infiltration of the Mafia.)", "lore_confidence": "supported", "effect": {"type": "convert", "duration": 10.0, "damage_mult": 1.0, "max_tier": 7}},
+        {"slot": 1, "name": "Into the Void", "unlock": 4, "cooldown": 18.0, "desc": "GAME MECHANIC: a wind charge hurls everything nearby 10 units back down the path and deals 150 damage.", "lore_confidence": "supported", "effect": {"type": "area_knockback", "radius": 5.5, "force": 10.0, "damage": 150}},
+        {"slot": 2, "name": "Purgatory", "unlock": 8, "cooldown": 28.0, "desc": "GAME MECHANIC: a stretch of path becomes Purgatory. Everything inside is stunned for 4 seconds and takes 35% more damage for 8.", "lore_confidence": "supported", "effect": {"type": "area_stun", "radius": 6.0, "stun": 4.0, "vulnerability": 0.35, "vuln_duration": 8.0}},
+        {"slot": 3, "name": "The NULL Answers", "unlock": 10, "cooldown": 80.0, "desc": "ULTIMATE. Spoke's army arrives: six NULL soldiers fight for 20 seconds, every enemy on the map is slowed by 50% for 10 seconds, and the wave takes 400 damage.", "lore_confidence": "canon_confirmed", "effect": {"type": "null_army", "count": 6, "duration": 20.0, "damage": 400, "global_slow": 0.5, "slow_duration": 10.0, "summon_damage": 70, "character": "spokeishere"}}
+      ]
+    }
+  ]
+}

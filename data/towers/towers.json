@@ -1,0 +1,406 @@
+{
+  "_schema": {
+    "gear_rule": "Each tower has three upgrade paths. One path may reach tier 4 (its Signature), a second may reach tier 2, and the third stays at 0. This is the game's 'Gear Rule'.",
+    "effects": "damage_add, damage_mult, range_add, range_mult, rate_mult (lower = faster), pierce_add, splash_add, armor_pen_add, crit_chance_add, crit_mult_add, projectile_speed_mult, income_add, income_interval_mult, buff_* and 'special' flags resolved in scripts/towers/tower.gd.",
+    "specials": "detect_invisible, hit_air, slow, stun, knockback, execute, bounty, income, wave_bonus, repair_base, block_path, buff_damage, buff_rate, buff_range, mark, chain, double_shot, mercenary, splash, camo_pierce, lives_on_wave, wall",
+    "lore_note": "Roles are derived from the research database. Any ability not evidenced by a source is labelled GAME MECHANIC in its description.",
+    "targeting_modes": ["first", "last", "close", "strong", "weak"]
+  },
+  "towers": [
+    {
+      "id": "royal_guard", "name": "Royal Recruit", "character": "royal_soldier", "category": "DPS",
+      "cost": 180, "damage": 9, "range": 7.0, "attack_time": 0.85, "damage_type": "melee", "attack_style": "slash",
+      "targeting": "first", "pierce": 1, "splash": 0.0, "armor_pen": 0.0, "projectile": "melee_swing",
+      "weapon": "iron_sword", "armor": {"helmet": "iron", "chestplate": "royal"}, "detect_invisible": false, "hit_air": false,
+      "lore": "A new player who took the Royal Army option at spawn instead of a quiet life. Cheap, willing, and the backbone of Fort Feather's line.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Sword Drill", "tiers": [
+          {"name": "Sharpened Iron", "cost": 120, "desc": "Sharper blades. +5 damage.", "effects": {"damage_add": 5}},
+          {"name": "Diamond Issue", "cost": 320, "desc": "Kingdom armoury upgrade. +10 damage, +1 pierce.", "effects": {"damage_add": 10, "pierce_add": 1, "weapon": "diamond_sword"}},
+          {"name": "Netherite Issue", "cost": 900, "desc": "Netherite kit. +24 damage, cuts through armor.", "effects": {"damage_add": 24, "armor_pen_add": 0.3, "weapon": "netherite_sword", "armor": {"helmet": "netherite", "chestplate": "netherite", "leggings": "netherite", "boots": "netherite"}}},
+          {"name": "Fort Feather Veteran", "cost": 2600, "desc": "Signature: survived the fort. +70 damage, +0.35 armor pierce, hits three targets.", "effects": {"damage_add": 70, "armor_pen_add": 0.35, "pierce_add": 2, "weapon": "netherite_sword_enchanted"}}
+        ]},
+        {"name": "Drill Sergeant", "tiers": [
+          {"name": "Faster Drills", "cost": 140, "desc": "Attacks 20% faster.", "effects": {"rate_mult": 0.8}},
+          {"name": "Formation Fighting", "cost": 380, "desc": "Attacks 25% faster and +1.5 range.", "effects": {"rate_mult": 0.75, "range_add": 1.5}},
+          {"name": "Line Discipline", "cost": 1100, "desc": "Attacks 30% faster; nearby Royal Recruits gain +15% damage.", "effects": {"rate_mult": 0.7, "special": ["buff_damage"], "buff_damage": 0.15, "buff_radius": 6.0, "buff_filter": "royal_guard"}},
+          {"name": "The Royal Army", "cost": 3200, "desc": "Signature: two recruits fight beside this one, each at 60% damage.", "effects": {"rate_mult": 0.85, "special": ["double_shot", "buff_damage"], "extra_attackers": 2, "extra_attacker_mult": 0.6}}
+        ]},
+        {"name": "Watchpost", "tiers": [
+          {"name": "Spotter", "cost": 100, "desc": "+2 range.", "effects": {"range_add": 2.0}},
+          {"name": "Longbow Support", "cost": 260, "desc": "+2.5 range, can hit airborne enemies.", "effects": {"range_add": 2.5, "special": ["hit_air"], "weapon": "bow", "damage_type": "ranged", "attack_style": "shoot", "projectile": "arrow"}},
+          {"name": "Torchlight Watch", "cost": 700, "desc": "Sees invisible enemies.", "effects": {"range_add": 2.0, "special": ["detect_invisible"]}},
+          {"name": "Fort Feather Wall", "cost": 2200, "desc": "Signature: +6 range, +30 damage, arrows pass through three enemies.", "effects": {"range_add": 6.0, "damage_add": 30, "pierce_add": 3, "weapon": "crossbow", "projectile": "bolt"}}
+        ]}
+      ]
+    },
+    {
+      "id": "theobaldthebird", "name": "TheobaldTheBird", "character": "theobaldthebird", "category": "Siege",
+      "cost": 650, "damage": 34, "range": 9.0, "attack_time": 2.0, "damage_type": "explosive", "attack_style": "throw",
+      "targeting": "first", "pierce": 1, "splash": 2.4, "armor_pen": 0.25, "projectile": "tnt_cart",
+      "weapon": "tnt", "armor": {"chestplate": "iron"}, "detect_invisible": false, "hit_air": false,
+      "lore": "Parrot's best friend and bodyguard, and the server's master of TNT minecart combat. He won the Warriors Council contest with carts, killed a Law commander with carts, and wiped out Cindercrest players the same way.",
+      "lore_confidence": "canon_confirmed",
+      "paths": [
+        {"name": "Cart Barrage", "tiers": [
+          {"name": "Double Cart", "cost": 400, "desc": "Sends two carts per attack.", "effects": {"special": ["double_shot"]}},
+          {"name": "Rolling Stock", "cost": 900, "desc": "+20 damage, attacks 20% faster.", "effects": {"damage_add": 20, "rate_mult": 0.8}},
+          {"name": "Supply Line", "cost": 2400, "desc": "Three carts per volley, +40 damage.", "effects": {"damage_add": 40, "extra_shots": 1}},
+          {"name": "Carting Master", "cost": 7200, "desc": "Signature: a five-cart barrage with a 3.6 blast radius and heavy armor shred.", "effects": {"damage_add": 120, "extra_shots": 2, "splash_add": 1.2, "armor_pen_add": 0.35}}
+        ]},
+        {"name": "Rail Network", "tiers": [
+          {"name": "Laid Track", "cost": 300, "desc": "+2.5 range.", "effects": {"range_add": 2.5}},
+          {"name": "Powered Rails", "cost": 750, "desc": "Carts travel faster; +2 range.", "effects": {"range_add": 2.0, "projectile_speed_mult": 1.6}},
+          {"name": "Junction Control", "cost": 1900, "desc": "+4 range and 25% faster attacks.", "effects": {"range_add": 4.0, "rate_mult": 0.75}},
+          {"name": "The Whole Network", "cost": 5600, "desc": "Signature: covers the entire lane; carts reach any enemy on the path.", "effects": {"range_add": 22.0, "rate_mult": 0.8, "special": ["hit_air"]}}
+        ]},
+        {"name": "Demolition", "tiers": [
+          {"name": "Packed Charges", "cost": 350, "desc": "+0.8 blast radius.", "effects": {"splash_add": 0.8}},
+          {"name": "Shaped Charge", "cost": 820, "desc": "+30 damage and deeper armor shred.", "effects": {"damage_add": 30, "armor_pen_add": 0.2}},
+          {"name": "Fort Demolition", "cost": 2100, "desc": "Blasts stun survivors for 1 second.", "effects": {"splash_add": 0.7, "special": ["stun"], "stun_duration": 1.0}},
+          {"name": "Self-Destruct Protocol", "cost": 6400, "desc": "Signature: Parrot's Fort Feather trick. Enormous blasts that stun for 2 seconds and shatter armor.", "effects": {"damage_add": 150, "splash_add": 2.2, "stun_duration": 2.0, "armor_pen_add": 0.45}}
+        ]}
+      ]
+    },
+    {
+      "id": "eggchan", "name": "eggchan", "character": "eggchan", "category": "Economy",
+      "cost": 420, "damage": 4, "range": 6.0, "attack_time": 1.6, "damage_type": "magic", "attack_style": "throw",
+      "targeting": "close", "pierce": 1, "splash": 0.0, "armor_pen": 0.0, "projectile": "bottle",
+      "weapon": "potion", "armor": {}, "detect_invisible": false, "hit_air": true,
+      "income": 45, "income_interval": 6.0,
+      "lore": "Wemmbu's best friend and the co-founder of the Egg Civilization, whose currency was bottles of enchanting. He turns a defended position into an economy.",
+      "lore_confidence": "canon_confirmed",
+      "paths": [
+        {"name": "Enchant Trade", "tiers": [
+          {"name": "Bottle Stall", "cost": 250, "desc": "+30 emeralds per payout.", "effects": {"income_add": 30}},
+          {"name": "Egg Exchange", "cost": 620, "desc": "+70 emeralds per payout, pays 20% sooner.", "effects": {"income_add": 70, "income_interval_mult": 0.8}},
+          {"name": "Bottle Monopoly", "cost": 1700, "desc": "+180 emeralds per payout.", "effects": {"income_add": 180}},
+          {"name": "The Egg Civilization", "cost": 5200, "desc": "Signature: +600 emeralds per payout and every payout also gives 1 life back.", "effects": {"income_add": 600, "special": ["repair_base"], "repair_amount": 1}}
+        ]},
+        {"name": "Morale", "tiers": [
+          {"name": "Comic Relief", "cost": 220, "desc": "Nearby towers attack 10% faster.", "effects": {"special": ["buff_rate"], "buff_rate": 0.1, "buff_radius": 6.0}},
+          {"name": "Best Friend", "cost": 560, "desc": "+15% attack speed aura and +1 range for nearby towers.", "effects": {"buff_rate": 0.15, "buff_range": 1.0, "buff_radius": 7.0}},
+          {"name": "Egg Rally", "cost": 1500, "desc": "+25% attack speed and +15% damage aura.", "effects": {"buff_rate": 0.25, "buff_damage": 0.15, "buff_radius": 8.0, "special": ["buff_rate", "buff_damage"]}},
+          {"name": "Empire Morale", "cost": 4400, "desc": "Signature: +40% attack speed, +30% damage and +2 range to every tower in a wide radius.", "effects": {"buff_rate": 0.4, "buff_damage": 0.3, "buff_range": 2.0, "buff_radius": 13.0}}
+        ]},
+        {"name": "Supply Run", "tiers": [
+          {"name": "Wave Bonus", "cost": 200, "desc": "+60 emeralds each time a wave is cleared.", "effects": {"special": ["wave_bonus"], "wave_bonus": 60}},
+          {"name": "Stocked Chests", "cost": 500, "desc": "+150 emeralds per wave cleared.", "effects": {"wave_bonus": 150}},
+          {"name": "Gear Shipment", "cost": 1400, "desc": "+350 per wave and nearby towers gain +10% armor pierce.", "effects": {"wave_bonus": 350, "buff_armor_pen": 0.1, "buff_radius": 7.0}},
+          {"name": "Eggchan Empire Logistics", "cost": 3900, "desc": "Signature: +900 emeralds per wave and +25% armor pierce to nearby towers.", "effects": {"wave_bonus": 900, "buff_armor_pen": 0.25, "buff_radius": 10.0}}
+        ]}
+      ]
+    },
+    {
+      "id": "lomedy", "name": "Lomedy", "character": "lomedy", "category": "Siege",
+      "cost": 520, "damage": 26, "range": 11.0, "attack_time": 2.6, "damage_type": "explosive", "attack_style": "point",
+      "targeting": "strong", "pierce": 1, "splash": 2.0, "armor_pen": 0.15, "projectile": "cannon_shell",
+      "weapon": "book", "armor": {"helmet": "leather"}, "detect_invisible": false, "hit_air": true,
+      "income": 25, "income_interval": 8.0,
+      "lore": "The farmer who armed FlameFrags with a mace and built the TNT cannons that broke the toxic base. He fights from behind the line and keeps the harvest coming.",
+      "lore_confidence": "canon_confirmed",
+      "paths": [
+        {"name": "Cannon Battery", "tiers": [
+          {"name": "Second Cannon", "cost": 330, "desc": "Fires two shells per volley.", "effects": {"special": ["double_shot"]}},
+          {"name": "Longer Barrels", "cost": 780, "desc": "+3 range and +18 damage.", "effects": {"range_add": 3.0, "damage_add": 18}},
+          {"name": "Cannon Line", "cost": 2000, "desc": "Three shells, +35 damage.", "effects": {"extra_shots": 1, "damage_add": 35}},
+          {"name": "Siege of the Toxic Base", "cost": 5800, "desc": "Signature: a four-shell bombardment with a huge blast.", "effects": {"extra_shots": 1, "damage_add": 110, "splash_add": 1.6}}
+        ]},
+        {"name": "Farmstead", "tiers": [
+          {"name": "Wheat Fields", "cost": 240, "desc": "+35 emeralds per payout.", "effects": {"income_add": 35}},
+          {"name": "Irrigation", "cost": 600, "desc": "+90 emeralds per payout, pays faster.", "effects": {"income_add": 90, "income_interval_mult": 0.75}},
+          {"name": "Grand Harvest", "cost": 1600, "desc": "+220 emeralds per payout.", "effects": {"income_add": 220}},
+          {"name": "The Farm War", "cost": 4600, "desc": "Signature: +550 per payout; every payout also repairs 2 lives.", "effects": {"income_add": 550, "special": ["repair_base"], "repair_amount": 2}}
+        ]},
+        {"name": "Redstone Ordnance", "tiers": [
+          {"name": "Timed Fuses", "cost": 280, "desc": "Attacks 20% faster.", "effects": {"rate_mult": 0.8}},
+          {"name": "Armor Cracking", "cost": 700, "desc": "+0.3 armor pierce.", "effects": {"armor_pen_add": 0.3}},
+          {"name": "Concussive Shells", "cost": 1800, "desc": "Blasts knock enemies back and slow them.", "effects": {"special": ["knockback", "slow"], "knockback": 1.6, "slow_mult": 0.6, "slow_duration": 2.0}},
+          {"name": "Lomedy's Two Maces", "cost": 5000, "desc": "Signature: shells hit like a Density mace and shatter any armor tier.", "effects": {"damage_add": 130, "armor_pen_add": 0.6, "knockback": 2.4, "splash_add": 0.8}}
+        ]}
+      ]
+    },
+    {
+      "id": "mapicc", "name": "Mapicc", "character": "mapicc", "category": "DPS",
+      "cost": 480, "damage": 16, "range": 6.5, "attack_time": 0.55, "damage_type": "melee", "attack_style": "slash",
+      "targeting": "first", "pierce": 1, "splash": 0.0, "armor_pen": 0.1, "projectile": "melee_swing",
+      "weapon": "diamond_sword", "armor": {"chestplate": "diamond", "boots": "iron"}, "detect_invisible": false, "hit_air": false,
+      "lore": "Spoke's best friend: loyal, a little gullible, and relentless in a fight. He ranked up inside the Invisible Mafia and broke into the spawn prison.",
+      "lore_confidence": "canon_confirmed",
+      "paths": [
+        {"name": "Blade Flurry", "tiers": [
+          {"name": "Quick Hands", "cost": 280, "desc": "Attacks 20% faster.", "effects": {"rate_mult": 0.8}},
+          {"name": "Combo Strings", "cost": 640, "desc": "Attacks 25% faster, +6 damage.", "effects": {"rate_mult": 0.75, "damage_add": 6}},
+          {"name": "Relentless", "cost": 1700, "desc": "Attacks 30% faster, hits two enemies.", "effects": {"rate_mult": 0.7, "pierce_add": 1}},
+          {"name": "Prison Break", "cost": 4800, "desc": "Signature: blindingly fast strikes that hit four enemies at once.", "effects": {"rate_mult": 0.55, "pierce_add": 2, "damage_add": 30}}
+        ]},
+        {"name": "Loyal Guard", "tiers": [
+          {"name": "Cover Fire", "cost": 260, "desc": "+1.5 range.", "effects": {"range_add": 1.5}},
+          {"name": "Watch Your Back", "cost": 580, "desc": "Nearby towers take no sabotage stuns.", "effects": {"special": ["stun_immunity_aura"], "buff_radius": 6.0}},
+          {"name": "Shoulder to Shoulder", "cost": 1500, "desc": "+20% damage to nearby towers.", "effects": {"special": ["buff_damage"], "buff_damage": 0.2, "buff_radius": 7.0}},
+          {"name": "Best Friend", "cost": 4200, "desc": "Signature: massive damage aura; with SpokeIsHere in play both gain further bonuses.", "effects": {"buff_damage": 0.35, "buff_radius": 10.0, "damage_add": 40}}
+        ]},
+        {"name": "Killing Edge", "tiers": [
+          {"name": "Find the Gap", "cost": 300, "desc": "15% critical chance.", "effects": {"crit_chance_add": 0.15}},
+          {"name": "Sharpness", "cost": 720, "desc": "+25% crit chance, +0.2 armor pierce.", "effects": {"crit_chance_add": 0.1, "armor_pen_add": 0.2}},
+          {"name": "Executioner", "cost": 1900, "desc": "Crits deal triple damage.", "effects": {"crit_mult_add": 1.0, "crit_chance_add": 0.1}},
+          {"name": "Gold Rank", "cost": 5400, "desc": "Signature: 60% crit chance at quadruple damage, ignoring most armor.", "effects": {"crit_chance_add": 0.25, "crit_mult_add": 1.0, "armor_pen_add": 0.4, "damage_add": 35}}
+        ]}
+      ]
+    },
+    {
+      "id": "leow0ok", "name": "Leow0ok", "character": "leow0ok", "category": "Assassin",
+      "cost": 700, "damage": 40, "range": 8.5, "attack_time": 1.5, "damage_type": "ranged", "attack_style": "shoot",
+      "targeting": "strong", "pierce": 1, "splash": 0.0, "armor_pen": 0.35, "projectile": "bolt",
+      "weapon": "crossbow", "armor": {"chestplate": "netherite"}, "detect_invisible": true, "hit_air": true,
+      "lore": "Leader of the Bounty Assassin Team: elite hunters who investigated crimes and neutralised wanted players. He finds targets other towers cannot see.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Contract", "tiers": [
+          {"name": "Marked for Death", "cost": 420, "desc": "+20 damage against the strongest target.", "effects": {"damage_add": 20, "special": ["mark"]}},
+          {"name": "Clean Shot", "cost": 980, "desc": "+0.25 armor pierce and +35 damage.", "effects": {"armor_pen_add": 0.25, "damage_add": 35}},
+          {"name": "Execution Order", "cost": 2600, "desc": "Instantly kills non-boss enemies below 12% health.", "effects": {"special": ["execute"], "execute_threshold": 0.12, "damage_add": 40}},
+          {"name": "BAT Contract", "cost": 7800, "desc": "Signature: executes below 25% health and deals crushing damage to bosses.", "effects": {"execute_threshold": 0.25, "damage_add": 200, "armor_pen_add": 0.3, "boss_damage_mult": 1.5}}
+        ]},
+        {"name": "Bounty", "tiers": [
+          {"name": "Head Money", "cost": 320, "desc": "Kills pay +3 emeralds.", "effects": {"special": ["bounty"], "bounty": 3}},
+          {"name": "Wanted List", "cost": 760, "desc": "Kills pay +8 emeralds.", "effects": {"bounty": 8}},
+          {"name": "Full Registry", "cost": 2000, "desc": "Kills pay +20 emeralds and grant bonus hero XP.", "effects": {"bounty": 20, "xp_bonus": 2}},
+          {"name": "The Whole Team", "cost": 5600, "desc": "Signature: every kill anywhere on the map pays +12 emeralds.", "effects": {"bounty": 45, "special": ["bounty", "global_bounty"], "global_bounty": 12}}
+        ]},
+        {"name": "Investigation", "tiers": [
+          {"name": "Field Glasses", "cost": 280, "desc": "+3 range.", "effects": {"range_add": 3.0}},
+          {"name": "Reveal", "cost": 640, "desc": "Nearby towers can also see invisible enemies.", "effects": {"special": ["detect_aura"], "buff_radius": 8.0}},
+          {"name": "Cold Case", "cost": 1700, "desc": "+5 range and 25% faster shots.", "effects": {"range_add": 5.0, "rate_mult": 0.75}},
+          {"name": "No One Hides", "cost": 4800, "desc": "Signature: reveals the whole map and shoots twice per volley.", "effects": {"range_add": 12.0, "special": ["detect_aura", "double_shot"], "buff_radius": 40.0}}
+        ]}
+      ]
+    },
+    {
+      "id": "minutetech", "name": "MinuteTech", "character": "minutetech", "category": "Trap",
+      "cost": 550, "damage": 22, "range": 5.5, "attack_time": 1.2, "damage_type": "magic", "attack_style": "cast",
+      "targeting": "close", "pierce": 3, "splash": 1.8, "armor_pen": 0.2, "projectile": "redstone_pulse",
+      "weapon": "stick", "armor": {"chestplate": "chainmail"}, "detect_invisible": true, "hit_air": false,
+      "lore": "The technical player who pulled Spoke and Mapicc out of a Mafia ambush and played both sides long enough to let them escape. GAME MECHANIC: his redstone traps are a gameplay interpretation of his technical reputation.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Piston Trap", "tiers": [
+          {"name": "Sticky Pistons", "cost": 300, "desc": "Pulses knock enemies backwards.", "effects": {"special": ["knockback"], "knockback": 1.2}},
+          {"name": "Crusher", "cost": 720, "desc": "+22 damage and stronger knockback.", "effects": {"damage_add": 22, "knockback": 2.0}},
+          {"name": "Compactor", "cost": 1900, "desc": "Traps stun for 1.2 seconds.", "effects": {"special": ["stun"], "stun_duration": 1.2, "damage_add": 25}},
+          {"name": "The Whole Contraption", "cost": 5400, "desc": "Signature: enormous pulses that stun for 2.5 seconds and hurl enemies back down the path.", "effects": {"damage_add": 90, "stun_duration": 2.5, "knockback": 5.0, "splash_add": 1.5}}
+        ]},
+        {"name": "Dispenser Array", "tiers": [
+          {"name": "Loaded Dispensers", "cost": 260, "desc": "+2 range, +1 pierce.", "effects": {"range_add": 2.0, "pierce_add": 1}},
+          {"name": "Rapid Fire", "cost": 640, "desc": "Attacks 30% faster.", "effects": {"rate_mult": 0.7}},
+          {"name": "Splash Potions", "cost": 1600, "desc": "Pulses slow everything they touch.", "effects": {"special": ["slow"], "slow_mult": 0.55, "slow_duration": 2.5}},
+          {"name": "Automated Defence", "cost": 4400, "desc": "Signature: continuous fire slowing and shredding whole columns.", "effects": {"rate_mult": 0.5, "damage_add": 60, "slow_mult": 0.4, "splash_add": 1.2, "pierce_add": 4}}
+        ]},
+        {"name": "Double Agent", "tiers": [
+          {"name": "Inside Man", "cost": 320, "desc": "+15% damage to nearby towers.", "effects": {"special": ["buff_damage"], "buff_damage": 0.15, "buff_radius": 6.0}},
+          {"name": "Leaked Coords", "cost": 780, "desc": "Nearby towers gain +2 range and see invisible enemies.", "effects": {"buff_range": 2.0, "special": ["detect_aura", "buff_damage"], "buff_radius": 7.0}},
+          {"name": "Sabotage", "cost": 2000, "desc": "Enemies in range take 20% more damage from everything.", "effects": {"special": ["vulnerability"], "vulnerability": 0.2}},
+          {"name": "The Diamond Betrayal", "cost": 5800, "desc": "Signature: enemies in range take 45% more damage and lose a third of their armor.", "effects": {"vulnerability": 0.45, "armor_strip": 0.33, "buff_damage": 0.25, "buff_radius": 9.0}}
+        ]}
+      ]
+    },
+    {
+      "id": "reinadrop", "name": "ReinaDrop", "character": "reinadrop", "category": "Support",
+      "cost": 460, "damage": 6, "range": 7.5, "attack_time": 1.4, "damage_type": "magic", "attack_style": "cast",
+      "targeting": "first", "pierce": 2, "splash": 1.2, "armor_pen": 0.0, "projectile": "petal",
+      "weapon": "potion", "armor": {}, "detect_invisible": false, "hit_air": true,
+      "lore": "One of two survivors of the Skymore massacre, forced to farm for Cindercrest, carrying the Oxeye Daisy Zoe gave her. She keeps the defenders standing.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Skymore Resolve", "tiers": [
+          {"name": "Steady Hands", "cost": 280, "desc": "Nearby towers gain +12% damage.", "effects": {"special": ["buff_damage"], "buff_damage": 0.12, "buff_radius": 7.0}},
+          {"name": "Survivor's Nerve", "cost": 660, "desc": "+20% damage aura and immunity to sabotage stuns.", "effects": {"buff_damage": 0.2, "special": ["buff_damage", "stun_immunity_aura"], "buff_radius": 8.0}},
+          {"name": "Never Again", "cost": 1800, "desc": "+30% damage and +15% attack speed aura.", "effects": {"buff_damage": 0.3, "buff_rate": 0.15, "buff_radius": 9.0}},
+          {"name": "The Last of Skymore", "cost": 5200, "desc": "Signature: +50% damage, +25% attack speed and +3 range to every tower nearby.", "effects": {"buff_damage": 0.5, "buff_rate": 0.25, "buff_range": 3.0, "buff_radius": 12.0}}
+        ]},
+        {"name": "Field Medic", "tiers": [
+          {"name": "Bandages", "cost": 300, "desc": "Restores 1 life every 20 seconds.", "effects": {"special": ["repair_base"], "repair_amount": 1, "repair_interval": 20.0}},
+          {"name": "Field Hospital", "cost": 720, "desc": "Restores 2 lives every 15 seconds.", "effects": {"repair_amount": 2, "repair_interval": 15.0}},
+          {"name": "Triage", "cost": 1900, "desc": "Restores 3 lives every 12 seconds.", "effects": {"repair_amount": 3, "repair_interval": 12.0}},
+          {"name": "Oxeye Daisy", "cost": 5000, "desc": "Signature: restores 6 lives every 10 seconds and briefly shields the base after a leak.", "effects": {"repair_amount": 6, "repair_interval": 10.0, "special": ["repair_base", "leak_shield"]}}
+        ]},
+        {"name": "Wheat and Thorns", "tiers": [
+          {"name": "Thorned Petals", "cost": 240, "desc": "+8 damage and +1 pierce.", "effects": {"damage_add": 8, "pierce_add": 1}},
+          {"name": "Slowing Pollen", "cost": 580, "desc": "Hits slow enemies by 30%.", "effects": {"special": ["slow"], "slow_mult": 0.7, "slow_duration": 2.0}},
+          {"name": "Bitter Harvest", "cost": 1600, "desc": "+30 damage and a wider splash.", "effects": {"damage_add": 30, "splash_add": 1.0}},
+          {"name": "Forced Labour's End", "cost": 4400, "desc": "Signature: sweeping strikes that halve enemy speed across a wide area.", "effects": {"damage_add": 80, "splash_add": 1.8, "slow_mult": 0.45, "slow_duration": 3.0, "pierce_add": 4}}
+        ]}
+      ]
+    },
+    {
+      "id": "spepticle", "name": "Spepticle", "character": "spepticle", "category": "Detection",
+      "cost": 380, "damage": 12, "range": 10.0, "attack_time": 1.1, "damage_type": "ranged", "attack_style": "shoot",
+      "targeting": "first", "pierce": 1, "splash": 0.0, "armor_pen": 0.15, "projectile": "arrow",
+      "weapon": "bow", "armor": {"chestplate": "leather"}, "detect_invisible": true, "hit_air": true,
+      "lore": "'The Owl' — the informant who slipped Parrot the notes that started the Kings Arc, and who was executed in Parrot's place. Nothing crosses his line of sight unseen.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Owl Sight", "tiers": [
+          {"name": "Night Vision", "cost": 220, "desc": "+3 range.", "effects": {"range_add": 3.0}},
+          {"name": "Watchful Eye", "cost": 540, "desc": "Nearby towers see invisible enemies.", "effects": {"special": ["detect_aura"], "buff_radius": 9.0}},
+          {"name": "The Owl's Network", "cost": 1500, "desc": "+6 range and a much wider detection aura.", "effects": {"range_add": 6.0, "buff_radius": 14.0}},
+          {"name": "Nothing Unseen", "cost": 4200, "desc": "Signature: reveals the entire map and every revealed enemy takes 25% more damage.", "effects": {"range_add": 15.0, "buff_radius": 50.0, "special": ["detect_aura", "vulnerability"], "vulnerability": 0.25}}
+        ]},
+        {"name": "Marked Target", "tiers": [
+          {"name": "Called Shot", "cost": 260, "desc": "Marked enemies take +20% damage.", "effects": {"special": ["mark"], "mark_vulnerability": 0.2}},
+          {"name": "Priority Target", "cost": 620, "desc": "+18 damage and stronger marks.", "effects": {"damage_add": 18, "mark_vulnerability": 0.3}},
+          {"name": "Hunter's Focus", "cost": 1700, "desc": "Attacks 30% faster.", "effects": {"rate_mult": 0.7, "damage_add": 20}},
+          {"name": "The Note That Started It", "cost": 4600, "desc": "Signature: marks spread to every enemy nearby, and marked enemies take 55% more damage.", "effects": {"mark_vulnerability": 0.55, "mark_spread": 4.0, "damage_add": 60}}
+        ]},
+        {"name": "Informant", "tiers": [
+          {"name": "Whispers", "cost": 200, "desc": "+25 emeralds every 8 seconds.", "effects": {"special": ["income"], "income_add": 25, "income_interval": 8.0}},
+          {"name": "Intelligence Network", "cost": 520, "desc": "+70 emeralds per payout.", "effects": {"income_add": 70}},
+          {"name": "Deep Cover", "cost": 1400, "desc": "+160 per payout and reveals boss weak points (+15% boss damage nearby).", "effects": {"income_add": 160, "boss_vulnerability": 0.15}},
+          {"name": "Spepticle's Last Message", "cost": 3800, "desc": "Signature: +420 per payout and +35% damage to bosses for every tower nearby.", "effects": {"income_add": 420, "boss_vulnerability": 0.35, "buff_radius": 12.0}}
+        ]}
+      ]
+    },
+    {
+      "id": "deputy_ace", "name": "Deputy_Ace", "character": "deputy_ace", "category": "Tank",
+      "cost": 600, "damage": 14, "range": 5.0, "attack_time": 1.0, "damage_type": "melee", "attack_style": "slash",
+      "targeting": "close", "pierce": 2, "splash": 0.0, "armor_pen": 0.0, "projectile": "melee_swing",
+      "weapon": "iron_sword", "armor": {"helmet": "iron", "chestplate": "iron", "leggings": "iron", "boots": "iron"}, "detect_invisible": false, "hit_air": false,
+      "lore": "The Law deputy who freed Parrot and Theo from execution and was killed for it. 'I'd rather die standing than live kneeling.' He holds the road.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Hold the Line", "tiers": [
+          {"name": "Blockade", "cost": 340, "desc": "Physically blocks enemies for a moment as they pass.", "effects": {"special": ["block_path"], "block_duration": 0.6, "block_cooldown": 3.0}},
+          {"name": "Standing Order", "cost": 800, "desc": "Longer blocks, +18 damage.", "effects": {"block_duration": 1.2, "damage_add": 18}},
+          {"name": "Immovable", "cost": 2100, "desc": "Blocks a whole group for 2 seconds.", "effects": {"block_duration": 2.0, "block_radius": 3.0, "damage_add": 25}},
+          {"name": "Die Standing", "cost": 6000, "desc": "Signature: halts everything in a wide radius for 3 seconds, over and over.", "effects": {"block_duration": 3.0, "block_radius": 5.0, "block_cooldown": 6.0, "damage_add": 80}}
+        ]},
+        {"name": "Shield Wall", "tiers": [
+          {"name": "Riot Shield", "cost": 300, "desc": "Nearby towers cannot be stunned.", "effects": {"special": ["stun_immunity_aura"], "buff_radius": 7.0}},
+          {"name": "Bulwark", "cost": 700, "desc": "The base takes 1 less damage from every leak.", "effects": {"special": ["leak_reduction"], "leak_reduction": 1}},
+          {"name": "Fortified Gate", "cost": 1800, "desc": "Leaks do 3 less damage.", "effects": {"leak_reduction": 3}},
+          {"name": "The Gate Holds", "cost": 5200, "desc": "Signature: leaks do 8 less damage and the first leak of each wave is stopped entirely.", "effects": {"leak_reduction": 8, "special": ["leak_reduction", "leak_shield"]}}
+        ]},
+        {"name": "Last Stand", "tiers": [
+          {"name": "Second Wind", "cost": 280, "desc": "+25% damage when the base is below half health.", "effects": {"special": ["desperation"], "desperation_mult": 0.25}},
+          {"name": "Defiance", "cost": 660, "desc": "+50% damage when the base is below half health.", "effects": {"desperation_mult": 0.5}},
+          {"name": "No Surrender", "cost": 1700, "desc": "+90% damage below half, +30 base damage.", "effects": {"desperation_mult": 0.9, "damage_add": 30}},
+          {"name": "I'd Rather Die Standing", "cost": 4800, "desc": "Signature: doubles all damage when the base is in danger, and cannot be disabled.", "effects": {"desperation_mult": 1.6, "damage_add": 70, "special": ["desperation", "stun_immune"]}}
+        ]}
+      ]
+    },
+    {
+      "id": "4cvit", "name": "4CVIT", "character": "4cvit", "category": "CrowdControl",
+      "cost": 500, "damage": 10, "range": 6.0, "attack_time": 0.9, "damage_type": "magic", "attack_style": "cast",
+      "targeting": "close", "pierce": 4, "splash": 2.2, "armor_pen": 0.0, "projectile": "slime_pulse",
+      "weapon": "stick", "armor": {}, "detect_invisible": false, "hit_air": false,
+      "lore": "Mayor of Steampunk City, obsessive redstone builder, top-tier parkourer, and a self-described blue slime. His ground turns hostile underfoot.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Redstone Town", "tiers": [
+          {"name": "Trip Wires", "cost": 260, "desc": "Pulses slow by 25%.", "effects": {"special": ["slow"], "slow_mult": 0.75, "slow_duration": 1.5}},
+          {"name": "Pressure Plates", "cost": 620, "desc": "Slows by 45% and hits harder.", "effects": {"slow_mult": 0.55, "damage_add": 14}},
+          {"name": "The Whole Town", "cost": 1700, "desc": "Slows by 60% across a wide area.", "effects": {"slow_mult": 0.4, "splash_add": 1.2, "slow_duration": 2.5}},
+          {"name": "Redstone Gauntlet", "cost": 4800, "desc": "Signature: near-halts everything in a huge radius and shreds it.", "effects": {"slow_mult": 0.22, "splash_add": 2.4, "damage_add": 60, "slow_duration": 3.5, "pierce_add": 6}}
+        ]},
+        {"name": "Parkour", "tiers": [
+          {"name": "Quick Feet", "cost": 240, "desc": "Attacks 25% faster.", "effects": {"rate_mult": 0.75}},
+          {"name": "Wall Runs", "cost": 560, "desc": "+2.5 range, can hit airborne enemies.", "effects": {"range_add": 2.5, "special": ["hit_air"]}},
+          {"name": "Momentum", "cost": 1500, "desc": "Attacks 35% faster.", "effects": {"rate_mult": 0.65, "damage_add": 15}},
+          {"name": "Top-Tier Parkourer", "cost": 4200, "desc": "Signature: relentless pulses that also strike the air.", "effects": {"rate_mult": 0.45, "damage_add": 45, "range_add": 3.0}}
+        ]},
+        {"name": "Slime Bounce", "tiers": [
+          {"name": "Bounce Pad", "cost": 280, "desc": "Knocks enemies back down the path.", "effects": {"special": ["knockback"], "knockback": 1.5}},
+          {"name": "Launcher", "cost": 680, "desc": "Much stronger knockback.", "effects": {"knockback": 3.0}},
+          {"name": "Chain Bounce", "cost": 1800, "desc": "Pulses chain to three extra enemies.", "effects": {"special": ["chain"], "chain": 3, "damage_add": 20}},
+          {"name": "Blue Slime", "cost": 5000, "desc": "Signature: throws whole columns backwards and chains to six enemies.", "effects": {"knockback": 6.0, "chain": 6, "damage_add": 55}}
+        ]}
+      ]
+    },
+    {
+      "id": "purpled", "name": "Purpled", "character": "purpled", "category": "DPS",
+      "cost": 750, "damage": 55, "range": 12.0, "attack_time": 1.9, "damage_type": "ranged", "attack_style": "shoot",
+      "targeting": "strong", "pierce": 2, "splash": 0.0, "armor_pen": 0.25, "projectile": "arrow",
+      "weapon": "bow", "armor": {"chestplate": "diamond", "helmet": "diamond"}, "detect_invisible": false, "hit_air": true,
+      "lore": "Leader of the Warriors District in the Far Lands before the council vote went to Parrot. A warrior first, and still the longest reach on the wall.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Warriors District", "tiers": [
+          {"name": "Heavy Draw", "cost": 420, "desc": "+25 damage.", "effects": {"damage_add": 25}},
+          {"name": "Power Enchant", "cost": 980, "desc": "+55 damage, +0.15 armor pierce.", "effects": {"damage_add": 55, "armor_pen_add": 0.15}},
+          {"name": "District Command", "cost": 2500, "desc": "+120 damage; nearby towers gain +20% damage.", "effects": {"damage_add": 120, "special": ["buff_damage"], "buff_damage": 0.2, "buff_radius": 8.0}},
+          {"name": "Warrior of the Far Lands", "cost": 7400, "desc": "Signature: devastating shots that pass through five enemies.", "effects": {"damage_add": 320, "pierce_add": 3, "armor_pen_add": 0.3}}
+        ]},
+        {"name": "Sniper", "tiers": [
+          {"name": "Long Sight", "cost": 380, "desc": "+5 range.", "effects": {"range_add": 5.0}},
+          {"name": "Beacon Ranging", "cost": 900, "desc": "+8 range and 20% faster shots.", "effects": {"range_add": 8.0, "rate_mult": 0.8}},
+          {"name": "Overwatch", "cost": 2300, "desc": "+12 range; always targets the strongest enemy.", "effects": {"range_add": 12.0, "damage_add": 60}},
+          {"name": "Across the Far Lands", "cost": 6800, "desc": "Signature: unlimited range and crushing shots against bosses.", "effects": {"range_add": 60.0, "damage_add": 180, "boss_damage_mult": 1.6}}
+        ]},
+        {"name": "Duel", "tiers": [
+          {"name": "Steady Aim", "cost": 340, "desc": "20% crit chance.", "effects": {"crit_chance_add": 0.2}},
+          {"name": "Killer Instinct", "cost": 820, "desc": "+15% crit chance, faster shots.", "effects": {"crit_chance_add": 0.15, "rate_mult": 0.85}},
+          {"name": "One Shot", "cost": 2200, "desc": "Crits deal triple damage.", "effects": {"crit_mult_add": 1.0, "damage_add": 60}},
+          {"name": "The Wither Test", "cost": 6200, "desc": "Signature: near-guaranteed crits at quadruple damage.", "effects": {"crit_chance_add": 0.35, "crit_mult_add": 1.0, "damage_add": 110}}
+        ]}
+      ]
+    },
+    {
+      "id": "fymada", "name": "Fymada", "character": "fymada", "category": "Builder",
+      "cost": 440, "damage": 8, "range": 6.5, "attack_time": 1.5, "damage_type": "magic", "attack_style": "cast",
+      "targeting": "first", "pierce": 2, "splash": 1.4, "armor_pen": 0.0, "projectile": "sand_burst",
+      "weapon": "banner", "armor": {"chestplate": "gold"}, "detect_invisible": false, "hit_air": false,
+      "lore": "Mayor of Capitol City, who was ordered to evacuate the citizens when Cindercrest came through the Main Building. She turns ground into fortifications.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "City Walls", "tiers": [
+          {"name": "Sandstone Barricade", "cost": 300, "desc": "Raises a wall on the path that blocks enemies until destroyed.", "effects": {"special": ["wall"], "wall_hp": 250, "wall_cooldown": 14.0}},
+          {"name": "Reinforced Walls", "cost": 720, "desc": "Sturdier walls, placed more often.", "effects": {"wall_hp": 700, "wall_cooldown": 11.0}},
+          {"name": "Curtain Wall", "cost": 1900, "desc": "Very tough walls every 9 seconds.", "effects": {"wall_hp": 1800, "wall_cooldown": 9.0}},
+          {"name": "The Main Building", "cost": 5400, "desc": "Signature: a hundred-block wall that damages whatever breaks it.", "effects": {"wall_hp": 6000, "wall_cooldown": 7.0, "wall_thorns": 60}}
+        ]},
+        {"name": "Evacuation", "tiers": [
+          {"name": "Evacuation Order", "cost": 280, "desc": "The base starts each wave with 5 extra lives of buffer.", "effects": {"special": ["lives_on_wave"], "lives_on_wave": 5}},
+          {"name": "Safe Corridors", "cost": 680, "desc": "+10 lives buffer per wave.", "effects": {"lives_on_wave": 10}},
+          {"name": "Civic Shelters", "cost": 1800, "desc": "+18 lives per wave and leaks do 2 less damage.", "effects": {"lives_on_wave": 18, "leak_reduction": 2}},
+          {"name": "Get Them Out", "cost": 4800, "desc": "Signature: +40 lives per wave and leaks do 5 less damage.", "effects": {"lives_on_wave": 40, "leak_reduction": 5}}
+        ]},
+        {"name": "Civic Order", "tiers": [
+          {"name": "Tax Ledger", "cost": 260, "desc": "+40 emeralds every 8 seconds.", "effects": {"special": ["income"], "income_add": 40, "income_interval": 8.0}},
+          {"name": "Desert Trade", "cost": 620, "desc": "+110 per payout.", "effects": {"income_add": 110}},
+          {"name": "Capitol Treasury", "cost": 1700, "desc": "+280 per payout; towers nearby cost 10% less to upgrade.", "effects": {"income_add": 280, "special": ["income", "discount"], "discount": 0.1, "buff_radius": 8.0}},
+          {"name": "Capitol City", "cost": 4600, "desc": "Signature: +700 per payout and 20% off nearby upgrades.", "effects": {"income_add": 700, "discount": 0.2, "buff_radius": 12.0}}
+        ]}
+      ]
+    },
+    {
+      "id": "jaden_man", "name": "Jaden_MAN", "character": "jaden_man", "category": "Special",
+      "cost": 820, "damage": 62, "range": 7.5, "attack_time": 1.1, "damage_type": "melee", "attack_style": "slash",
+      "targeting": "strong", "pierce": 2, "splash": 0.0, "armor_pen": 0.3, "projectile": "melee_swing",
+      "weapon": "netherite_axe", "armor": {"chestplate": "netherite", "helmet": "netherite"}, "detect_invisible": false, "hit_air": false,
+      "mercenary": true,
+      "lore": "Founder of the Pirates. He has been an antagonist and an ally to both Wemmbu and Flame, switching sides more than once. GAME MECHANIC: he occasionally downs tools mid-fight, reflecting that unreliability.",
+      "lore_confidence": "supported",
+      "paths": [
+        {"name": "Plunder", "tiers": [
+          {"name": "Take the Cargo", "cost": 460, "desc": "Kills pay +10 emeralds.", "effects": {"special": ["bounty"], "bounty": 10}},
+          {"name": "Raider's Cut", "cost": 1100, "desc": "+25 emeralds per kill and +40 damage.", "effects": {"bounty": 25, "damage_add": 40}},
+          {"name": "Castle Hoard", "cost": 2800, "desc": "+60 per kill.", "effects": {"bounty": 60, "damage_add": 60}},
+          {"name": "The Pirate Fleet", "cost": 8200, "desc": "Signature: +150 emeralds per kill and colossal damage.", "effects": {"bounty": 150, "damage_add": 260}}
+        ]},
+        {"name": "Cutthroat", "tiers": [
+          {"name": "Boarding Axe", "cost": 480, "desc": "+45 damage.", "effects": {"damage_add": 45}},
+          {"name": "No Quarter", "cost": 1150, "desc": "+90 damage, +0.2 armor pierce.", "effects": {"damage_add": 90, "armor_pen_add": 0.2}},
+          {"name": "Hostage Taker", "cost": 2900, "desc": "Stuns whatever it hits for 1 second.", "effects": {"special": ["stun"], "stun_duration": 1.0, "damage_add": 100}},
+          {"name": "Betrayal Arc", "cost": 8600, "desc": "Signature: overwhelming strikes, and he stops switching sides.", "effects": {"damage_add": 340, "armor_pen_add": 0.4, "special": ["stun", "loyal"], "stun_duration": 1.5}}
+        ]},
+        {"name": "Escape Tunnel", "tiers": [
+          {"name": "Hidden Routes", "cost": 400, "desc": "+2 range and 15% faster attacks.", "effects": {"range_add": 2.0, "rate_mult": 0.85}},
+          {"name": "Smuggler's Pass", "cost": 950, "desc": "+3.5 range, +30% attack speed.", "effects": {"range_add": 3.5, "rate_mult": 0.7}},
+          {"name": "Underground Network", "cost": 2500, "desc": "Attacks reach the whole choke point and chain to two enemies.", "effects": {"range_add": 5.0, "special": ["chain"], "chain": 2}},
+          {"name": "Down the Tunnel", "cost": 7400, "desc": "Signature: blindingly fast strikes chaining to five enemies.", "effects": {"rate_mult": 0.5, "chain": 5, "damage_add": 160, "range_add": 4.0}}
+        ]}
+      ]
+    }
+  ]
+}

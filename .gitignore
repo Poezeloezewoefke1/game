@@ -1,0 +1,11 @@
+# Godot import cache
+.godot/
+*.translation
+
+# Intermediate test renders (the kept screenshots live in docs/screenshots/)
+build/*.png
+build/linux/
+
+# OS
+.DS_Store
+Thumbs.db
