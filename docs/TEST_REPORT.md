@@ -388,3 +388,39 @@ Three things were found and fixed by looking at the renders rather than the code
 Build zones are flattened to ground level on a board, so tower and hero models stand on the painted
 surface rather than floating at the voxel world's elevations. Targeting is unaffected: `query_range`
 was already planar in x/z, so no tower's coverage changed.
+
+---
+
+## 11. Real Minecraft assets
+
+The supplied skins and resource pack replaced most of the procedural stand-ins.
+
+**Skins.** All four playable heroes and all fourteen tower characters now use skins supplied by the
+project owner. The hero mapping was checked against the artwork before use rather than taken from the
+order the files arrived in — skin 4 is a crowned king with parrot wings and skin 1 is covered in
+flames, which is the opposite of how they were listed. Verified by rendering all eighteen
+(`tests/visual_heroes_test.gd`).
+
+**Armour.** Armour is now drawn the way Minecraft draws it: a copy of the humanoid model inflated by
+1 pixel (helmet, chestplate, boots) or 0.5 (leggings) and textured by the pack's equipment layers,
+which use the 64×32 legacy net. Three things a naive port gets wrong, all found by rendering a tier
+line-up:
+
+1. **Leather came out white.** Its layers ship greyscale because vanilla multiplies them by the dye
+   colour at runtime. Fixed with the default leather tint plus the untinted `leather_overlay`.
+2. **Anything the pack cannot draw vanished.** `layers_available()` is true if *any* slot has a
+   texture, and the first version then skipped the slots without one — so capes, elytra and this
+   project's own royal and cinder liveries silently disappeared. `slots_without_layers()` now keeps
+   them on the shell-box treatment.
+3. **Boots and leggings both cover the legs.** Listing the leg parts twice in one layer would
+   z-fight, so a part is only added once per group. Asserted in `test_armor_layers`.
+
+Enemies render through MultiMesh, and each armour group needs its own texture, so a group gets one
+extra MultiMesh per layer sharing the skin's transforms — the merged skin mesh drops the slots the
+layers now draw. Verified by cropping into a live board render.
+
+**Glint.** The procedural stripe is replaced by Minecraft's own `enchanted_glint_armor.png`, sampled
+twice with different scroll directions and speeds and added on top; the stripe remains as the
+no-pack fallback.
+
+**Blocks.** Covered in section 10's notes on tinting and animated-texture frames.

@@ -62,8 +62,14 @@ func set_armor(armor_set: Dictionary) -> void:
 	if skin == null:
 		return
 	var defs := MCGeometry.part_defs(skin.slim, skin.legacy)
+	var shell_set := armor
+	if ArmorBuilder.layers_available(armor):
+		_build_armor_layers(defs)
+		shell_set = ArmorBuilder.slots_without_layers(armor)
+		if shell_set.is_empty():
+			return
 	var by_part: Dictionary = {}
-	for box in ArmorBuilder.boxes_for_set(armor, skin.slim):
+	for box in ArmorBuilder.boxes_for_set(shell_set, skin.slim):
 		var p: int = box["part"]
 		if not by_part.has(p):
 			by_part[p] = []
@@ -76,6 +82,31 @@ func set_armor(armor_set: Dictionary) -> void:
 		mi.material_override = material
 		parts[def["name"]].add_child(mi)
 		armor_nodes.append(mi)
+
+## Armour drawn Minecraft's way: an inflated copy of the humanoid model per material and layer,
+## textured by the resource pack's equipment layers. One MeshInstance per group because each group
+## needs its own texture, and one child per body part so GPU limb animation still moves it.
+func _build_armor_layers(defs: Array) -> void:
+	for group in ArmorBuilder.layer_groups(armor):
+		var layer := int(group["layer"])
+		var mat := MCMaterials.make_armor_layer(String(group["material"]), layer, false,
+			float(group["glint"]) > 0.0)
+		if mat == null:
+			continue
+		var by_part: Dictionary = {}
+		for pd in group["parts"]:
+			var pid := int(pd["part"])
+			if not by_part.has(pid):
+				by_part[pid] = []
+			by_part[pid].append(pd)
+		for pid in by_part.keys():
+			var def := MCGeometry.part_def(defs, pid)
+			var mi := MeshInstance3D.new()
+			mi.name = "Armor_%s_%s_%d" % [def["name"], String(group["material"]), layer]
+			mi.mesh = ArmorBuilder.build_layer_piece_mesh(by_part[pid], layer, def["pivot"])
+			mi.material_override = mat
+			parts[def["name"]].add_child(mi)
+			armor_nodes.append(mi)
 
 func set_held(weapon_id: String) -> void:
 	held_id = weapon_id

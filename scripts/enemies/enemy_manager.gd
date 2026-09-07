@@ -257,7 +257,13 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 		mat = MCMaterials.make(SkinLibrary.get_skin("chungie").get_texture(), false, true)
 	else:
 		var extras: Array = []
-		mm.mesh = SkinLibrary.get_merged_mesh(skin_id, d.get("armor", {}), String(d.get("held", "")), extras)
+		# Armour the resource pack can draw for real is left out of the merged skin mesh and rendered
+		# by its own MultiMesh below; only the slots without a layer texture stay as shell boxes.
+		var full_armor: Dictionary = d.get("armor", {})
+		var shell_armor := full_armor
+		if ArmorBuilder.layers_available(full_armor):
+			shell_armor = ArmorBuilder.slots_without_layers(full_armor)
+		mm.mesh = SkinLibrary.get_merged_mesh(skin_id, shell_armor, String(d.get("held", "")), extras)
 		mat = SkinLibrary.get_material(skin_id, (d["flag_mask"] & F_INVISIBLE) != 0, true)
 	mm.instance_count = 0
 	var mmi := MultiMeshInstance3D.new()
@@ -266,6 +272,28 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	mmi.extra_cull_margin = 16.0
 	add_child(mmi)
+	# Real armour layers: one MultiMesh each, sharing the skin's transforms.
+	var armor_layers: Array = []
+	if model == "" and ArmorBuilder.layers_available(d.get("armor", {})):
+		for g in SkinLibrary.get_armor_layer_meshes(d.get("armor", {})):
+			var amat := MCMaterials.make_armor_layer(String(g["material"]), int(g["layer"]), true,
+				float(g["glint"]) > 0.0)
+			if amat == null:
+				continue
+			var amm := MultiMesh.new()
+			amm.transform_format = MultiMesh.TRANSFORM_3D
+			amm.use_custom_data = true
+			amm.use_colors = true
+			amm.mesh = g["mesh"]
+			amm.instance_count = 0
+			var ammi := MultiMeshInstance3D.new()
+			ammi.multimesh = amm
+			ammi.material_override = amat
+			ammi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			ammi.extra_cull_margin = 16.0
+			add_child(ammi)
+			armor_layers.append(amm)
+
 	var extra_node: Node3D = null
 	if String(d.get("extras", "")) != "":
 		# Mount / cart props ride along with their rider in a second MultiMesh.
@@ -282,7 +310,7 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 		add_child(emmi)
 		extra_node = emmi
 	groups.append({"key": key, "mmi": mmi, "mm": mm, "slots": PackedInt32Array(), "def_idx": di,
-		"skin": skin_id, "extra": extra_node, "tint_applied": false})
+		"skin": skin_id, "extra": extra_node, "armor_layers": armor_layers, "tint_applied": false})
 	return groups.size() - 1
 
 # ================================================================================================
@@ -747,6 +775,10 @@ func _upload_visuals() -> void:
 			extra_mm = (extra_node as MultiMeshInstance3D).multimesh
 			if extra_mm.instance_count != n:
 				extra_mm.instance_count = n
+		var armor_mms: Array = g.get("armor_layers", [])
+		for amm: MultiMesh in armor_mms:
+			if amm.instance_count != n:
+				amm.instance_count = n
 		if n == 0:
 			continue
 		var d: Dictionary = defs[g["def_idx"]]
@@ -763,6 +795,10 @@ func _upload_visuals() -> void:
 			var ghost := 0.55 if (flags[slot] & F_INVISIBLE) != 0 else 0.0
 			mm.set_instance_custom_data(k, Color(phase[slot], flash, ghost, 0.85 * moving))
 			mm.set_instance_color(k, tint)
+			for amm: MultiMesh in armor_mms:
+				amm.set_instance_transform(k, xform)
+				amm.set_instance_custom_data(k, Color(phase[slot], flash, ghost, 0.85 * moving))
+				amm.set_instance_color(k, tint)
 			if extra_mm != null:
 				extra_mm.set_instance_transform(k, xform)
 				extra_mm.set_instance_custom_data(k, Color(phase[slot], flash, 0.0, 0.0))

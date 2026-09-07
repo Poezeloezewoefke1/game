@@ -48,6 +48,7 @@ func _ready() -> void:
 	test_save()
 	_section("Relationships")
 	test_relationships()
+	test_armor_layers()
 	test_cc_limits()
 	test_downgrade_scaling()
 	_section("Lore database integrity")
@@ -728,6 +729,52 @@ func test_relationships() -> void:
 	hero.reset_relationship()
 	check_near(hero.relationship_damage_mult, 1.0, 0.001, "reset returns the hero to identity")
 	hero.free()
+
+## Real armour layers, when a resource pack is installed. These are skipped rather than failed on a
+## checkout with no pack, because the pack is optional by design.
+func test_armor_layers() -> void:
+	if not ResourcePack.available():
+		check(true, "no resource pack installed; armour layer tests skipped")
+		return
+	check(ResourcePack.armor_layer("diamond", 1) != null, "pack has a diamond layer 1")
+	check(ResourcePack.armor_layer("diamond", 2) != null, "pack has a diamond layer 2 (leggings)")
+	check(ResourcePack.glint_image(true) != null, "pack has the armour enchantment glint")
+
+	var full := {"helmet": "iron", "chestplate": "iron", "leggings": "iron", "boots": "iron"}
+	check(ArmorBuilder.layers_available(full), "a full iron set can be drawn as real layers")
+	check(ArmorBuilder.slots_without_layers(full).is_empty(), "iron needs no shell fallback")
+
+	# Layer 1 is helmet/chestplate/boots, layer 2 is leggings — the same split Minecraft uses.
+	var groups := ArmorBuilder.layer_groups(full)
+	check_eq(groups.size(), 2, "one iron set is two groups, one per layer")
+	var by_layer: Dictionary = {}
+	for g in groups:
+		by_layer[int(g["layer"])] = g
+	check(by_layer.has(1) and by_layer.has(2), "both layers present")
+	var l1_parts: Array = []
+	for pd in by_layer[1]["parts"]:
+		l1_parts.append(int(pd["part"]))
+	check(l1_parts.has(MCGeometry.Part.HEAD), "layer 1 covers the head (helmet)")
+	check(l1_parts.has(MCGeometry.Part.RIGHT_LEG), "layer 1 covers the legs (boots)")
+	# A part must not be listed twice, or boots and leggings would z-fight on the legs.
+	check_eq(l1_parts.size(), _unique_count(l1_parts), "layer 1 lists each part once")
+
+	# Anything the pack cannot draw has to keep its shell boxes, or capes and this project's own
+	# liveries would silently vanish the moment a pack is installed.
+	var mixed := {"chestplate": "netherite", "cape": "cinder", "crown": "gold"}
+	var left := ArmorBuilder.slots_without_layers(mixed)
+	check(left.has("cape"), "a cape falls back to shell boxes")
+	check(left.has("crown"), "a crown falls back to shell boxes")
+	check(not left.has("chestplate"), "a netherite chestplate uses a real layer")
+
+	var mesh := ArmorBuilder.build_layer_merged_mesh(by_layer[1]["parts"], 1)
+	check(mesh != null and mesh.get_surface_count() == 1, "a layer merges into one surface")
+
+func _unique_count(values: Array) -> int:
+	var seen: Dictionary = {}
+	for v in values:
+		seen[v] = true
+	return seen.size()
 
 ## Crowd control must not be able to hold a unit still forever. Before diminishing returns existed,
 ## a pair of stunning/knocking towers near the exit pinned any non-boss unit indefinitely no matter

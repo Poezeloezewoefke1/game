@@ -5,6 +5,8 @@ extends RefCounted
 static var _shader_opaque: Shader
 static var _shader_ghost: Shader
 static var _armor_tex: Texture2D
+static var _layer_tex: Dictionary = {}      # "material:layer" -> Texture2D
+static var _glint_tex: Texture2D
 
 static func armor_texture() -> Texture2D:
 	if _armor_tex == null:
@@ -14,6 +16,39 @@ static func armor_texture() -> Texture2D:
 			img.fill(Color.WHITE)
 		_armor_tex = ImageTexture.create_from_image(img)
 	return _armor_tex
+
+## The pack's armour layer texture for a material, or null when the pack has none.
+static func armor_layer_texture(material: String, layer: int) -> Texture2D:
+	var key := "%s:%d" % [material, layer]
+	if _layer_tex.has(key):
+		return _layer_tex[key]
+	var img := ResourcePack.armor_layer(material, layer)
+	_layer_tex[key] = ImageTexture.create_from_image(img) if img != null else null
+	return _layer_tex[key]
+
+## Minecraft's scrolling enchantment overlay. Null when no pack is installed.
+static func glint_texture() -> Texture2D:
+	if _glint_tex == null:
+		var img := ResourcePack.glint_image(true)
+		if img != null:
+			_glint_tex = ImageTexture.create_from_image(img)
+	return _glint_tex
+
+## A material that draws an armour layer: the same character shader, but with the layer texture
+## standing in for the skin so the GPU limb animation still applies.
+static func make_armor_layer(material: String, layer: int, gpu_anim: bool = false,
+		glint: bool = false) -> ShaderMaterial:
+	var tex := armor_layer_texture(material, layer)
+	if tex == null:
+		return null
+	var m := make(tex, false, gpu_anim)
+	if glint:
+		var g := glint_texture()
+		if g != null:
+			m.set_shader_parameter("glint_tex", g)
+			m.set_shader_parameter("glint_has_tex", 1.0)
+			m.set_shader_parameter("glint_strength", 1.0)
+	return m
 
 static func opaque_shader() -> Shader:
 	if _shader_opaque == null:

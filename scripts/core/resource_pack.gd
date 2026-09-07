@@ -8,8 +8,10 @@ extends RefCounted
 ## present every lookup returns null and callers fall back to the generated placeholders, which is why
 ## the game still runs with no pack installed.
 ##
-## The pack is deliberately NOT committed: a vanilla pack is Mojang's artwork, and the project's asset
-## policy is not to redistribute it. See docs/ASSET_LICENSES.md.
+## A pack IS committed at assets/resourcepack/, at the project owner's direction. That artwork is
+## Mojang's, not this project's, and their permission has not been obtained -- see
+## docs/ASSET_LICENSES.md and KNOWN_LIMITATIONS. Deleting the directory is a supported configuration:
+## every lookup then returns null and the generated placeholders take over.
 
 const ROOTS := ["user://resourcepack/", "res://assets/resourcepack/"]
 const MC := "assets/minecraft/textures/"
@@ -19,6 +21,9 @@ const MC := "assets/minecraft/textures/"
 const GRASS_TINT := Color(0.569, 0.741, 0.349)
 const FOLIAGE_TINT := Color(0.467, 0.671, 0.184)
 const WATER_TINT := Color(0.247, 0.463, 0.894)
+## Vanilla's default (undyed) leather colour. The leather layers ship greyscale because the game
+## multiplies them by the dye at runtime, so loading them raw gives white armour.
+const LEATHER_TINT := Color(0.647, 0.412, 0.247)
 
 ## This project's block ids -> {path, tint}. A block missing from here simply has no pack texture and
 ## keeps its generated one.
@@ -127,8 +132,15 @@ static func armor_layer(material: String, layer: int = 1) -> Image:
 	if _cache.has(key):
 		return _cache[key]
 	var dir := "entity/equipment/humanoid" if layer == 1 else "entity/equipment/humanoid_leggings"
-	_cache[key] = _load("%s/%s" % [dir, mat])
-	return _cache[key]
+	var img := _load("%s/%s" % [dir, mat])
+	if img != null and mat == "leather":
+		_tint(img, LEATHER_TINT)
+		# The overlay carries the parts that are never dyed (buckles, stitching); it goes on untinted.
+		var overlay := _load("%s/leather_overlay" % dir)
+		if overlay != null:
+			img.blend_rect(overlay, Rect2i(Vector2i.ZERO, overlay.get_size()), Vector2i.ZERO)
+	_cache[key] = img
+	return img
 
 ## The scrolling overlay Minecraft draws over enchanted gear.
 static func glint_image(for_armor: bool = true) -> Image:

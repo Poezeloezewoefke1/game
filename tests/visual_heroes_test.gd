@@ -1,8 +1,14 @@
 extends Node3D
 ## Renders the four playable heroes side by side so the supplied skins can be eyeballed.
 
-const HEROES := ["royal_soldier", "theobaldthebird", "eggchan", "lomedy", "mapicc",
-	"leow0ok", "minutetech"]
+const HEROES := ["chungie", "chungie", "chungie", "chungie", "chungie", "chungie", "chungie"]
+const ARMOR := [{}, {"helmet": "leather", "chestplate": "leather", "leggings": "leather", "boots": "leather"},
+	{"helmet": "chainmail", "chestplate": "chainmail", "leggings": "chainmail", "boots": "chainmail"},
+	{"helmet": "iron", "chestplate": "iron", "leggings": "iron", "boots": "iron"},
+	{"helmet": "gold", "chestplate": "gold", "leggings": "gold", "boots": "gold"},
+	{"helmet": "diamond", "chestplate": "diamond", "leggings": "diamond", "boots": "diamond"},
+	{"helmet": "netherite_enchanted", "chestplate": "netherite_enchanted", "leggings": "netherite_enchanted", "boots": "netherite_enchanted"}]
+const LABELS := ["none", "leather", "chainmail", "iron", "gold", "diamond", "netherite+glint"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
@@ -26,13 +32,13 @@ func _ready() -> void:
 	for i in HEROES.size():
 		var c := MinecraftCharacter.new()
 		add_child(c)
-		c.setup(SkinLibrary.get_skin(HEROES[i]), {}, "")
+		c.setup(SkinLibrary.get_skin(HEROES[i]), ARMOR[i], "")
 		c.position = Vector3(-5.4 + 1.8 * float(i), 0, 0)
 		c.rotation_degrees.y = 180.0
 		c.play("idle")
 		var lbl := Label3D.new()
 		add_child(lbl)
-		lbl.text = HEROES[i]
+		lbl.text = LABELS[i]
 		lbl.position = Vector3(-5.4 + 1.8 * float(i), 2.35, 0)
 		lbl.font_size = 72
 		lbl.pixel_size = 0.0025

@@ -13,6 +13,8 @@ uniform float anim_enabled = 0.0;
 uniform float walk_phase = 0.0;
 uniform float swing_amplitude = 0.0;
 uniform float glint_strength = 1.0;
+uniform sampler2D glint_tex : source_color, filter_nearest, repeat_enable;
+uniform float glint_has_tex = 0.0;
 uniform float emission_boost = 0.0;
 uniform vec4 emission_color : source_color = vec4(1.0, 0.5, 0.1, 1.0);
 
@@ -60,9 +62,19 @@ void mc_shade(vec2 uv, vec4 vcol, float use_color, float glint, float flash_v, f
 	albedo = col;
 	vec3 em = emission_color.rgb * emission_boost;
 	if (glint > 0.5) {
-		float stripe = sin((uv.x + uv.y) * 40.0 + time * 3.0) * 0.5 + 0.5;
-		stripe = smoothstep(0.55, 1.0, stripe);
-		em += vec3(0.65, 0.3, 0.95) * stripe * 0.7 * glint_strength;
+		if (glint_has_tex > 0.5) {
+			// Minecraft's enchantment glint: the same texture sampled twice, scrolling in different
+			// directions at different speeds, tinted violet and added on top. The two passes are what
+			// make it shimmer rather than simply slide.
+			vec2 g1 = uv * 3.0 + vec2(time * 0.11, time * 0.05);
+			vec2 g2 = uv * 3.0 + vec2(-time * 0.08, time * 0.13);
+			vec3 g = texture(glint_tex, g1).rgb + texture(glint_tex, g2).rgb;
+			em += g * vec3(0.60, 0.34, 0.95) * 0.75 * glint_strength;
+		} else {
+			float stripe = sin((uv.x + uv.y) * 40.0 + time * 3.0) * 0.5 + 0.5;
+			stripe = smoothstep(0.55, 1.0, stripe);
+			em += vec3(0.65, 0.3, 0.95) * stripe * 0.7 * glint_strength;
+		}
 	}
 	emission = em;
 }

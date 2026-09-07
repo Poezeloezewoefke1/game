@@ -75,6 +75,22 @@ func get_merged_mesh(id: String, armor: Dictionary, held: String, extras: Array 
 	_merged_meshes[key] = mesh
 	return mesh
 
+## One merged mesh per armour layer group, for MultiMesh rendering. Each needs its own texture, so
+## they cannot be merged into the skin mesh the way the shell-box armour was.
+func get_armor_layer_meshes(armor: Dictionary) -> Array:
+	var key := "armor|" + JSON.stringify(armor)
+	if _merged_meshes.has(key):
+		return _merged_meshes[key]
+	var out: Array = []
+	for group in ArmorBuilder.layer_groups(armor):
+		out.append({
+			"mesh": ArmorBuilder.build_layer_merged_mesh(group["parts"], int(group["layer"])),
+			"material": String(group["material"]), "layer": int(group["layer"]),
+			"glint": float(group["glint"]),
+		})
+	_merged_meshes[key] = out
+	return out
+
 func clear_cache() -> void:
 	_skins.clear(); _materials.clear(); _merged_meshes.clear()
 
