@@ -148,9 +148,10 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
   needs `rcedit`, a Windows tool unavailable here. The in-game window icon is set correctly.
 - **Music is short loops.** Each track is 8 bars (roughly 17 seconds) of synthesised chiptune. It
   loops seamlessly but will get repetitive over a long run.
-- **Voice acting is one character deep.** ParrotX2 has all thirteen lines recorded and playing;
-  every other character is still on-screen dialogue only. The playback path is convention-based, so
-  the remaining sets need files and no code (see docs/VOICE_LINES.md).
+- **Voice acting covers two of five speaking characters.** ParrotX2 and Wemmbu each have all
+  thirteen lines recorded and playing; SpokeIsHere, FlameFrags, Saparata and the fourteen towers are
+  still on-screen dialogue only. The playback path is convention-based, so the remaining sets need
+  files and no code (see docs/VOICE_LINES.md).
 - **Godot logs a resource leak at exit.** Static caches (shaders, the armour texture, block textures,
   prop meshes) outlive the scene tree teardown. Harmless at shutdown; it does not leak during play.
 - **Enemies do not path around obstacles.** They follow a fixed polyline with a lateral offset. Walls

@@ -19,7 +19,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -786,7 +786,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -808,7 +808,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -819,7 +819,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -863,7 +863,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -874,7 +874,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -918,7 +918,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -951,7 +951,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -973,7 +973,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -1017,7 +1017,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -1039,7 +1039,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -1061,7 +1061,8 @@
       "creator": "build tools",
       "license": "Project-original",
       "usage": "Automated UV-mapping test",
-      "placeholder": true
+      "placeholder": true,
+      "model": "classic"
     },
     {
       "id": "uv_test_legacy",
@@ -1071,7 +1072,8 @@
       "creator": "build tools",
       "license": "Project-original",
       "usage": "Automated UV-mapping test",
-      "placeholder": true
+      "placeholder": true,
+      "model": "classic"
     },
     {
       "id": "wemmbu",
@@ -1103,7 +1105,7 @@
       "creator": "Skin supplied by the project owner (original character skin).",
       "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "classic",
+      "model": "slim",
       "placeholder": false
     },
     {
@@ -1244,6 +1246,136 @@
       "creator": "ParrotX2 (recorded for this project and supplied by the project owner)",
       "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
       "usage": "ParrotX2 hero line: defeat",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_select",
+      "asset": "assets/audio/voice/wemmbu_select.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: select",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_placed",
+      "asset": "assets/audio/voice/wemmbu_placed.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: placed",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_ability_1",
+      "asset": "assets/audio/voice/wemmbu_ability_1.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: ability_1",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_ability_2",
+      "asset": "assets/audio/voice/wemmbu_ability_2.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: ability_2",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_ability_3",
+      "asset": "assets/audio/voice/wemmbu_ability_3.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: ability_3",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_ultimate",
+      "asset": "assets/audio/voice/wemmbu_ultimate.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: ultimate",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_level_2",
+      "asset": "assets/audio/voice/wemmbu_level_2.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: level_2",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_level_15",
+      "asset": "assets/audio/voice/wemmbu_level_15.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: level_15",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_wave_clear",
+      "asset": "assets/audio/voice/wemmbu_wave_clear.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: wave_clear",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_low_lives",
+      "asset": "assets/audio/voice/wemmbu_low_lives.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: low_lives",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_boss_enter",
+      "asset": "assets/audio/voice/wemmbu_boss_enter.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: boss_enter",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_victory",
+      "asset": "assets/audio/voice/wemmbu_victory.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: victory",
+      "placeholder": false
+    },
+    {
+      "id": "voice_wemmbu_defeat",
+      "asset": "assets/audio/voice/wemmbu_defeat.mp3",
+      "type": "voice",
+      "source": "supplied_by_developer",
+      "creator": "Wemmbu (recorded for this project and supplied by the project owner)",
+      "license": "Recorded for this project at the owner's request. Confirm the performer's terms before shipping publicly.",
+      "usage": "Wemmbu hero line: defeat",
       "placeholder": false
     }
   ],

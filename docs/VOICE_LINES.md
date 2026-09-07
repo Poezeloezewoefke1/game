@@ -21,7 +21,8 @@ these are prompts, not scripts, and the file should be updated to match what the
 - **Format:** WAV, OGG or MP3 all work — send whatever is easiest. Mono, 48 kHz, 16-bit or better if
   you have the choice. Name each file `<character>_<key>`, e.g. `parrotx2_ability_1.mp3`; keys are in
   each table. Naming files after the *line text* is fine too — that is what ParrotX2's set did, and
-  matching them back up took a minute.
+  matching them back up took a minute — filenames get their `?` and `"` stripped and non-ASCII
+  mangled on the way through a zip, so the matcher ignores punctuation entirely.
 - **Length:** 1–2 seconds for combat barks, up to 4 for arc lines. Anything longer will be cut off by
   the next game event.
 - **Takes:** three per line — one flat, one urgent, one wry. Combat barks repeat a lot, so variety
@@ -210,7 +211,7 @@ Recorded so far:
 | Character | Status |
 |-----------|--------|
 | **ParrotX2** | **All 13 lines recorded and in the game.** |
-| Wemmbu | not recorded |
+| **Wemmbu** | **All 13 lines recorded and in the game.** |
 | SpokeIsHere | not recorded |
 | FlameFrags | not recorded |
 | Saparata | not recorded |

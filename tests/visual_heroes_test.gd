@@ -1,15 +1,14 @@
 extends Node3D
 ## Renders the four playable heroes side by side so the supplied skins can be eyeballed.
 
-const HEROES := ["chungie", "cindercrest_soldier", "saparata", "shoebilly", "lettucek",
-	"clownpierce", "ashswagg", "arachn1d"]
-const ARMOR := [{}, {}, {}, {}, {}, {}, {}, {}]
-const LABELS := ["chungie", "cindercrest", "saparata", "shoebilly", "lettucek", "clownpierce", "ashswagg", "arachn1d"]
+const HEROES := ["parrotx2", "wemmbu", "spokeishere", "flamefrags", "reinadrop", "purpled"]
+const ARMOR := [{}, {}, {}, {}, {}, {}]
+const LABELS := ["parrotx2 SLIM", "wemmbu classic", "spokeishere SLIM", "flamefrags SLIM", "reinadrop SLIM", "purpled SLIM"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
 	add_child(cam)
-	cam.position = Vector3(0, 2.4, -12.5)
+	cam.position = Vector3(0, 2.2, -9.5)
 	cam.look_at(Vector3(0, 1.05, 0))
 	cam.fov = 38
 	var sun := DirectionalLight3D.new()
@@ -29,14 +28,14 @@ func _ready() -> void:
 		var c := MinecraftCharacter.new()
 		add_child(c)
 		c.setup(SkinLibrary.get_skin(HEROES[i]), ARMOR[i], "")
-		c.position = Vector3(-6.3 + 1.8 * float(i), 0, 0)
+		c.position = Vector3(-4.5 + 1.8 * float(i), 0, 0)
 		c.rotation_degrees.y = 180.0
 		c.play("idle")
 		var lbl := Label3D.new()
 		add_child(lbl)
 		lbl.text = LABELS[i]
-		lbl.position = Vector3(-6.3 + 1.8 * float(i), 2.35, 0)
-		lbl.font_size = 72
+		lbl.position = Vector3(-4.5 + 1.8 * float(i), 2.35, 0)
+		lbl.font_size = 56
 		lbl.pixel_size = 0.0025
 		lbl.rotation_degrees.y = 180.0
 

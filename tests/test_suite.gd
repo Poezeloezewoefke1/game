@@ -48,6 +48,7 @@ func _ready() -> void:
 	test_save()
 	_section("Relationships")
 	test_relationships()
+	test_skin_models()
 	test_armor_layers()
 	test_cc_limits()
 	test_downgrade_scaling()
@@ -729,6 +730,38 @@ func test_relationships() -> void:
 	hero.reset_relationship()
 	check_near(hero.relationship_damage_mult, 1.0, 0.001, "reset returns the hero to identity")
 	hero.free()
+
+## The manifest's "model" field is an override that beats SkinParser's auto-detection, so a wrong
+## value silently renders a slim character with 4-wide arms. It was wrong for twelve skins once,
+## because the install script used a bad slim test (checking column 47, which a slim skin still fills
+## with its arm's left face — the columns actually left spare are 54-55). This asserts the manifest
+## and the parser agree.
+func test_skin_models() -> void:
+	var manifest_path := "res://data/asset_manifest.json"
+	check(FileAccess.file_exists(manifest_path), "asset manifest exists")
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+	check(typeof(parsed) == TYPE_DICTIONARY, "manifest parses")
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var checked := 0
+	var wrong: Array[String] = []
+	for a in (parsed as Dictionary).get("assets", []):
+		var entry: Dictionary = a
+		if String(entry.get("type", "")) != "skin":
+			continue
+		var path := "res://" + String(entry.get("asset", ""))
+		if not FileAccess.file_exists(path):
+			continue
+		var img := SkinParser.load_image(path)
+		if img == null or img.get_width() != img.get_height():
+			continue                      # legacy 64x32 has no slim variant
+		checked += 1
+		var expected := "slim" if SkinParser.detect_slim(img) else "classic"
+		if String(entry.get("model", "classic")) != expected:
+			wrong.append("%s (manifest says %s, texture is %s)"
+				% [String(entry.get("id", "?")), String(entry.get("model", "")), expected])
+	check(checked > 20, "checked a meaningful number of skins (%d)" % checked)
+	check(wrong.is_empty(), "every manifest model matches the texture: %s" % ", ".join(wrong))
 
 ## Real armour layers, when a resource pack is installed. These are skipped rather than failed on a
 ## checkout with no pack, because the pack is optional by design.

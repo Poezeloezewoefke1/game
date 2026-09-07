@@ -6,14 +6,14 @@ func _ready() -> void:
 	print("[AUDIO] music_main: %s" % ("OK " + music.get_class() if music != null else "MISSING"))
 	var keys := ["select", "placed", "ability_1", "ability_2", "ability_3", "ultimate",
 		"level_2", "level_15", "wave_clear", "low_lives", "boss_enter", "victory", "defeat"]
-	var ok := 0
-	for k in keys:
-		var s := AudioMgr._load("voice/parrotx2_" + k)
-		if s != null:
-			ok += 1
-		else:
-			print("[AUDIO]   MISSING voice/parrotx2_%s" % k)
-	print("[AUDIO] parrotx2 voice lines: %d / %d" % [ok, keys.size()])
+	for who in ["parrotx2", "wemmbu"]:
+		var ok := 0
+		for k in keys:
+			if AudioMgr._load("voice/%s_%s" % [who, k]) != null:
+				ok += 1
+			else:
+				print("[AUDIO]   MISSING voice/%s_%s" % [who, k])
+		print("[AUDIO] %s voice lines: %d / %d" % [who, ok, keys.size()])
 	print("[AUDIO] a character with no lines returns false: %s"
 		% str(not AudioMgr.play_voice("saparata", "select")))
 	print("[AUDIO] buses: %s" % str(AudioServer.get_bus_index("Voice") >= 0))
