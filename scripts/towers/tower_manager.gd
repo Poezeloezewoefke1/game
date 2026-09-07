@@ -145,6 +145,12 @@ func refresh_auras() -> void:
 	for t in towers:
 		if is_instance_valid(t):
 			t.external_mults = {"damage": 1.0, "rate": 1.0, "range_add": 0.0, "armor_pen": 0.0}
+	# The hero accumulates its bond bonus the same way towers do, so it has to be reset the same way.
+	# Without this its multiplier compounded on every refresh -- and refresh_auras() runs on every
+	# placement, upgrade and sell, about 125 times in a campaign -- so the hero ended up dealing ~90%
+	# of all damage in the game and no amount of wave tuning could make a run losable.
+	if hero != null and is_instance_valid(hero):
+		hero.reset_relationship()
 	# 1. tower auras
 	for src in towers:
 		if not is_instance_valid(src):

@@ -232,3 +232,109 @@ These were all found by the tests or the screenshots, not by inspection.
 
 10. **Armour sealed the face shut**, making every character unidentifiable under a helmet. Rebuilt
     armour as shell pieces; the test suite now asserts the face stays open.
+
+11. **Explosion chains overflowed the stack.** A dense cluster of TNT runners killing each other
+    recursed through `damage()` until Godot ran out of stack. Found by the balance simulation. Fixed
+    by queuing blasts and draining them iteratively with a round cap.
+
+12. **Gear breaks were counted as kills.** Every armour layer a chungie shed incremented the kill
+    stat, so "enemies defeated" reported several times the number of units actually stopped (1526 at
+    wave 9). Split into `kills` and `gear_breaks`.
+
+13. **A lambda capture leak in the HUD.** `_refresh_hero_panel()` connected a fresh lambda to
+    `EventBus.hero_xp_changed` on every rebuild, spamming "Lambda capture at index 0 was freed".
+    Replaced with a single bound method and a retained bar reference.
+
+---
+
+## 8. Bugs found by the balance simulation
+
+Section 7's bugs stopped the game from running correctly. This second group is different: the game
+ran, looked fine, and was quietly *unplayable as designed*. They were only found by having an AI
+player play a full 25-wave campaign under the same rules as a human and then measuring where the
+damage actually came from — no amount of reading the code surfaced them.
+
+The investigation is worth recording, because the first two hypotheses were wrong:
+
+1. **The symptom.** Every campaign ended 100/100 lives with zero leaks. Raising late-wave enemy counts
+   made it *easier* (kill rewards scale with count, so a bigger wave pays for the towers that answer
+   it). Raising HP did nothing either: a sanity run at **25x HP** on waves 16-25 still finished
+   100/100 with a single leak. Difficulty was not tunable at all, which meant something was
+   HP-invariant.
+
+2. **Wrong hypothesis #1: crowd control.** `apply_stun` only ever extended `stun_until`, and
+   `push_back` subtracted path distance on every hit, both with no cap — so stun/knockback towers near
+   the exit could pin any non-boss unit indefinitely regardless of its health. This is a genuine
+   defect and is fixed (diminishing returns on stun, a per-unit cooldown *and* a lifetime budget on
+   knockback, a floor on slows), but it was **not** the cause: the 25x run was unchanged.
+
+3. **Wrong hypothesis #2: the hero was overpowered.** Kill attribution showed `parrotx2` landing 448
+   of 674 kills and 448 of 452 kills past 90% of the path. But kill credit misleads — a unit worn down
+   by five towers and finished by a sixth credits only the sixth. Measuring *damage* rather than kills
+   showed the hero at 90% of all damage in the run, while its 316 recorded attacks at 32.8 damage
+   could account for at most ~21,000 of 4.7 million.
+
+4. **Real cause A: wave HP scaling evaporated on the first gear break.** `spawn()` applied
+   `hp_scale * hp_mult`, but `_downgrade()` applied only `hp_scale`. A seven-layer chungie therefore
+   carried the wave's multiplier on roughly one seventh of its real health pool. Fixed by storing the
+   spawn multiplier per unit (`hp_mult_of`) and reapplying it to every layer below.
+
+5. **Real cause B: the hero's relationship bonus compounded without ever being reset.**
+   `apply_relationship()` multiplies `relationship_damage_mult`, and `reset_relationship()` was never
+   called from anywhere. `refresh_auras()` runs on every placement, upgrade and sell — about 125 times
+   in a campaign — and each call re-multiplied the hero by every active bond. Towers were rebuilt from
+   identity on each refresh; the hero was not. Fixed by resetting the hero alongside the towers in
+   `refresh_auras()`.
+
+   Total damage in a campaign fell from 4,702,027 to 16,795 once this was fixed, and the damage table
+   became what the design intends: the towers carry the run (royal_guard 27%, jaden_man 22%,
+   purpled 17%) and the support hero contributes 8%.
+
+6. **Base healing made lives meaningless.** Once the two bugs above were fixed and leaks became real,
+   the simulation still finished a campaign on **100/100 lives having taken 53 leaks** — every one of
+   them healed back. The cause is structural rather than a wrong number: base repair was expressed per
+   second, and a campaign runs roughly forty minutes, so ReinaDrop's signature tier (6 lives per 10s)
+   restored about fourteen times the entire hundred-life pool over a run. Fymada's `lives_on_wave` 40
+   was likewise larger than the damage any single wave could do. Fixed structurally with a per-wave
+   repair cap (`repair_cap`, enforced in `Tower._tick_repair` and reset each wave) rather than by
+   shrinking the numbers alone, so the medic identity survives without leaks becoming free.
+
+7. **Campaign results were not reproducible.** The enemy RNG was seeded from the clock, and two runs
+   of the same build finished "won with 80 lives" and "lost on wave 23". The simulation now takes a
+   seed argument, and `tools/balance_sweep.sh` reports a distribution across seeds instead of trusting
+   one run.
+
+---
+
+## 9. Campaign balance result
+
+`tests/balance_sim.gd` plays a full 25-wave campaign with an AI player bound by the same rules as a
+human: the map's real starting emeralds, purchases and upgrades only when affordable, hero abilities
+on cooldown, towers placed in the free zone furthest from the ones already built. `tools/balance_sweep.sh`
+runs it across seeds. After the fixes and tuning in section 8, ParrotX2 on Fort Feather at normal:
+
+| seed | outcome | wave  | lives   | leaks | boss killed |
+|------|---------|-------|---------|-------|-------------|
+| 1    | VICTORY | 25/25 | 59/100  | 23    | yes         |
+| 2    | VICTORY | 25/25 | 49/100  | 24    | yes         |
+| 3    | VICTORY | 25/25 | 66/100  | 27    | yes         |
+| 4    | VICTORY | 25/25 | 61/100  | 22    | yes         |
+| 5    | VICTORY | 25/25 | 55/100  | 24    | yes         |
+| 7    | VICTORY | 25/25 | 65/100  | 22    | yes         |
+
+Six of six wins, ending on roughly half the life bar with 22-27 leaks and Saparata killed. The shape
+of a run is now the intended one: no leaks through wave 7 while the board is being built, the first
+real damage around wave 13, and steady pressure through the back half.
+
+Reproduce with:
+
+```
+tools/balance_sweep.sh parrotx2 normal fort_feather 1 2 3 4 5
+```
+
+Read this as a claim about the *simulated* player, not a human one — see KNOWN_LIMITATIONS §5 for
+what that does and does not establish.
+
+Hero repositioning is covered by `tests/headless_run.gd`, which relocates the hero to a build zone
+mid-run and asserts the cooldown starts and the bond multiplier stays fixed across 21 aura refreshes
+(the loop that used to compound it).

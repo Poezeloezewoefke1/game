@@ -16,9 +16,13 @@ var camera: Camera3D
 var hud
 var vfx: Node3D
 
+const HERO_MOVE_COOLDOWN := 12.0
+
 var placing_tower_id: String = ""
 var placement_preview: Node3D
 var placement_zone: int = -1
+var moving_hero: bool = false
+var hero_move_cooldown: float = 0.0
 var _shake_time: float = 0.0
 var _shake_strength: float = 0.0
 var _cam_target: Vector3 = Vector3.ZERO
@@ -155,7 +159,9 @@ func _play_intro() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		if placing_tower_id != "":
+		if moving_hero:
+			cancel_hero_move()
+		elif placing_tower_id != "":
 			cancel_placement()
 		else:
 			hud.toggle_pause_menu()
@@ -186,7 +192,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_handle_click(event.position)
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		if placing_tower_id != "":
+		if moving_hero:
+			cancel_hero_move()
+		elif placing_tower_id != "":
 			cancel_placement()
 		else:
 			towers.select(null)
@@ -194,6 +202,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_update_placement_preview(event.position)
 
 func _handle_click(screen_pos: Vector2) -> void:
+	if moving_hero:
+		_try_move_hero(screen_pos)
+		return
 	if placing_tower_id != "":
 		_try_place(screen_pos)
 		return
@@ -208,6 +219,43 @@ func _handle_click(screen_pos: Vector2) -> void:
 		hud.show_hero_panel()
 		return
 	towers.select(null)
+
+# ================================================================================================
+# Hero repositioning
+# ================================================================================================
+
+## Starts hero relocation. The hero may stand on any build zone, occupied or not — it shares the
+## ground with a tower rather than consuming the slot.
+func begin_hero_move() -> void:
+	if hero == null or not is_instance_valid(hero) or hero_move_cooldown > 0.0:
+		return
+	moving_hero = true
+	cancel_placement()
+	map_builder.show_zone_markers(true)
+	for i in towers.zones.size():
+		map_builder.set_zone_marker_state(i, true)
+	EventBus.announce.emit("REPOSITION", "Click a build zone to move %s there." % hero.def.get("name", ""), 2.0)
+
+func cancel_hero_move() -> void:
+	if not moving_hero:
+		return
+	moving_hero = false
+	map_builder.show_zone_markers(false)
+
+func _try_move_hero(screen_pos: Vector2) -> void:
+	var p := _ground_point(screen_pos)
+	var zone := towers.zone_at(p)
+	if zone < 0:
+		AudioMgr.play_sfx("denied", -6.0)
+		return
+	var z: Dictionary = towers.zones[zone]
+	hero.position = (z["pos"] as Vector3) + Vector3(0, float(z["elevation"]), 0)
+	hero_move_cooldown = HERO_MOVE_COOLDOWN
+	moving_hero = false
+	map_builder.show_zone_markers(false)
+	towers.refresh_auras()          # the hero's aura moved with it
+	AudioMgr.play_sfx("place", -4.0)
+	EventBus.hero_placed.emit(hero)
 
 func _ground_point(screen_pos: Vector2) -> Vector3:
 	var from := camera.project_ray_origin(screen_pos)
@@ -292,6 +340,8 @@ func _process(delta: float) -> void:
 	_update_camera_input(delta)
 	_update_shake(delta)
 	_update_float_texts(delta)
+	if hero_move_cooldown > 0.0:
+		hero_move_cooldown = maxf(0.0, hero_move_cooldown - delta)
 
 func _update_camera_input(delta: float) -> void:
 	var move := Vector2.ZERO

@@ -62,19 +62,39 @@ reasonable expectation, not a tested result.
 
 ---
 
-## 5. Balance is untuned
+## 5. Balance is tuned against a simulated player, not a human one
 
-The numbers are set for readability and internal consistency, not by playtesting. Nobody has played a
-full 25-wave run at normal speed with a human making decisions.
+The campaign is now known to be winnable, and it is tuned — but by an AI player, not a person.
 
-Known-suspect areas:
-- Late-wave difficulty is asserted by the test suite only as a ramp (last third > 2× first third by
-  total HP). Whether wave 24 is *beatable* by a reasonable board has not been established.
-- Economy towers may be too strong: a defence that opens with Eggchan and Lomedy accumulates a large
-  bank by wave 10.
-- Signature (tier 4) upgrade costs were set by feel.
-- The boss test wins by damaging enemies directly through the harness, which proves the *encounter
-  mechanics* work — not that the fight is winnable with a legitimate board.
+`tests/balance_sim.gd` plays a full 25-wave campaign under exactly the rules a human has: the map's
+real starting emeralds, no free money, purchases and upgrades only when affordable, hero abilities on
+cooldown. `tools/balance_sweep.sh` runs it across several seeds and reports the spread. That is what
+the current wave numbers (`tools/tune_waves.py`) were fitted to.
+
+What this establishes: the campaign can be won from wave 1 to the Saparata kill without cheating, the
+difficulty curve responds to tuning, and the boss is reachable and beatable by a legitimate board.
+
+What it does **not** establish, and these are real gaps:
+
+- **A human is not this AI.** The simulated player follows one fixed build order and one upgrade plan,
+  places each tower in the free zone furthest from its existing ones, and never sells, re-targets, or
+  repositions the hero. A person will play better in some ways (reacting to a wave's composition) and
+  worse in others (missing ability windows). The AI is a competent-but-unimaginative benchmark, so the
+  game is probably somewhat easier for an engaged human than these numbers suggest.
+- **Only one hero and one map are tuned.** The sweep above is ParrotX2 on Fort Feather at normal.
+  Wemmbu, FlameFrags and SpokeIsHere have had no campaign-level tuning at all, and neither has
+  Merchant City or the easy/hard difficulty multipliers.
+- **Run-to-run variance is wide.** Before seeding, two runs of an identical build finished "won with
+  80 lives" and "lost on wave 23". Seeded runs are reproducible, but the spread across seeds is still
+  large enough that a single run should never be used to judge a change.
+- **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
+- **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
+  game *feels* good — only about whether it can be won.
+
+Two balance-relevant systems are also currently inert and should be treated as unbalanced rather than
+absent: the ultimate ability effect `leak_cap` is parsed and stored but never read by anything
+(`Hero.leak_damage_cap()` has no callers), and the `wall` ability spawns a `cobble_wall` unit that
+nothing checks for during movement, so walls do not actually block the path.
 
 ---
 

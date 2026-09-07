@@ -3,6 +3,8 @@ extends Node3D
 ## The player's chosen protagonist. Attacks like a tower, but also levels up during the run and
 ## carries three actives plus an ultimate, driven by data/heroes/heroes.json.
 
+const SUMMON_SUFFIX := ":summon"
+
 signal level_changed(level: int)
 signal ability_state_changed()
 
@@ -288,7 +290,7 @@ func _on_attack_hit() -> void:
 	AudioMgr.play_sfx_at("swing", global_position, -9.0, 0.15, 0.06)
 
 func on_enemy_killed(slot: int, killer: String) -> void:
-	if killer != hero_id:
+	if killer != hero_id and killer != hero_id + SUMMON_SUFFIX:
 		return
 	kills += 1
 	add_xp(int(enemies.def_of(slot).get("xp", 2)) if enemies.is_alive(slot) else 3)
@@ -495,7 +497,10 @@ func _summon(count: int, duration: float, e: Dictionary) -> void:
 func _make_summon(pos: Vector3, duration: float, dmg: float, rate: float, rng_r: float, character: String) -> HeroSummon:
 	var s := HeroSummon.new()
 	get_parent().add_child(s)
-	s.setup(character, enemies, projectiles, dmg, rate, rng_r, duration, hero_id)
+	# Summons report their own source id so damage attribution can tell a hero's personal output
+	# apart from its summons' -- they are wildly different balance levers but both come from the
+	# same ability bar. SUMMON_SUFFIX keeps kill credit flowing back to the hero.
+	s.setup(character, enemies, projectiles, dmg, rate, rng_r, duration, hero_id + SUMMON_SUFFIX)
 	s.global_position = pos
 	summons.append(s)
 	return s

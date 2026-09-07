@@ -8,6 +8,15 @@ extends Node3D
 
 const CELL_SIZE := 4.0
 const MAX_CAPACITY := 2200
+## Safety bound on chained death explosions (one round = every blast queued by the previous round).
+const MAX_CHAIN_ROUNDS := 24
+
+# Crowd-control limits. See the stun_dr_stage / knock_ready declarations below for why these exist.
+const STUN_DR_FACTORS: Array[float] = [1.0, 0.5, 0.25]  ## then immune until the window lapses
+const STUN_DR_WINDOW := 8.0                             ## seconds of no stuns needed to reset
+const KNOCKBACK_COOLDOWN := 2.5                         ## per-unit, seconds
+const KNOCKBACK_BUDGET := 24.0                          ## total path distance a unit can be shoved back
+const SLOW_FLOOR := 0.2                                 ## nothing moves slower than 20% base speed
 
 # --- flags -------------------------------------------------------------------------------------
 const F_FLYING := 1
@@ -42,6 +51,23 @@ var flags: PackedInt32Array = PackedInt32Array()
 var slow_until: PackedFloat32Array = PackedFloat32Array()
 var slow_mult: PackedFloat32Array = PackedFloat32Array()
 var stun_until: PackedFloat32Array = PackedFloat32Array()
+# Crowd-control diminishing returns. Without these, stun and knockback are independent of enemy HP:
+# apply_stun() only extended stun_until and push_back() subtracted distance on every hit, so a couple
+# of stunning or knocking towers near the exit could pin any non-boss unit in place indefinitely no
+# matter how much health it had, making tanky enemies strictly weaker than fast ones. Repeated CC on
+# the same unit now decays and then stops landing until the unit has been left alone for a while.
+# (Found while investigating untunable late-game difficulty. It was not that bug's cause -- see
+# hp_mult_of below and Hero.reset_relationship() -- but it is a real defect in its own right.)
+var stun_dr_stage: PackedInt32Array = PackedInt32Array()
+var stun_dr_until: PackedFloat32Array = PackedFloat32Array()
+var knock_ready: PackedFloat32Array = PackedFloat32Array()
+var knock_budget: PackedFloat32Array = PackedFloat32Array()
+# The wave's per-spawn HP multiplier, kept for the unit's lifetime. Gear layers below the one that
+# spawned are re-rolled by _downgrade(), which used to apply only the global hp_scale -- so a wave's
+# hp_mult survived exactly one gear break and then vanished. A seven-layer chungie therefore carried
+# the wave's scaling on roughly a seventh of its real health pool, which is why raising late-wave HP
+# barely moved the outcome at all.
+var hp_mult_of: PackedFloat32Array = PackedFloat32Array()
 var flash_until: PackedFloat32Array = PackedFloat32Array()
 var phase: PackedFloat32Array = PackedFloat32Array()
 var y_offset: PackedFloat32Array = PackedFloat32Array()
@@ -73,9 +99,19 @@ var reward_scale: float = 1.0
 var rng := RandomNumberGenerator.new()
 var enabled: bool = true
 
+## Test-only damage attribution. Off by default; the balance simulation turns it on to find out which
+## towers, hero and abilities actually carry a run, which kill credit alone cannot show (a unit that
+## is worn down by five towers and finished by a sixth credits only the sixth).
+var debug_damage_by_source: bool = false
+var damage_by_source: Dictionary = {}
+
 # spatial grid
 var _grid: Dictionary = {}
 var _grid_dirty: bool = true
+
+# death-explosion chain resolution (see damage() / _drain_deaths())
+var _pending_blasts: Array = []
+var _draining: bool = false
 
 # statistics
 var total_spawned: int = 0
@@ -117,6 +153,8 @@ func _resize(n: int) -> void:
 	alive.resize(n); type_idx.resize(n); hp.resize(n); max_hp.resize(n); dist.resize(n)
 	base_speed.resize(n); lateral.resize(n); armor.resize(n); flags.resize(n)
 	slow_until.resize(n); slow_mult.resize(n); stun_until.resize(n); flash_until.resize(n)
+	stun_dr_stage.resize(n); stun_dr_until.resize(n); knock_ready.resize(n); knock_budget.resize(n)
+	hp_mult_of.resize(n)
 	phase.resize(n); y_offset.resize(n); cd_a.resize(n); cd_b.resize(n); group_idx.resize(n)
 	used_once.resize(n); spawn_time.resize(n); pos_x.resize(n); pos_y.resize(n); pos_z.resize(n)
 	scripted.resize(n); active_pos.resize(n)
@@ -147,6 +185,7 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	alive[slot] = 1
 	type_idx[slot] = di
 	var hp_value := float(d.get("hp", 10)) * hp_scale * hp_mult
+	hp_mult_of[slot] = hp_mult
 	hp[slot] = hp_value
 	max_hp[slot] = hp_value
 	dist[slot] = at_distance
@@ -156,6 +195,10 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	slow_until[slot] = 0.0
 	slow_mult[slot] = 1.0
 	stun_until[slot] = 0.0
+	stun_dr_stage[slot] = 0
+	stun_dr_until[slot] = 0.0
+	knock_ready[slot] = 0.0
+	knock_budget[slot] = KNOCKBACK_BUDGET
 	flash_until[slot] = 0.0
 	phase[slot] = rng.randf()
 	cd_a[slot] = 0.0
@@ -361,20 +404,23 @@ func _tick_abilities(slot: int, d: Dictionary, abilities: Array, delta: float) -
 				pass
 
 ## Abilities that fire when the unit dies. Returns true if the unit should survive (totem revive).
+##
+## A death explosion is QUEUED rather than applied here. Applying it inline recurses — an exploding
+## unit kills a neighbour, whose explosion kills another, and a dense cluster of TNT runners blows the
+## stack. Queuing turns that chain into the iterative drain in _drain_deaths().
 func _death_abilities(slot: int, d: Dictionary) -> bool:
 	for a in d.get("abilities", []):
 		var t := String(a.get("type", ""))
 		match t:
 			"death_explosion":
-				var r := float(a.get("radius", 2.5))
-				var dmg := float(a.get("damage", 40.0))
-				var centre := unit_position(slot)
+				_pending_blasts.append({
+					"centre": unit_position(slot),
+					"radius": float(a.get("radius", 2.5)),
+					"damage": float(a.get("damage", 40.0)),
+					"exclude": slot,
+				})
 				EventBus.camera_shake.emit(0.35, 0.25)
-				AudioMgr.play_sfx_at("explosion", centre, -3.0)
-				for other in query_range(centre, r):
-					if other != slot:
-						var falloff := DamageCalc.splash_falloff(unit_position(other).distance_to(centre), r)
-						damage(other, dmg * falloff, "explosive", 0.5, "tnt")
+				AudioMgr.play_sfx_at("explosion", unit_position(slot), -3.0)
 			"death_splash_slow":
 				var r2 := float(a.get("radius", 3.0))
 				for other in query_range(unit_position(slot), r2):
@@ -395,8 +441,41 @@ func _death_abilities(slot: int, d: Dictionary) -> bool:
 # ================================================================================================
 
 ## Applies damage through the armor formula. Returns damage actually dealt.
+##
+## Death explosions queued during resolution are drained iteratively here, so a chain reaction of
+## exploding units is bounded rather than recursive.
 func damage(slot: int, amount: float, damage_type: String = "melee", armor_pen: float = 0.0,
 		source_id: String = "", crit_chance: float = 0.0, crit_mult: float = 2.0) -> float:
+	var dealt := _damage_one(slot, amount, damage_type, armor_pen, source_id, crit_chance, crit_mult)
+	if not _draining and not _pending_blasts.is_empty():
+		_drain_deaths()
+	return dealt
+
+## Applies every queued blast, and any blast those kills produce, until the chain settles.
+func _drain_deaths() -> void:
+	_draining = true
+	var rounds := 0
+	while not _pending_blasts.is_empty() and rounds < MAX_CHAIN_ROUNDS:
+		rounds += 1
+		var batch: Array = _pending_blasts
+		_pending_blasts = []
+		for b: Dictionary in batch:
+			var centre: Vector3 = b["centre"]
+			var radius: float = b["radius"]
+			var dmg: float = b["damage"]
+			var exclude: int = b["exclude"]
+			for other in query_range(centre, radius):
+				if other == exclude:
+					continue
+				var falloff := DamageCalc.splash_falloff(unit_position(other).distance_to(centre), radius)
+				_damage_one(other, dmg * falloff, "explosive", 0.5, "tnt")
+	if rounds >= MAX_CHAIN_ROUNDS:
+		push_warning("[EnemyManager] explosion chain hit the round cap; remaining blasts dropped")
+		_pending_blasts.clear()
+	_draining = false
+
+func _damage_one(slot: int, amount: float, damage_type: String, armor_pen: float,
+		source_id: String, crit_chance: float = 0.0, crit_mult: float = 2.0) -> float:
 	if slot < 0 or slot >= capacity or alive[slot] == 0 or amount <= 0.0:
 		return 0.0
 	var d: Dictionary = defs[type_idx[slot]]
@@ -410,6 +489,8 @@ func damage(slot: int, amount: float, damage_type: String = "melee", armor_pen: 
 	hp[slot] -= float(res["damage"])
 	flash_until[slot] = time_now + 0.12
 	GameState.run_stats["damage_dealt"] = float(GameState.run_stats.get("damage_dealt", 0.0)) + dealt
+	if debug_damage_by_source:
+		damage_by_source[source_id] = float(damage_by_source.get(source_id, 0.0)) + dealt
 	if bool(res["crit"]):
 		EventBus.float_text.emit(unit_position(slot), "%d!" % int(res["damage"]), Color(1.0, 0.85, 0.3))
 	if hp[slot] <= 0.0:
@@ -430,11 +511,14 @@ func _on_zero_hp(slot: int, d: Dictionary, overflow: float, source_id: String) -
 	var downgrade := String(d.get("downgrade_to", "")) if d.get("downgrade_to") != null else ""
 	if (flags[slot] & F_NO_DOWNGRADE_REWARD) == 0:
 		GameState.add_emeralds(reward)
-	GameState.run_stats["kills"] = int(GameState.run_stats.get("kills", 0)) + 1
-	SaveSystem.data["stats"]["total_kills"] = int(SaveSystem.data["stats"].get("total_kills", 0)) + 1
 	if downgrade != "" and def_index.has(downgrade):
+		# Breaking a gear layer is not a kill — the unit is still walking. Counting it as one made
+		# "enemies defeated" report several times the number of units the player actually stopped.
+		GameState.run_stats["gear_breaks"] = int(GameState.run_stats.get("gear_breaks", 0)) + 1
 		_downgrade(slot, downgrade, overflow, source_id, String(d.get("id", "")))
 	else:
+		GameState.run_stats["kills"] = int(GameState.run_stats.get("kills", 0)) + 1
+		SaveSystem.data["stats"]["total_kills"] = int(SaveSystem.data["stats"].get("total_kills", 0)) + 1
 		kill(slot, source_id, true)
 
 ## Converts a unit into its next gear layer down, keeping position and carrying overflow damage.
@@ -442,7 +526,7 @@ func _downgrade(slot: int, to_id: String, overflow: float, source_id: String, fr
 	var di: int = def_index[to_id]
 	var d: Dictionary = defs[di]
 	type_idx[slot] = di
-	var new_hp := float(d.get("hp", 10)) * hp_scale
+	var new_hp := float(d.get("hp", 10)) * hp_scale * hp_mult_of[slot]
 	hp[slot] = new_hp
 	max_hp[slot] = new_hp
 	base_speed[slot] = float(d.get("speed", 1.5)) * speed_scale
@@ -454,7 +538,8 @@ func _downgrade(slot: int, to_id: String, overflow: float, source_id: String, fr
 	AudioMgr.play_sfx_at("armor_break", unit_position(slot), -6.0)
 	EventBus.enemy_downgraded.emit(slot, from_id, to_id)
 	if overflow > 0.0:
-		damage(slot, overflow, "true", 1.0, source_id)
+		# _damage_one, not damage(): the blast drain belongs to the outermost call.
+		_damage_one(slot, overflow, "true", 1.0, source_id)
 
 func kill(slot: int, source_id: String = "", count_stat: bool = true) -> void:
 	if slot < 0 or slot >= capacity or alive[slot] == 0:
@@ -500,21 +585,46 @@ func apply_slow(slot: int, mult: float, duration: float) -> void:
 		return
 	if (flags[slot] & F_BOSS) != 0:
 		mult = lerpf(1.0, mult, 0.4)      # bosses are resistant, never immune
+	# Slows do not stack (the strongest wins), but stacking *sources* could still floor an enemy at
+	# a crawl, which is lockdown by another name. Nothing moves slower than this fraction of its
+	# base speed.
+	mult = maxf(mult, SLOW_FLOOR)
 	if mult < slow_mult[slot] or slow_until[slot] <= time_now:
 		slow_mult[slot] = mult
 	slow_until[slot] = maxf(slow_until[slot], time_now + duration)
 
+## Stuns a unit, with diminishing returns: within a DR window each successive stun on the same unit
+## lands for a smaller fraction of its duration, and past the last stage it does not land at all
+## until the unit has gone STUN_DR_WINDOW seconds without being stunned.
 func apply_stun(slot: int, duration: float) -> void:
 	if alive[slot] == 0:
 		return
 	if (flags[slot] & F_BOSS) != 0:
 		duration *= 0.35
-	stun_until[slot] = maxf(stun_until[slot], time_now + duration)
+	if time_now >= stun_dr_until[slot]:
+		stun_dr_stage[slot] = 0                      # window lapsed: full effect again
+	var stage: int = stun_dr_stage[slot]
+	var factor: float = STUN_DR_FACTORS[stage] if stage < STUN_DR_FACTORS.size() else 0.0
+	stun_dr_stage[slot] = stage + 1
+	stun_dr_until[slot] = time_now + STUN_DR_WINDOW
+	if factor <= 0.0:
+		return
+	stun_until[slot] = maxf(stun_until[slot], time_now + duration * factor)
 
+## Shoves a unit back down the path. Rate-limited per unit and capped over the unit's lifetime:
+## unlimited knockback let a pair of towers near the exit hold a wave in place indefinitely
+## regardless of its health. The cooldown alone is not enough to guarantee that -- a top-tier 4cvit
+## knocks back 6.0 units, further than most enemies walk during the cooldown -- so each unit also
+## gets a finite pushback budget, after which knockback still fires visually but cannot stall it.
 func push_back(slot: int, amount: float) -> void:
 	if alive[slot] == 0 or (flags[slot] & F_BOSS) != 0:
 		return
-	dist[slot] = maxf(0.0, dist[slot] - amount)
+	if time_now < knock_ready[slot] or knock_budget[slot] <= 0.0:
+		return
+	var applied: float = minf(amount, knock_budget[slot])
+	knock_budget[slot] -= applied
+	knock_ready[slot] = time_now + KNOCKBACK_COOLDOWN
+	dist[slot] = maxf(0.0, dist[slot] - applied)
 
 # ================================================================================================
 # Queries

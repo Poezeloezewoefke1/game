@@ -46,6 +46,7 @@ var cooldown: float = 0.0
 var stun_until: float = 0.0
 var income_timer: float = 0.0
 var repair_timer: float = 0.0
+var repaired_this_wave: int = 0     ## reset each wave; see _tick_repair() for why the cap exists
 var block_timer: float = 0.0
 var wall_timer: float = 0.0
 var mercenary_pause_until: float = 0.0
@@ -140,7 +141,7 @@ func recompute_stats() -> void:
 				elif k.begins_with("buff_") or k in ["income_add", "income_interval", "income_interval_mult", "wave_bonus",
 						"bounty", "global_bounty", "execute_threshold", "boss_damage_mult", "slow_mult", "slow_duration",
 						"stun_duration", "knockback", "chain", "extra_shots", "extra_attackers", "extra_attacker_mult",
-						"vulnerability", "armor_strip", "repair_amount", "repair_interval", "leak_reduction",
+						"vulnerability", "armor_strip", "repair_amount", "repair_interval", "repair_cap", "leak_reduction",
 						"lives_on_wave", "wall_hp", "wall_cooldown", "wall_thorns", "block_duration", "block_cooldown",
 						"block_radius", "desperation_mult", "mark_vulnerability", "mark_spread", "discount",
 						"boss_vulnerability", "xp_bonus"]:
@@ -392,8 +393,18 @@ func _tick_income(delta: float) -> void:
 		EventBus.float_text.emit(global_position + Vector3(0, 2.2, 0), "+%d" % int(amount), Color(0.4, 0.95, 0.5))
 		AudioMgr.play_sfx("coin", -12.0, 0.1, 0.4)
 
+## Restores base lives on a timer, bounded by a per-wave cap.
+##
+## The cap is load-bearing, not a detail. A heal expressed per second integrates over a campaign that
+## runs about forty minutes, so even a modest trickle restores many times the hundred-life pool: at
+## its old 6-lives-per-10-seconds the top tier healed roughly fourteen full life bars in a run, and a
+## campaign that took 53 leaks still finished on 100/100. Lives stop being a resource at that point.
+## Capping per wave keeps the medic identity — you recover from a bad wave — without making leaks free.
 func _tick_repair(delta: float) -> void:
 	if not specials.has("repair_base"):
+		return
+	var cap := int(specials.get("repair_cap", 3))
+	if repaired_this_wave >= cap:
 		return
 	var interval := float(specials.get("repair_interval", 20.0))
 	repair_timer += delta
@@ -402,7 +413,9 @@ func _tick_repair(delta: float) -> void:
 		var amount := int(specials.get("repair_amount", 1))
 		if manager != null:
 			amount += manager.repair_bonus_for(self)
-		if GameState.lives < GameState.max_lives:
+		amount = mini(amount, cap - repaired_this_wave)
+		if amount > 0 and GameState.lives < GameState.max_lives:
+			repaired_this_wave += amount
 			GameState.heal_base(amount)
 			EventBus.float_text.emit(global_position + Vector3(0, 2.2, 0), "+%d ♥" % amount, Color(1.0, 0.4, 0.5))
 
@@ -437,6 +450,7 @@ func apply_stun(duration: float) -> void:
 	visual.flash(0.6)
 
 func on_wave_cleared() -> void:
+	repaired_this_wave = 0
 	if specials.has("wave_bonus"):
 		var bonus := int(specials.get("wave_bonus", 0))
 		GameState.add_emeralds(bonus)

@@ -17,7 +17,7 @@
       "difficulty": "Beginner",
       "unlocked": true,
       "waves": "res://data/waves/fort_feather_waves.json",
-      "start_emeralds": 700,
+      "start_emeralds": 1000,
       "lives": 100,
       "recommended_heroes": ["parrotx2", "wemmbu", "flamefrags", "spokeishere"],
       "music": "map_fort_feather",

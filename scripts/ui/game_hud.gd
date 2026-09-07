@@ -27,6 +27,8 @@ var boss_phase: Label
 var pause_menu: PanelContainer
 var results_panel: PanelContainer
 var relationship_box: VBoxContainer
+var move_hero_button: Button
+var hero_xp_bar: ProgressBar
 var _announce_timer: float = 0.0
 var _dialogue_timer: float = 0.0
 var _shop_buttons: Dictionary = {}
@@ -264,12 +266,18 @@ func _connect() -> void:
 	EventBus.tower_placed.connect(func(_t) -> void: _refresh_relationships())
 	EventBus.tower_sold.connect(func(_t) -> void: _refresh_relationships())
 	EventBus.game_speed_changed.connect(func(_s: float) -> void: _update_speed_button())
+	EventBus.hero_xp_changed.connect(_on_hero_xp)
 	if game.hero != null:
 		game.hero.level_changed.connect(func(_l: int) -> void: _refresh_hero_panel())
 		game.hero.ability_state_changed.connect(_refresh_hero_panel)
 	_on_emeralds(GameState.emeralds)
 	_on_lives(GameState.lives, GameState.max_lives)
 	_refresh_hero_panel()
+
+func _on_hero_xp(xp: int, next: int) -> void:
+	if is_instance_valid(hero_xp_bar):
+		hero_xp_bar.max_value = maxi(1, next)
+		hero_xp_bar.value = xp
 
 func _on_emeralds(amount: int) -> void:
 	emerald_label.text = "⬧ %d" % amount
@@ -429,15 +437,19 @@ func _refresh_hero_panel() -> void:
 	hero_box.add_child(top)
 	top.add_child(UITheme.label(String(hero.def.get("name", hero.hero_id)), 18))
 	top.add_child(UITheme.label("Lv %d" % hero.level, 16, UITheme.GOLD))
-	var xp_bar := UITheme.progress(UITheme.ROYAL)
-	xp_bar.custom_minimum_size = Vector2(180, 8)
-	xp_bar.max_value = maxi(1, hero.xp_to_next)
-	xp_bar.value = hero.xp
-	top.add_child(xp_bar)
-	EventBus.hero_xp_changed.connect(func(x: int, n: int) -> void:
-		if is_instance_valid(xp_bar):
-			xp_bar.max_value = maxi(1, n)
-			xp_bar.value = x)
+	move_hero_button = UITheme.button("MOVE", 12)
+	move_hero_button.pressed.connect(func() -> void:
+		AudioMgr.play_sfx("click", -8.0)
+		game.begin_hero_move())
+	top.add_child(move_hero_button)
+	# The panel is rebuilt on every level-up and ability change, so the XP bar is stored on the HUD
+	# and updated by a single connection made in _connect(). Connecting a fresh lambda here would
+	# accumulate one dead capture per rebuild.
+	hero_xp_bar = UITheme.progress(UITheme.ROYAL)
+	hero_xp_bar.custom_minimum_size = Vector2(180, 8)
+	hero_xp_bar.max_value = maxi(1, hero.xp_to_next)
+	hero_xp_bar.value = hero.xp
+	top.add_child(hero_xp_bar)
 	top.add_child(UITheme.label("Kills %d" % hero.kills, 12, UITheme.TEXT_DIM))
 
 	var row := HBoxContainer.new()
@@ -486,6 +498,10 @@ func _update_hero_cooldowns() -> void:
 			b.disabled = false
 			cd.text = "READY"
 			cd.add_theme_color_override("font_color", UITheme.EMERALD)
+	if is_instance_valid(move_hero_button) and game != null:
+		var cd_left: float = game.hero_move_cooldown
+		move_hero_button.disabled = cd_left > 0.0
+		move_hero_button.text = "MOVE" if cd_left <= 0.0 else "MOVE %.0fs" % cd_left
 
 func show_hero_panel() -> void:
 	_refresh_hero_panel()

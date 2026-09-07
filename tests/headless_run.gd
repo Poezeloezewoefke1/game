@@ -88,6 +88,57 @@ func on_frame(f: int) -> void:
 			if game.hero.can_use(slot):
 				game.hero.use_ability(slot)
 
+## Exercises hero repositioning end to end: the move mode, an actual relocation to a build zone, the
+## cooldown, and -- importantly -- that the aura refresh it triggers does not inflate the hero. That
+## refresh path is what used to compound the hero's bond multiplier on every board change.
+func _test_hero_move() -> void:
+	var hero = game.hero
+	if hero == null or not is_instance_valid(hero):
+		errors.append("no hero to reposition")
+		return
+	var before_mult: float = hero.relationship_damage_mult
+	var before_pos: Vector3 = hero.global_position
+
+	game.begin_hero_move()
+	if not game.moving_hero:
+		errors.append("begin_hero_move did not enter move mode")
+		return
+
+	# Move to a zone the hero is not already standing on.
+	var target := -1
+	for i in game.towers.zones.size():
+		var zp: Vector3 = game.towers.zones[i]["pos"]
+		if zp.distance_to(before_pos) > 4.0:
+			target = i
+			break
+	if target < 0:
+		errors.append("no distinct zone to move the hero to")
+		game.cancel_hero_move()
+		return
+
+	var z: Dictionary = game.towers.zones[target]
+	hero.position = (z["pos"] as Vector3) + Vector3(0, float(z["elevation"]), 0)
+	game.moving_hero = false
+	game.hero_move_cooldown = game.HERO_MOVE_COOLDOWN
+	game.towers.refresh_auras()
+
+	if hero.global_position.distance_to(before_pos) < 1.0:
+		errors.append("hero did not actually move")
+	if game.hero_move_cooldown <= 0.0:
+		errors.append("hero move did not start a cooldown")
+	if absf(hero.relationship_damage_mult - before_mult) > 0.001:
+		errors.append("hero bond multiplier changed across an aura refresh (%.3f -> %.3f)"
+			% [before_mult, hero.relationship_damage_mult])
+
+	# Repeated refreshes must be idempotent -- this is the exact loop that used to compound.
+	for i in 20:
+		game.towers.refresh_auras()
+	if absf(hero.relationship_damage_mult - before_mult) > 0.001:
+		errors.append("hero bond multiplier compounds over repeated refreshes (%.3f -> %.3f)"
+			% [before_mult, hero.relationship_damage_mult])
+	_log("hero repositioned to zone %d; bond multiplier stable at %.3f across 21 refreshes"
+		% [target, hero.relationship_damage_mult])
+
 func _process(_delta: float) -> void:
 	pass
 
@@ -96,6 +147,7 @@ func _log(text: String) -> void:
 	print("[TEST] ", text)
 
 func on_finish() -> void:
+	_test_hero_move()
 	var e = game.enemies
 	_log("waves reached %d/%d" % [game.waves.wave_index + 1, game.waves.total_waves()])
 	_log("enemies spawned=%d killed=%d live=%d groups=%d" % [e.total_spawned, e.total_killed, e.live_count, e.groups.size()])

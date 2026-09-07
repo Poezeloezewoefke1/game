@@ -48,6 +48,8 @@ func _ready() -> void:
 	test_save()
 	_section("Relationships")
 	test_relationships()
+	test_cc_limits()
+	test_downgrade_scaling()
 	_section("Lore database integrity")
 	test_lore()
 	_report()
@@ -384,7 +386,9 @@ func test_enemy_pool() -> void:
 	mgr.dist[s3] = 40.0
 	mgr.push_back(s3, 10.0)
 	check_near(mgr.dist[s3], 30.0, 0.001, "knockback pushes back along the path")
+	# Knockback is rate limited per unit now, so advance past the cooldown before the next shove.
 	mgr.dist[s3] = 2.0
+	mgr.time_now += EnemyManager.KNOCKBACK_COOLDOWN
 	mgr.push_back(s3, 10.0)
 	check_near(mgr.dist[s3], 0.0, 0.001, "knockback never goes below the path start")
 
@@ -709,6 +713,106 @@ func test_relationships() -> void:
 		check((r.get("sources", []) as Array).size() > 0, "relationship %s cites sources" % rid)
 		check(String(r.get("confidence", "")) != "", "relationship %s states its confidence" % rid)
 		check(not (r.get("effects", {}) as Dictionary).is_empty(), "relationship %s has an effect" % rid)
+
+	# The hero's bond bonus is multiplicative and refresh_auras() runs on every placement, upgrade and
+	# sell. It must be rebuilt from identity each time, exactly as tower external_mults are. When it
+	# was not, a campaign ended with the hero dealing ~280x its listed damage and ~90% of all damage
+	# in the game, and no wave tuning could make the run losable.
+	var hero := Hero.new()
+	hero.hero_id = "parrotx2"
+	check_near(hero.relationship_damage_mult, 1.0, 0.001, "hero bond multiplier starts at identity")
+	hero.apply_relationship({"damage_mult": 1.2})
+	check_near(hero.relationship_damage_mult, 1.2, 0.001, "a bond multiplies the hero's damage")
+	hero.apply_relationship({"damage_mult": 1.2})
+	check_near(hero.relationship_damage_mult, 1.44, 0.001, "bonds stack within one refresh")
+	hero.reset_relationship()
+	check_near(hero.relationship_damage_mult, 1.0, 0.001, "reset returns the hero to identity")
+	hero.free()
+
+## Crowd control must not be able to hold a unit still forever. Before diminishing returns existed,
+## a pair of stunning/knocking towers near the exit pinned any non-boss unit indefinitely no matter
+## how much health it had, which made late-wave difficulty impossible to tune.
+func test_cc_limits() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(200, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 32)
+
+	# stun diminishing returns: repeated stuns decay, then stop landing entirely
+	var s1 := mgr.spawn("chungie_t1", 0.0, 0.0)
+	mgr.time_now = 100.0
+	mgr.apply_stun(s1, 2.0)
+	check_near(mgr.stun_until[s1] - mgr.time_now, 2.0, 0.01, "first stun lands in full")
+	mgr.apply_stun(s1, 2.0)
+	check_near(mgr.stun_until[s1] - mgr.time_now, 2.0, 0.01, "second stun is halved, does not extend")
+	mgr.time_now = 103.0
+	mgr.apply_stun(s1, 2.0)
+	check_near(mgr.stun_until[s1] - mgr.time_now, 0.5, 0.01, "third stun lands at a quarter")
+	mgr.time_now = 104.0
+	var before := mgr.stun_until[s1]
+	mgr.apply_stun(s1, 2.0)
+	check_eq(mgr.stun_until[s1], before, "fourth stun inside the window does not land at all")
+	mgr.time_now = 120.0
+	mgr.apply_stun(s1, 2.0)
+	check_near(mgr.stun_until[s1] - mgr.time_now, 2.0, 0.01, "stun resets after the DR window lapses")
+
+	# knockback: rate limited, and capped over the unit's lifetime so it always makes progress
+	var s2 := mgr.spawn("chungie_t1", 0.0, 0.0)
+	mgr.time_now = 200.0
+	mgr.dist[s2] = 100.0
+	mgr.push_back(s2, 6.0)
+	check_near(mgr.dist[s2], 94.0, 0.01, "knockback moves the unit back")
+	mgr.push_back(s2, 6.0)
+	check_near(mgr.dist[s2], 94.0, 0.01, "knockback on cooldown is ignored")
+	var pushes := 0
+	for i in 40:
+		mgr.time_now += EnemyManager.KNOCKBACK_COOLDOWN
+		var d0: float = mgr.dist[s2]
+		mgr.push_back(s2, 6.0)
+		if mgr.dist[s2] < d0:
+			pushes += 1
+	var budget_left: float = mgr.knock_budget[s2]
+	check_near(budget_left, 0.0, 0.01, "knockback budget is exhausted, not infinite")
+	check(pushes < 40, "knockback stops landing once the budget is spent")
+	check(mgr.dist[s2] >= 100.0 - EnemyManager.KNOCKBACK_BUDGET - 0.01,
+		"a unit can never be pushed back further than its lifetime budget")
+
+	# slow floor: nothing can be reduced to a standstill
+	var s3 := mgr.spawn("chungie_t1", 0.0, 0.0)
+	mgr.apply_slow(s3, 0.01, 5.0)
+	check(mgr.slow_mult[s3] >= EnemyManager.SLOW_FLOOR - 0.001, "slows are floored above zero")
+	mgr.queue_free()
+
+## A wave's hp_mult has to survive gear breaks. It used to be dropped by _downgrade(), so a chungie
+## carried the wave multiplier on only its outermost layer -- about a seventh of its real health --
+## and raising late-wave HP barely changed anything.
+func test_downgrade_scaling() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(200, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 16)
+
+	var plain := mgr.spawn("chungie_t3", 0.0, 0.0)
+	var base_hp: float = mgr.max_hp[plain]
+	var scaled := mgr.spawn("chungie_t3", 0.0, 0.0, 4.0)
+	check_near(mgr.max_hp[scaled], base_hp * 4.0, 0.5, "hp_mult scales the spawned layer")
+
+	# Break each layer down and confirm the multiplier is still applied at every step.
+	var guard := 0
+	while guard < 10:
+		guard += 1
+		var before_type: String = mgr.type_id_of(scaled)
+		mgr.damage(scaled, mgr.hp[scaled] + 1.0, "true", 1.0, "test")
+		if not mgr.is_alive(scaled) or mgr.type_id_of(scaled) == before_type:
+			break
+		var layer: Dictionary = DataDB.enemies.get(mgr.type_id_of(scaled), {})
+		var expect: float = float(layer.get("hp", 0)) * mgr.hp_scale * 4.0
+		check_near(mgr.max_hp[scaled], expect, 0.5,
+			"layer %s keeps the wave hp_mult after a gear break" % mgr.type_id_of(scaled))
+	check(guard > 1, "the test actually broke at least one gear layer")
+	mgr.queue_free()
 
 func test_lore() -> void:
 	for category in ["characters", "arcs", "factions", "locations", "events", "weapons", "bosses"]:

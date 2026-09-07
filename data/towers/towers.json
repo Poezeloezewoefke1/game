@@ -220,10 +220,10 @@
           {"name": "The Last of Skymore", "cost": 5200, "desc": "Signature: +50% damage, +25% attack speed and +3 range to every tower nearby.", "effects": {"buff_damage": 0.5, "buff_rate": 0.25, "buff_range": 3.0, "buff_radius": 12.0}}
         ]},
         {"name": "Field Medic", "tiers": [
-          {"name": "Bandages", "cost": 300, "desc": "Restores 1 life every 20 seconds.", "effects": {"special": ["repair_base"], "repair_amount": 1, "repair_interval": 20.0}},
-          {"name": "Field Hospital", "cost": 720, "desc": "Restores 2 lives every 15 seconds.", "effects": {"repair_amount": 2, "repair_interval": 15.0}},
-          {"name": "Triage", "cost": 1900, "desc": "Restores 3 lives every 12 seconds.", "effects": {"repair_amount": 3, "repair_interval": 12.0}},
-          {"name": "Oxeye Daisy", "cost": 5000, "desc": "Signature: restores 6 lives every 10 seconds and briefly shields the base after a leak.", "effects": {"repair_amount": 6, "repair_interval": 10.0, "special": ["repair_base", "leak_shield"]}}
+          {"name": "Bandages", "cost": 300, "desc": "Restores 1 life every 20 seconds, up to 2 per wave.", "effects": {"special": ["repair_base"], "repair_amount": 1, "repair_interval": 20.0, "repair_cap": 2}},
+          {"name": "Field Hospital", "cost": 720, "desc": "Restores 2 lives every 15 seconds, up to 4 per wave.", "effects": {"repair_amount": 2, "repair_interval": 15.0, "repair_cap": 4}},
+          {"name": "Triage", "cost": 1900, "desc": "Restores 3 lives every 12 seconds, up to 6 per wave.", "effects": {"repair_amount": 3, "repair_interval": 12.0, "repair_cap": 6}},
+          {"name": "Oxeye Daisy", "cost": 5000, "desc": "Signature: restores 5 lives every 10 seconds, up to 10 per wave, and briefly shields the base after a leak.", "effects": {"repair_amount": 5, "repair_interval": 10.0, "repair_cap": 10, "special": ["repair_base", "leak_shield"]}}
         ]},
         {"name": "Wheat and Thorns", "tiers": [
           {"name": "Thorned Petals", "cost": 240, "desc": "+8 damage and +1 pierce.", "effects": {"damage_add": 8, "pierce_add": 1}},
@@ -360,10 +360,10 @@
           {"name": "The Main Building", "cost": 5400, "desc": "Signature: a hundred-block wall that damages whatever breaks it.", "effects": {"wall_hp": 6000, "wall_cooldown": 7.0, "wall_thorns": 60}}
         ]},
         {"name": "Evacuation", "tiers": [
-          {"name": "Evacuation Order", "cost": 280, "desc": "The base starts each wave with 5 extra lives of buffer.", "effects": {"special": ["lives_on_wave"], "lives_on_wave": 5}},
-          {"name": "Safe Corridors", "cost": 680, "desc": "+10 lives buffer per wave.", "effects": {"lives_on_wave": 10}},
-          {"name": "Civic Shelters", "cost": 1800, "desc": "+18 lives per wave and leaks do 2 less damage.", "effects": {"lives_on_wave": 18, "leak_reduction": 2}},
-          {"name": "Get Them Out", "cost": 4800, "desc": "Signature: +40 lives per wave and leaks do 5 less damage.", "effects": {"lives_on_wave": 40, "leak_reduction": 5}}
+          {"name": "Evacuation Order", "cost": 280, "desc": "The base starts each wave with 2 extra lives of buffer.", "effects": {"special": ["lives_on_wave"], "lives_on_wave": 2}},
+          {"name": "Safe Corridors", "cost": 680, "desc": "+4 lives buffer per wave.", "effects": {"lives_on_wave": 4}},
+          {"name": "Civic Shelters", "cost": 1800, "desc": "+7 lives per wave and leaks do 2 less damage.", "effects": {"lives_on_wave": 7, "leak_reduction": 2}},
+          {"name": "Get Them Out", "cost": 4800, "desc": "Signature: +14 lives per wave and leaks do 3 less damage.", "effects": {"lives_on_wave": 14, "leak_reduction": 3}}
         ]},
         {"name": "Civic Order", "tiers": [
           {"name": "Tax Ledger", "cost": 260, "desc": "+40 emeralds every 8 seconds.", "effects": {"special": ["income"], "income_add": 40, "income_interval": 8.0}},
