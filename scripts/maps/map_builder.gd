@@ -492,7 +492,14 @@ static var _block_texture_cache: Dictionary = {}
 static func load_block_texture(path: String) -> ImageTexture:
 	if _block_texture_cache.has(path):
 		return _block_texture_cache[path]
-	var img := SkinParser.load_image(path)
+	# A resource pack, when installed, supersedes the generated block texture. `path` is the
+	# generated file, so the block id is recovered from it to ask the pack first.
+	var block := path.get_file().trim_prefix("block_").trim_suffix(".png")
+	var img := ResourcePack.block_image(block)
+	if img != null:
+		img = img.duplicate()
+	else:
+		img = SkinParser.load_image(path)
 	var tex: ImageTexture = null
 	if img != null:
 		img.generate_mipmaps()

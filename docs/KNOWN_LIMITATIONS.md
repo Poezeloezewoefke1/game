@@ -22,9 +22,17 @@ nothing was downloaded. Supply a licensed PNG and the game uses it immediately.
 64×64, legacy 64×32 and HD multiples all work; slim arms are auto-detected. The complete list of ids
 awaiting a real skin is in [ASSET_LICENSES.md](ASSET_LICENSES.md). No code change is needed.
 
-**On the four that were supplied:** they are used here at the owner's direction and are recorded in
-the manifest as `supplied_by_developer`. That covers use inside this project; it is not a
-redistribution licence, so confirm rights with each skin's author before shipping the game publicly.
+**On the supplied skins:** the four heroes and all fourteen tower characters are used here at the
+owner's direction and recorded in the manifest as `supplied_by_developer`. That covers use inside this
+project; it is not a redistribution licence, so confirm rights with each skin's author before shipping
+the game publicly.
+
+**On the bundled Minecraft textures:** `assets/resourcepack/` holds a vanilla-layout Minecraft
+resource pack — Mojang's artwork, not this project's. It is committed at the project owner's explicit
+direction after the licensing position was raised. **Mojang's permission has not been obtained and is
+not claimed.** Anyone redistributing this repository, or a build made from it, is responsible for
+clearing that. The dependency is deliberately shallow: delete the directory and `ResourcePack` falls
+back to the generated placeholders, so nothing breaks.
 
 ---
 

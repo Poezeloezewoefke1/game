@@ -305,7 +305,12 @@ func _dark_px(x: int, y: int) -> void:
 func _block_image(block: String) -> Image:
 	if _cache.has(block):
 		return _cache[block]
-	var img := SkinParser.load_image("res://assets/textures/block_%s.png" % block)
+	# Real pack art when a resource pack is installed, otherwise the project's generated stand-in.
+	var img := ResourcePack.block_image(block)
+	if img != null:
+		img = img.duplicate()          # the pack's cache is shared; never resize the cached copy
+	else:
+		img = SkinParser.load_image("res://assets/textures/block_%s.png" % block)
 	if img != null:
 		if img.get_format() != Image.FORMAT_RGBA8:
 			img.convert(Image.FORMAT_RGBA8)
