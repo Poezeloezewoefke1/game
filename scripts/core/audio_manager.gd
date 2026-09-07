@@ -18,6 +18,18 @@ var current_music: String = ""
 var _rng := RandomNumberGenerator.new()
 var _sfx_cooldowns: Dictionary = {}
 
+# --- voice ---------------------------------------------------------------------------------------
+## Recorded character lines, looked up by convention: assets/audio/voice/<character>_<key>.<ext>.
+## A character with no recording for a key is silent, so adding another creator's lines is purely a
+## matter of dropping files in — no code and no data entry.
+const VOICE_DIR := "voice/"
+## How far the music drops while a line plays, and how long the duck takes to fall and recover.
+const VOICE_DUCK_DB := -9.0
+const VOICE_DUCK_TIME := 0.25
+const VOICE_RECOVER_TIME := 0.7
+var _voice_player: AudioStreamPlayer
+var _voice_tween: Tween
+
 func _ready() -> void:
 	_ensure_buses()
 	_music_player = AudioStreamPlayer.new()
@@ -31,6 +43,10 @@ func _ready() -> void:
 		p.bus = "SFX"
 		add_child(p)
 		_sfx_players.append(p)
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.bus = "Voice"
+	add_child(_voice_player)
+	_voice_player.finished.connect(_on_voice_finished)
 	for i in 16:
 		var p3 := AudioStreamPlayer3D.new()
 		p3.bus = "SFX"
@@ -41,7 +57,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _ensure_buses() -> void:
-	for bus_name in ["Music", "SFX"]:
+	for bus_name in ["Music", "SFX", "Voice"]:
 		if AudioServer.get_bus_index(bus_name) < 0:
 			var idx := AudioServer.bus_count
 			AudioServer.add_bus(idx)
@@ -52,7 +68,7 @@ func _load(name: String) -> AudioStream:
 	if _cache.has(name):
 		return _cache[name]
 	var stream: AudioStream = null
-	for ext: String in [".ogg", ".wav"]:
+	for ext: String in [".ogg", ".mp3", ".wav"]:
 		var path: String = AUDIO_DIR + name + ext
 		if ResourceLoader.exists(path):
 			stream = load(path)
@@ -73,6 +89,8 @@ func play_music(name: String, fade: float = 1.0) -> void:
 		stream.loop_end = stream.data.size() / 2 if stream.format == AudioStreamWAV.FORMAT_16_BITS else stream.data.size()
 	elif stream is AudioStreamOggVorbis:
 		stream.loop = true
+	elif stream is AudioStreamMP3:
+		stream.loop = true
 	# crossfade
 	var old := _music_player
 	_music_player = _music_player_b
@@ -86,6 +104,41 @@ func play_music(name: String, fade: float = 1.0) -> void:
 	if old.playing:
 		tw.tween_property(old, "volume_db", -30.0, fade)
 		tw.chain().tween_callback(old.stop)
+
+## Plays a character line, ducking the music under it. One line at a time: a later line replaces the
+## one playing rather than talking over it, because two takes of the same voice at once sounds broken.
+## Returns false when there is no recording, which is the normal case for most characters.
+func play_voice(character: String, key: String) -> bool:
+	if character == "" or key == "":
+		return false
+	var stream := _load(VOICE_DIR + character + "_" + key)
+	if stream == null:
+		return false
+	if stream is AudioStreamMP3 or stream is AudioStreamOggVorbis:
+		stream.loop = false
+	_voice_player.stream = stream
+	_voice_player.play()
+	_duck_music(VOICE_DUCK_DB, VOICE_DUCK_TIME)
+	return true
+
+func stop_voice() -> void:
+	if _voice_player.playing:
+		_voice_player.stop()
+		_on_voice_finished()
+
+func _on_voice_finished() -> void:
+	_duck_music(0.0, VOICE_RECOVER_TIME)
+
+func _duck_music(db: float, time: float) -> void:
+	var bus := AudioServer.get_bus_index("Music")
+	if bus < 0:
+		return
+	if _voice_tween != null and _voice_tween.is_valid():
+		_voice_tween.kill()
+	_voice_tween = create_tween()
+	_voice_tween.tween_method(
+		func(v: float) -> void: AudioServer.set_bus_volume_db(bus, v),
+		AudioServer.get_bus_volume_db(bus), db, time)
 
 func stop_music(fade: float = 0.8) -> void:
 	current_music = ""

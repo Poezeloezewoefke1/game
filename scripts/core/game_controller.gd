@@ -35,6 +35,7 @@ var _cam_yaw: float = 0.0
 var _cam_pitch: float = -0.95
 var _ended: bool = false
 var _float_texts: Array = []
+var _said_low_lives: bool = false
 
 func _ready() -> void:
 	map_def = GameState.map_def()
@@ -160,13 +161,39 @@ func _build_hero() -> void:
 		hero.position = Vector3(bp[0], bp[1], bp[2] - 3.0)
 	towers.refresh_auras()
 	EventBus.hero_placed.emit(hero)
+	AudioMgr.play_voice(hero.hero_id, "placed")
 
 func _build_hud() -> void:
 	hud = load("res://scripts/ui/game_hud.gd").new()
 	add_child(hud)
 	hud.setup(self)
 
+## Wires recorded character lines to the moments they were written for. Characters without
+## recordings are silent, so this costs nothing for the ones that have none yet.
+func _connect_voice() -> void:
+	EventBus.hero_ability_used.connect(func(slot: int) -> void:
+		_say("ultimate" if slot == 3 else "ability_%d" % (slot + 1)))
+	EventBus.hero_level_up.connect(func(level: int) -> void:
+		# One line for "getting stronger" and one for late game, rather than a line every level.
+		_say("level_15" if level >= 15 else "level_2"))
+	EventBus.wave_cleared.connect(func(_i: int) -> void: _say("wave_clear"))
+	EventBus.lives_changed.connect(_on_lives_for_voice)
+	EventBus.boss_spawned.connect(func(_b) -> void: _say("boss_enter"))
+
+## Fires once, the first time the base drops under a quarter — not on every hit after that.
+func _on_lives_for_voice(lives: int, maximum: int) -> void:
+	if _said_low_lives or maximum <= 0:
+		return
+	if float(lives) / float(maximum) <= 0.25:
+		_said_low_lives = true
+		_say("low_lives")
+
+func _say(key: String) -> void:
+	if hero != null and is_instance_valid(hero):
+		AudioMgr.play_voice(hero.hero_id, key)
+
 func _connect_signals() -> void:
+	_connect_voice()
 	EventBus.run_defeat.connect(_on_defeat)
 	EventBus.all_waves_cleared.connect(_on_all_waves_cleared)
 	EventBus.enemy_killed.connect(_on_enemy_killed)
@@ -556,8 +583,10 @@ func _finish_run(won: bool) -> void:
 	_unlock_codex_for_run()
 	if won:
 		AudioMgr.play_music("victory", 0.4)
+		_say("victory")
 	else:
 		AudioMgr.play_music("defeat", 0.4)
+		_say("defeat")
 	var outro: Dictionary = map_def.get("outro_victory" if won else "outro_defeat", {})
 	hud.show_results(stats, outro)
 
@@ -580,7 +609,7 @@ func restart() -> void:
 
 func quit_to_menu() -> void:
 	GameState.end_run()
-	AudioMgr.play_music("menu")
+	AudioMgr.play_music("music_main")
 	var main := get_parent()
 	if main != null and main.has_method("go_to_main_menu"):
 		main.go_to_main_menu()

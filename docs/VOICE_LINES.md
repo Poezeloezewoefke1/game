@@ -18,8 +18,10 @@ these are prompts, not scripts, and the file should be updated to match what the
 
 ## Recording notes
 
-- **Format:** mono WAV, 48 kHz, 16-bit or better. Filename `<character>_<key>.wav`, e.g.
-  `parrotx2_ability_1.wav`. Keys are given in each table.
+- **Format:** WAV, OGG or MP3 all work — send whatever is easiest. Mono, 48 kHz, 16-bit or better if
+  you have the choice. Name each file `<character>_<key>`, e.g. `parrotx2_ability_1.mp3`; keys are in
+  each table. Naming files after the *line text* is fine too — that is what ParrotX2's set did, and
+  matching them back up took a minute.
 - **Length:** 1–2 seconds for combat barks, up to 4 for arc lines. Anything longer will be cut off by
   the next game event.
 - **Takes:** three per line — one flat, one urgent, one wry. Combat barks repeat a lot, so variety
@@ -195,11 +197,28 @@ role in the story.
 
 ## Where these go
 
-Save recordings to `assets/audio/voice/<character>_<key>.wav` and add each to
-`data/asset_manifest.json` with the creator's name and the permission they gave. Nothing in the game
-loads them yet — the audio manager plays SFX and music, and a voice bus with per-character ducking is
-still to be built. **Get the recordings first**; the playback hook is a small change next to the
-scheduling problem of getting a dozen creators into a microphone.
+Save recordings to `assets/audio/voice/<character>_<key>.mp3` (`.ogg` and `.wav` also work) and add
+each to `data/asset_manifest.json` with the creator's name and the permission they gave.
+
+**Playback is built.** `AudioMgr.play_voice(character, key)` looks the file up by that naming
+convention and does nothing if it is absent, so **adding a creator's lines needs no code and no data
+entry — just the files.** A `Voice` bus ducks the music by 9 dB while a line plays, and a new line
+replaces one already playing rather than talking over it.
+
+Recorded so far:
+
+| Character | Status |
+|-----------|--------|
+| **ParrotX2** | **All 13 lines recorded and in the game.** |
+| Wemmbu | not recorded |
+| SpokeIsHere | not recorded |
+| FlameFrags | not recorded |
+| Saparata | not recorded |
+| Towers (14) | not recorded |
+
+Two notes for the remaining sets. `level_2` plays on any level-up below 15 and `level_15` from 15
+upward, so they want to be readable at either point in a run. `low_lives` fires once, the first time
+the base drops under a quarter — it is a "this is going badly" line, not a repeated alarm.
 
 If a creator wants to record something not on this list, take it. A line the person actually wants to
 say will always beat a line written for them.

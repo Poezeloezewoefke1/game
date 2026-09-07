@@ -105,7 +105,10 @@ func _make_card(hero: Dictionary) -> Control:
 func _select(id: String) -> void:
 	if not DataDB.heroes.has(id):
 		id = "parrotx2"
+	var changed := id != selected_id
 	selected_id = id
+	if changed:
+		AudioMgr.play_voice(id, "select")
 	for key in cards.keys():
 		var card: Dictionary = cards[key]
 		var p: PanelContainer = card["panel"]

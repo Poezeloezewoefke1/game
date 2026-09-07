@@ -6,7 +6,7 @@ var previews: Array = []
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	UITheme.background(self)
-	AudioMgr.play_music("menu")
+	AudioMgr.play_music("music_main")
 
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

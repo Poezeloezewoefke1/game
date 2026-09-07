@@ -20,7 +20,7 @@
       "start_emeralds": 1000,
       "lives": 100,
       "recommended_heroes": ["parrotx2", "wemmbu", "flamefrags", "spokeishere"],
-      "music": "map_fort_feather",
+      "music": "music_main",
       "intro": {
         "title": "FORT FEATHER",
         "subtitle": "Cindercrest is coming. Hold the fort.",
@@ -125,7 +125,7 @@
       "start_emeralds": 850,
       "lives": 80,
       "recommended_heroes": ["parrotx2", "wemmbu", "flamefrags", "spokeishere"],
-      "music": "map_merchant_city",
+      "music": "music_main",
       "intro": {
         "title": "MERCHANT CITY",
         "subtitle": "The Fort Feather legion retreated here through the tunnel.",
