@@ -29,6 +29,7 @@ func _ready() -> void:
 	_section("Enemy pool")
 	test_enemy_pool()
 	test_enemy_rendering()
+	test_spatial_grid()
 	_section("Enemy data")
 	test_enemy_data()
 	_section("Gear progression")
@@ -336,6 +337,35 @@ func test_path() -> void:
 	var ranges := p.ranges_within(Vector3(5, 0, 0), 2.0)
 	check(ranges.size() >= 1, "range query finds the covered stretch")
 	check_near(p.nearest_distance_to(Vector3(5, 0, 3)), 5.0, 0.6, "nearest distance projects onto the path")
+
+## The spatial grid, which everything that asks "what is near here" goes through: tower targeting,
+## splash damage, death explosions, auras. Each cell used to keep only the FIRST unit that landed in
+## it, because pushing into `_grid[key]` pushed into a copy -- so a tight column of enemies four units
+## apart was, as far as every query was concerned, one enemy.
+func test_spatial_grid() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(100, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 200)
+	# Twelve enemies packed into a couple of metres, well inside one 4-unit grid cell.
+	var made := 0
+	for i in 12:
+		if mgr.spawn("chungie_t1", float(i) * 0.15) >= 0:
+			made += 1
+	check_eq(made, 12, "spawned a tight column")
+	mgr._process(0.016)
+	var found := mgr.query_range(mgr.unit_position(mgr.active[0]), 6.0)
+	check_eq(found.size(), 12, "a range query finds every enemy in the cell, not just the first")
+	# And they must be distinct slots, not the same one repeated.
+	var seen: Dictionary = {}
+	for slot in found:
+		seen[slot] = true
+	check_eq(seen.size(), found.size(), "the query returns distinct units")
+	# A radius that excludes most of them must actually exclude them.
+	var near := mgr.query_range(mgr.unit_position(mgr.active[0]), 0.5)
+	check(near.size() < 12 and near.size() >= 1, "a tight radius still filters (%d)" % near.size())
+	mgr.queue_free()
 
 ## Does the enemy pool actually put anything on screen? Every other enemy test asks the pool about
 ## itself, and the pool will happily report a thousand healthy units while uploading none of them to

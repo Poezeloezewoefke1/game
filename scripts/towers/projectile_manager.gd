@@ -25,6 +25,10 @@ var free_slots: PackedInt32Array = PackedInt32Array()
 var active: PackedInt32Array = PackedInt32Array()
 var kind_names: Array = []
 
+# Upload scratch: live rows sorted by visual kind, with each kind's [start, end) into it.
+var _sorted_rows: PackedInt32Array = PackedInt32Array()
+var _kind_start: PackedInt32Array = PackedInt32Array()
+
 const KIND_SPECS := {
 	"arrow": {"size": Vector3(0.08, 0.08, 0.7), "color": Color(0.85, 0.82, 0.7), "speed": 34.0, "trail": false},
 	"bolt": {"size": Vector3(0.1, 0.1, 0.6), "color": Color(0.75, 0.78, 0.85), "speed": 44.0, "trail": false},
@@ -75,7 +79,7 @@ func _make_kind(kind: String) -> void:
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.extra_cull_margin = 40.0
 	add_child(mmi)
-	kinds[kind] = {"mm": mm, "mmi": mmi, "index": kind_names.size(), "rows": PackedInt32Array()}
+	kinds[kind] = {"mm": mm, "mmi": mmi, "index": kind_names.size()}
 	kind_names.append(kind)
 
 ## Fires a projectile. `data` carries damage, damage_type, splash, armor_pen, crit, and special flags.
@@ -223,21 +227,45 @@ func _spawn_impact(at: Vector3, radius: float) -> void:
 	EventBus.camera_shake.emit(clampf(radius * 0.06, 0.0, 0.4), 0.15)
 
 func _upload() -> void:
-	for kind in kinds.keys():
-		(kinds[kind]["rows"] as PackedInt32Array).clear()
+	# Counting sort of the live rows by visual kind, into flat member arrays. Not a push into
+	# `kinds[k]["rows"]`: a PackedInt32Array read out of a Dictionary is a copy, so that appended to a
+	# temporary and threw it away, every kind's instance_count stayed 0, and no projectile was ever
+	# drawn -- arrows, carts and bottles all resolved their damage invisibly. Same bug the enemy
+	# renderer had; see EnemyManager._upload_visuals.
+	var nk := kind_names.size()
+	if nk == 0:
+		return
+	_kind_start.resize(nk + 1)
+	for i in nk + 1:
+		_kind_start[i] = 0
+	var total := 0
 	for i in active.size():
 		var slot: int = active[i]
 		if alive[slot] == 0:
 			continue
-		var name: String = kind_names[kind_idx[slot]]
-		(kinds[name]["rows"] as PackedInt32Array).push_back(slot)
-	for kind in kinds.keys():
-		var rows: PackedInt32Array = kinds[kind]["rows"]
-		var mm: MultiMesh = kinds[kind]["mm"]
-		if mm.instance_count != rows.size():
-			mm.instance_count = rows.size()
-		for k in rows.size():
-			var slot: int = rows[k]
+		_kind_start[kind_idx[slot] + 1] += 1
+		total += 1
+	for i in nk:
+		_kind_start[i + 1] += _kind_start[i]
+	if _sorted_rows.size() != total:
+		_sorted_rows.resize(total)
+	var cursor := _kind_start.duplicate()
+	for i in active.size():
+		var slot: int = active[i]
+		if alive[slot] == 0:
+			continue
+		var ki: int = kind_idx[slot]
+		_sorted_rows[cursor[ki]] = slot
+		cursor[ki] += 1
+
+	for ki in nk:
+		var base: int = _kind_start[ki]
+		var n: int = _kind_start[ki + 1] - base
+		var mm: MultiMesh = kinds[kind_names[ki]]["mm"]
+		if mm.instance_count != n:
+			mm.instance_count = n
+		for k in n:
+			var slot: int = _sorted_rows[base + k]
 			var pos := Vector3(px[slot], py[slot], pz[slot])
 			var dir := Vector3(tx[slot] - px[slot], ty[slot] - py[slot], tz[slot] - pz[slot])
 			var b := Basis.IDENTITY

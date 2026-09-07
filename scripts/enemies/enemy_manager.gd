@@ -713,12 +713,13 @@ func _rebuild_grid() -> void:
 		if alive[slot] == 0:
 			continue
 		var key := _cell_key(pos_x[slot], pos_z[slot])
-		if _grid.has(key):
-			(_grid[key] as PackedInt32Array).push_back(slot)
-		else:
-			var arr := PackedInt32Array()
-			arr.push_back(slot)
-			_grid[key] = arr
+		# Read the cell into a local, push, then put it back. A PackedInt32Array is a value type, so
+		# `_grid[key].push_back(slot)` would append to a copy and drop it -- which it used to, leaving
+		# every cell holding only the FIRST unit that landed in it. Everything that asks the grid a
+		# question (tower targeting, splash, death explosions, auras) then saw one enemy per 4x4 cell.
+		var cell: PackedInt32Array = _grid.get(key, PackedInt32Array())
+		cell.push_back(slot)
+		_grid[key] = cell
 
 ## All living enemies whose centre is within `radius` of `centre` (XZ distance, y ignored).
 ## The grid is rebuilt once per frame; a spawn or death since then marks it dirty so queries made
