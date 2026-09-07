@@ -85,30 +85,22 @@ static func held_item_offset(slim: bool) -> Vector3:
 ## How the fist holds an item. Three angles, applied in this order to an item that starts pointing
 ## straight up out of the hand:
 ##
-##   ITEM_ROLL   spins the item about its own long axis, which decides whether the board camera sees
-##               the flat of the blade or its edge.
-##   ITEM_SWING  swings it out away from the body, to the character's right.
-##   ITEM_PITCH  tips it forward and down.
+##   ITEM_ROLL   spins the item about its own long axis: 90 is Minecraft's, blade edge up, so you see
+##               the flat of the blade from the side and its edge from in front.
+##   ITEM_SWING  swings it out away from the body, to the character's right. Minecraft's is 0.
+##   ITEM_PITCH  tips it forward out of the hanging fist. Minecraft's is about -90, level.
 ##
-## Minecraft's own third-person pose is roll 90, swing 0, pitch about -90: the blade points straight
-## forward, edge up. Copying it exactly does not survive this game's camera, and the reason is worth
-## writing down because it is not obvious from a still:
+## These are Minecraft's own numbers -- the game is meant to look like Minecraft, so the hand carries
+## an item the way Minecraft's does, and a sword sticks straight out in front of the fist, edge up.
 ##
-##   * A character walking AWAY from the board camera has a forward-pointing item hidden behind their
-##     own body. That is a quarter of every path, with the weapon simply gone.
-##   * An item sprite is one pixel thick against a character about fifty pixels tall on the board, so
-##     edge-on is not "thin", it is invisible. Vanilla gets away with it because its camera can move;
-##     this one cannot.
-##
-## Swinging the item out to the side fixes the first (it is never behind the torso) and helps the
-## second (its face never squares up with the camera's line of sight for long). What is left is a
-## genuine trade: the further the blade tips below horizontal, the more its face must turn away from
-## a camera that is looking down. Past roughly 38 degrees of tip -- the camera's own pitch -- there is
-## always some walking direction where it vanishes edge-on. These angles sit inside that limit, and
-## keep at least 30% of the sprite's area facing the camera from every direction on the board.
-const ITEM_ROLL := 14.0
-const ITEM_SWING := 33.0
-const ITEM_PITCH := -114.0
+## Worth knowing when reading a screenshot: this pose costs visibility on a fixed overhead camera in
+## two ways vanilla does not care about, because vanilla's camera can move and this one cannot. A
+## character walking directly away from the camera has the item behind their own body, and an item
+## sprite is one pixel thick against a character about fifty pixels tall on the board, so from
+## straight on it is a hairline. Both are inherent to the vanilla pose, not bugs in the geometry.
+const ITEM_ROLL := 90.0
+const ITEM_SWING := 0.0
+const ITEM_PITCH := -90.0
 
 static func held_item_basis() -> Basis:
 	return Basis.from_euler(Vector3(deg_to_rad(ITEM_PITCH), 0.0, 0.0)) \

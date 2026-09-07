@@ -105,6 +105,12 @@ var enabled: bool = true
 var debug_damage_by_source: bool = false
 var damage_by_source: Dictionary = {}
 
+# Rendering scratch: live slots sorted by visual group, plus each group's [start, end) into it.
+# Members rather than locals so they are not reallocated every frame, and packed rather than nested
+# so nothing is copied by value on the way in (see _upload_visuals).
+var _sorted_slots: PackedInt32Array = PackedInt32Array()
+var _group_start: PackedInt32Array = PackedInt32Array()
+
 # spatial grid
 var _grid: Dictionary = {}
 var _grid_dirty: bool = true
@@ -327,7 +333,7 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 		emmi.extra_cull_margin = 16.0
 		add_child(emmi)
 		extra_node = emmi
-	groups.append({"key": key, "mmi": mmi, "mm": mm, "slots": PackedInt32Array(), "def_idx": di,
+	groups.append({"key": key, "mmi": mmi, "mm": mm, "def_idx": di,
 		"skin": skin_id, "extra": extra_node, "riders": riders, "tint_applied": false})
 	return groups.size() - 1
 
@@ -772,19 +778,48 @@ func boss_slot() -> int:
 # ================================================================================================
 
 func _upload_visuals() -> void:
-	for g in groups:
-		(g["slots"] as PackedInt32Array).clear()
+	# Bucket the live units by visual group, as one counting sort into a single flat array.
+	#
+	# It has to be done with member arrays and explicit offsets, not by pushing into a per-group list
+	# held inside `groups`. A PackedInt32Array is a VALUE type: reading one out of a Dictionary or an
+	# Array hands back a copy, so `groups[gi]["slots"].push_back(slot)` appends to a temporary that is
+	# thrown away the moment the statement ends. That is not a subtle inefficiency -- it is silent.
+	# Every group's slot list stayed empty, every instance_count stayed 0, and no enemy was ever drawn
+	# on the board, while the pool itself spawned, moved, fought and died exactly as the logs said.
+	var ng := groups.size()
+	if ng == 0:
+		return
+	_group_start.resize(ng + 1)
+	for i in ng + 1:
+		_group_start[i] = 0
+	var total := 0
 	for i in active.size():
 		var slot: int = active[i]
 		if alive[slot] == 0:
 			continue
 		var gi: int = group_idx[slot]
 		if gi >= 0:
-			(groups[gi]["slots"] as PackedInt32Array).push_back(slot)
-	for g in groups:
-		var slots: PackedInt32Array = g["slots"]
+			_group_start[gi + 1] += 1
+			total += 1
+	for i in ng:
+		_group_start[i + 1] += _group_start[i]
+	if _sorted_slots.size() != total:
+		_sorted_slots.resize(total)
+	var cursor := _group_start.duplicate()      # a local packed array is safe to index-assign
+	for i in active.size():
+		var slot: int = active[i]
+		if alive[slot] == 0:
+			continue
+		var gi: int = group_idx[slot]
+		if gi >= 0:
+			_sorted_slots[cursor[gi]] = slot
+			cursor[gi] += 1
+
+	for gi in ng:
+		var g: Dictionary = groups[gi]
+		var base: int = _group_start[gi]
 		var mm: MultiMesh = g["mm"]
-		var n := slots.size()
+		var n: int = _group_start[gi + 1] - base
 		if mm.instance_count != n:
 			mm.instance_count = n
 		var extra_node = g["extra"]
@@ -803,7 +838,7 @@ func _upload_visuals() -> void:
 		var scale := float(d.get("scale", 1.0)) * GameState.unit_display_scale
 		var tint: Color = _faction_tint()
 		for k in n:
-			var slot: int = slots[k]
+			var slot: int = _sorted_slots[base + k]
 			var yaw := _yaw_of(slot)
 			var basis := Basis.from_euler(Vector3(0, yaw, 0)).scaled(Vector3(scale, scale, scale))
 			var xform := Transform3D(basis, Vector3(pos_x[slot], pos_y[slot], pos_z[slot]))

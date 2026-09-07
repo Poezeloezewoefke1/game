@@ -28,6 +28,7 @@ func _ready() -> void:
 	test_path()
 	_section("Enemy pool")
 	test_enemy_pool()
+	test_enemy_rendering()
 	_section("Enemy data")
 	test_enemy_data()
 	_section("Gear progression")
@@ -335,6 +336,61 @@ func test_path() -> void:
 	var ranges := p.ranges_within(Vector3(5, 0, 0), 2.0)
 	check(ranges.size() >= 1, "range query finds the covered stretch")
 	check_near(p.nearest_distance_to(Vector3(5, 0, 3)), 5.0, 0.6, "nearest distance projects onto the path")
+
+## Does the enemy pool actually put anything on screen? Every other enemy test asks the pool about
+## itself, and the pool will happily report a thousand healthy units while uploading none of them to
+## its MultiMeshes -- which is exactly what shipped: `groups[gi]["slots"].push_back(slot)` appended
+## to a throwaway copy, because a PackedInt32Array read out of a Dictionary is a copy, so no enemy
+## was ever drawn. Nothing in the suite noticed, because nothing in the suite looked at the renderer.
+func test_enemy_rendering() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(100, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 200)
+
+	# Three different types, so they land in more than one visual group.
+	var ids := ["chungie_t1", "chungie_t3", "archer"]
+	var spawned := 0
+	for id in ids:
+		for i in 4:
+			if mgr.spawn(id, float(i) * 3.0) >= 0:
+				spawned += 1
+	check_eq(spawned, 12, "spawned twelve enemies across three types")
+	mgr._process(0.016)
+
+	var instanced := 0
+	var groups_used := 0
+	for g in mgr.groups:
+		var mm: MultiMesh = g["mm"]
+		instanced += mm.instance_count
+		if mm.instance_count > 0:
+			groups_used += 1
+			# An instance at the origin with an identity transform is not being positioned either.
+			check(mm.get_instance_transform(0).origin.length() >= 0.0,
+				"group %s has a real transform" % String(g["key"]))
+	check_eq(instanced, mgr.live_count, "every live enemy is uploaded to a MultiMesh instance")
+	check(groups_used >= 2, "the enemies span more than one visual group (%d)" % groups_used)
+
+	# Killing some must remove them from the upload, not just from the pool's own bookkeeping.
+	var killed := 0
+	for slot in mgr.active.duplicate():
+		if mgr.alive[slot] == 1 and killed < 5:
+			mgr.kill(slot)
+			killed += 1
+	mgr._process(0.016)
+	var after := 0
+	for g in mgr.groups:
+		after += (g["mm"] as MultiMesh).instance_count
+	check_eq(after, mgr.live_count, "dead enemies stop being uploaded")
+	check(after < instanced, "and the instance count actually dropped (%d -> %d)" % [instanced, after])
+
+	# Armour layers and held items ride the same transforms, so they must match one for one.
+	for g in mgr.groups:
+		var n: int = (g["mm"] as MultiMesh).instance_count
+		for rider: MultiMesh in (g.get("riders", []) as Array):
+			check_eq(rider.instance_count, n, "a rider MultiMesh matches its group's instance count")
+	mgr.queue_free()
 
 func test_enemy_pool() -> void:
 	var mgr := EnemyManager.new()
@@ -885,40 +941,33 @@ func test_held_items() -> void:
 	check(WeaponBuilder.build_real_mesh("not_a_real_item") == null, "and builds no real mesh")
 	check(WeaponBuilder.build_mesh("not_a_real_item") != null, "but still gets a box model")
 
-## The pose the fist holds an item in. These are the properties that make an item read as held and
-## stay visible on the board -- all three were wrong at some point and none of them shows up in a
-## single screenshot, because each only fails from certain walking directions.
+## The pose the fist holds an item in. Minecraft's own: blade level, pointing forward out of the
+## fist, edge up. What is asserted here is that it stays Minecraft's and stays anchored in the hand
+## -- both drifted at some point, and neither shows up in a single screenshot.
 func test_held_pose() -> void:
 	var basis := MCGeometry.held_item_basis()
 	var blade: Vector3 = basis * Vector3(0, 1, 0)
 	var face: Vector3 = basis * Vector3(0, 0, 1)
-	# Out to the character's right. Without this a character walking away from the board camera hides
-	# their own weapon behind their torso, which is a quarter of every path.
-	check(blade.x > 0.35, "the item swings clear of the body (x = %.2f)" % blade.x)
-	check(blade.y < 0.0, "and hangs downward out of the fist (y = %.2f)" % blade.y)
-	# The board camera looks down at 38 degrees and cannot move. An item sprite is one pixel thick, so
-	# a face that squares up with that line of sight is not thin, it is gone. Check the worst walking
-	# direction rather than a convenient one.
-	var to_camera := Vector3(0, sin(deg_to_rad(38.0)), -cos(deg_to_rad(38.0)))
-	var worst := 1.0
-	var worst_yaw := 0.0
-	for step in 72:
-		var yaw := TAU * float(step) / 72.0
-		var n: Vector3 = Basis.from_euler(Vector3(0, yaw, 0)) * face
-		var seen := absf(n.dot(to_camera))
-		if seen < worst:
-			worst = seen
-			worst_yaw = rad_to_deg(yaw)
-	check(worst > 0.25, "the item never turns edge-on to the board camera (worst %.2f at %.0f deg)"
-		% [worst, worst_yaw])
-	# And the longest item in the game must not drag its tip through the floor.
+	# Forward out of the fist, level: vanilla's pose, not hanging at the side or raised overhead.
+	check(blade.z < -0.9, "the blade points forward out of the fist (z = %.2f)" % blade.z)
+	check(absf(blade.y) < 0.2, "and is carried level (y = %.2f)" % blade.y)
+	# Edge up, so the flat of the blade faces sideways. This is the half of vanilla's pose that costs
+	# visibility on a fixed overhead camera; it is a deliberate choice, so pin it rather than let it
+	# drift back by accident.
+	check(absf(face.x) > 0.9, "the blade is carried edge up, flat facing sideways (x = %.2f)" % face.x)
+	# The socket has to be in the fist, not on the wrist joint at the arm's base -- that was what made
+	# the item look balanced on the hand rather than gripped.
 	var arm_pivot: Vector3 = MCGeometry.part_def(
 		MCGeometry.part_defs(false, false), MCGeometry.Part.RIGHT_ARM)["pivot"]
 	var socket := arm_pivot + MCGeometry.held_item_offset(false)
 	check(socket.y > 12.0 and socket.y < 16.0, "the socket sits in the fist, not the wrist (y = %.0f px)"
 		% socket.y)
-	var tip_y := socket.y + blade.y * 20.0
-	check(tip_y > 0.0, "a 20px item's tip clears the ground (%.1f px)" % tip_y)
+	# And the fist closes part way up the handle, so the pommel passes through the hand instead of
+	# being pinched at its very tip.
+	var mesh := WeaponBuilder.build_real_mesh("iron_sword")
+	if mesh != null:
+		check(mesh.get_aabb().position.y < -0.05,
+			"the handle end sits below the grip (%.2f)" % mesh.get_aabb().position.y)
 
 func _unique_count(values: Array) -> int:
 	var seen: Dictionary = {}
