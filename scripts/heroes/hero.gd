@@ -72,6 +72,7 @@ func setup(id: String, definition: Dictionary, enemy_mgr: EnemyManager, proj: Pr
 	manager = mgr
 	visual = MinecraftCharacter.new()
 	add_child(visual)
+	visual.scale = Vector3.ONE * GameState.unit_display_scale
 	visual.setup(SkinLibrary.get_skin(String(def.get("character", id))), def.get("armor", {}), String(def.get("weapon", "")))
 	visual.attack_style = String(def.get("attack_style", "slash"))
 	visual.attack_hit.connect(_on_attack_hit)
@@ -304,7 +305,7 @@ func on_enemy_killed(slot: int, killer: String) -> void:
 				for other in enemies.query_range(at, float(e.get("radius", 2.4))):
 					enemies.damage(other, float(e.get("damage", 100.0)), "explosive", 0.4, hero_id)
 			"kill_mark":
-				if randf() < float(e.get("chance", 0.2)):
+				if enemies.rng.randf() < float(e.get("chance", 0.2)):
 					var at2 := enemies.unit_position(slot)
 					for other in enemies.query_range(at2, float(e.get("radius", 3.5))):
 						enemies.apply_slow(other, 0.8, float(e.get("duration", 4.0)))

@@ -5,6 +5,8 @@ extends Node3D
 ## structures costs a few draw calls rather than thousands of nodes.
 
 const BLOCK := 1.0
+## Character draw scale on a flat board. See GameState.unit_display_scale for why it is not 1.
+const FLAT_UNIT_SCALE := 2.8
 
 ## When true the map is painted as a single flat 2D board (see _build_flat_board); when false it is
 ## extruded into the original voxel world. Flat is the shipping look: a 2D map with 3D characters.

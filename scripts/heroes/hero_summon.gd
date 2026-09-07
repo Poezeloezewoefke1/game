@@ -29,7 +29,7 @@ func setup(character: String, enemy_mgr: EnemyManager, proj: ProjectileManager,
 	visual.attack_hit.connect(_on_hit)
 	visual.play("idle")
 	visual.set_emission(Color(0.4, 0.8, 1.0), 0.4)
-	scale = Vector3(0.92, 0.92, 0.92)
+	scale = Vector3(0.92, 0.92, 0.92) * GameState.unit_display_scale
 
 func _process(delta: float) -> void:
 	life -= delta

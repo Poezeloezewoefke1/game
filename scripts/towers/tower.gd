@@ -70,6 +70,7 @@ func setup(id: String, definition: Dictionary, enemy_mgr: EnemyManager, proj: Pr
 	targeting = String(def.get("targeting", "first"))
 	visual = MinecraftCharacter.new()
 	add_child(visual)
+	visual.scale = Vector3.ONE * GameState.unit_display_scale
 	recompute_stats()
 	visual.setup(SkinLibrary.get_skin(String(def.get("character", id))), armor_set, weapon)
 	visual.attack_style = attack_style
@@ -348,7 +349,8 @@ func _on_attack_hit() -> void:
 		var p := _payload()
 		p["damage"] = float(p["damage"]) * mult
 		for i in extra:
-			projectiles.fire(projectile_kind, muzzle + Vector3(randf_range(-0.6, 0.6), 0, randf_range(-0.6, 0.6)), slot, p)
+			projectiles.fire(projectile_kind, muzzle + Vector3(
+				enemies.rng.randf_range(-0.6, 0.6), 0, enemies.rng.randf_range(-0.6, 0.6)), slot, p)
 	_pending_shots = 0
 	AudioMgr.play_sfx_at(_attack_sfx(), global_position, -8.0, 0.12, 0.05)
 

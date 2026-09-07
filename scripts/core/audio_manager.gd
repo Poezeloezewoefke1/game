@@ -11,6 +11,11 @@ var _sfx_players: Array[AudioStreamPlayer] = []
 var _sfx_3d_players: Array[AudioStreamPlayer3D] = []
 var _cache: Dictionary = {}
 var current_music: String = ""
+## Audio has its own random stream on purpose. Pitch variation used to draw from the global RNG, and
+## the draw only happened when the wall-clock cooldown below let a sound through — so how many sounds
+## played perturbed the sequence that towers and hero passives drew from. Two identical runs of the
+## balance simulation diverged at wave 24 because of it.
+var _rng := RandomNumberGenerator.new()
 var _sfx_cooldowns: Dictionary = {}
 
 func _ready() -> void:
@@ -100,7 +105,7 @@ func play_sfx(name: String, volume_db: float = 0.0, pitch_variation: float = 0.0
 		if not p.playing:
 			p.stream = stream
 			p.volume_db = volume_db
-			p.pitch_scale = 1.0 + randf_range(-pitch_variation, pitch_variation)
+			p.pitch_scale = 1.0 + _rng.randf_range(-pitch_variation, pitch_variation)
 			p.play()
 			return
 
@@ -117,6 +122,6 @@ func play_sfx_at(name: String, position: Vector3, volume_db: float = 0.0, pitch_
 			p.stream = stream
 			p.global_position = position
 			p.volume_db = volume_db
-			p.pitch_scale = 1.0 + randf_range(-pitch_variation, pitch_variation)
+			p.pitch_scale = 1.0 + _rng.randf_range(-pitch_variation, pitch_variation)
 			p.play()
 			return

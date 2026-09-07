@@ -168,6 +168,8 @@ func _spend() -> void:
 func _check_fixed_timestep(delta: float) -> void:
 	if _warned_variable_step:
 		return
+	if delta <= 0.0:
+		return                       # the first frame reports a zero delta; it is not a step
 	if _step_seen < 0.0:
 		_step_seen = delta
 		return

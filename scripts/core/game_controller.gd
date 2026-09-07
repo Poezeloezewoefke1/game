@@ -55,6 +55,7 @@ func _build_world() -> void:
 	map_builder = MapBuilder.new()
 	add_child(map_builder)
 	path = map_builder.build(map_def)
+	GameState.unit_display_scale = MapBuilder.FLAT_UNIT_SCALE if map_builder.flat_board else 1.0
 	vfx = Node3D.new()
 	add_child(vfx)
 

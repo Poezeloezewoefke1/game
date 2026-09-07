@@ -14,6 +14,12 @@ var total_waves: int = 0
 var game_speed: float = 1.0
 var paused: bool = false
 var run_active: bool = false
+## How much larger characters are drawn than their world size. A flat board is framed so the whole
+## map is on screen, which puts the camera far enough back that a 1.8-unit character is about twenty
+## pixels tall — visible, but not readable. Drawing units out of scale with the map is how board-style
+## tower defence games keep them legible; it is presentation only and changes no hitbox, range or
+## path, all of which stay in world units.
+var unit_display_scale: float = 1.0
 var run_stats: Dictionary = {}
 var selected_tower_loadout: Array[String] = []
 

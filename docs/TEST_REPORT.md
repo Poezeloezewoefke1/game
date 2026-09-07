@@ -312,9 +312,20 @@ The investigation is worth recording, because the first two hypotheses were wron
    timestep is fixed as well.
 
    Fixed by running the simulation with `--fixed-fps 60` (baked into `tools/balance_sweep.sh`) and
-   setting `Engine.time_scale = 3.0` for a 1/20 s step. Two runs of the same build and seed now agree
-   exactly, verified. The simulation also detects a variable timestep at runtime and prints a loud
-   warning rather than reporting a number that means nothing.
+   setting `Engine.time_scale = 3.0` for a 1/20 s step. The simulation also detects a variable
+   timestep at runtime and prints a loud warning rather than reporting a number that means nothing.
+
+8. **Audio was drawing from the gameplay RNG.** Even with a fixed timestep, two *concurrent* runs of
+   one build and seed still diverged — identically through wave 23, then apart at wave 24. The cause:
+   `AudioMgr.play_sfx` throttles on wall-clock `Time.get_ticks_msec()`, and a sound that got through
+   the throttle called `randf_range` for pitch variation — from the *global* RNG that `Tower`'s muzzle
+   jitter and `Hero`'s `kill_mark` passive also drew from. How many sounds happened to play therefore
+   shifted the gameplay random sequence.
+
+   Fixed by giving `AudioMgr` its own `RandomNumberGenerator` and moving the two gameplay draws onto
+   the seeded stream (`enemies.rng`), so no gameplay randomness comes from the global RNG any more.
+   Two concurrent runs of the same build and seed now produce byte-identical output, verified under
+   deliberate CPU contention.
 
 ---
 
@@ -331,16 +342,16 @@ ParrotX2 on Fort Feather at normal, on the 2D board:
 
 | seed | outcome | wave  | lives   | leaks | boss killed |
 |------|---------|-------|---------|-------|-------------|
-| 1    | VICTORY | 25/25 | 26/100  | 35    | yes         |
-| 2    | VICTORY | 25/25 | 65/100  | 23    | yes         |
-| 3    | DEFEAT  | 24/25 | 0/100   | 38    | no          |
-| 4    | VICTORY | 25/25 | 33/100  | 39    | yes         |
-| 5    | VICTORY | 25/25 | 14/100  | 37    | yes         |
+| 1    | VICTORY | 25/25 | 36/100  | 34    | yes         |
+| 2    | VICTORY | 25/25 | 75/100  | 23    | yes         |
+| 3    | VICTORY | 25/25 | 13/100  | 36    | yes         |
+| 4    | VICTORY | 25/25 | 39/100  | 36    | yes         |
+| 5    | DEFEAT  | 24/25 | 0/100   | 37    | no          |
 
-Four wins from five, Saparata killed in every win, and the one loss comes on wave 24 of 25. Wins end
-on 14–65 lives. For a benchmark player that never sells a tower, never re-targets and never
-repositions its hero, losing one run in five at the very end is about right: a human with the same
-board should win reliably but not comfortably.
+Four wins from five, Saparata killed in every win, wins ending on 13–75 lives, and the single loss on
+wave 24 of 25. For a benchmark player that never sells a tower, never re-targets and never repositions
+its hero, losing one run in five at the very end is about right: a human with the same board should
+win reliably but not comfortably.
 
 Reproduce with:
 

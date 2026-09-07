@@ -750,7 +750,7 @@ func _upload_visuals() -> void:
 		if n == 0:
 			continue
 		var d: Dictionary = defs[g["def_idx"]]
-		var scale := float(d.get("scale", 1.0))
+		var scale := float(d.get("scale", 1.0)) * GameState.unit_display_scale
 		var tint: Color = _faction_tint()
 		for k in n:
 			var slot: int = slots[k]
