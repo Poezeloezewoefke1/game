@@ -84,9 +84,7 @@ func get_armor_layer_meshes(armor: Dictionary) -> Array:
 	var out: Array = []
 	for group in ArmorBuilder.layer_groups(armor):
 		out.append({
-			"mesh": ArmorBuilder.build_layer_merged_mesh(group["parts"], int(group["layer"])),
-			"material": String(group["material"]), "layer": int(group["layer"]),
-			"glint": float(group["glint"]),
+			"mesh": ArmorBuilder.build_layer_merged_mesh(group["parts"], group), "group": group,
 		})
 	_merged_meshes[key] = out
 	return out

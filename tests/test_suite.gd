@@ -794,16 +794,32 @@ func test_armor_layers() -> void:
 	# A part must not be listed twice, or boots and leggings would z-fight on the legs.
 	check_eq(l1_parts.size(), _unique_count(l1_parts), "layer 1 lists each part once")
 
-	# Anything the pack cannot draw has to keep its shell boxes, or capes and this project's own
-	# liveries would silently vanish the moment a pack is installed.
-	var mixed := {"chestplate": "netherite", "cape": "cinder", "crown": "gold"}
-	var left := ArmorBuilder.slots_without_layers(mixed)
-	check(left.has("cape"), "a cape falls back to shell boxes")
-	check(left.has("crown"), "a crown falls back to shell boxes")
-	check(not left.has("chestplate"), "a netherite chestplate uses a real layer")
+	# Everything this project equips is now drawn from real art: the invented royal and cinder
+	# liveries as dyed leather (Minecraft's only colourable armour), and the three slots vanilla has
+	# no equipment layer for from their own textures. Nothing in the shipped data should be left on
+	# the coloured shell boxes, which exist only for a build with no resource pack.
+	var mixed := {"chestplate": "netherite", "cape": "cinder", "crown": "gold", "elytra": "elytra"}
+	check(ArmorBuilder.slots_without_layers(mixed).is_empty(), "capes, crowns and elytra are real art")
+	check(ArmorBuilder.slots_without_layers({"chestplate": "royal"}).is_empty(),
+		"a royal livery is drawn as dyed leather")
+	check(ArmorBuilder.layer_image("royal", 1) != null, "the royal livery has a layer texture")
+	check(ArmorBuilder.layer_image("cinder", 2) != null, "the cinder livery has a leggings texture")
+	check(ArmorBuilder.layer_image("royal", 1) != ArmorBuilder.layer_image("cinder", 1),
+		"the two liveries are dyed differently")
+	for slot in ArmorBuilder.EXTRA_PIECES.keys():
+		check(ArmorBuilder.extra_image(String(slot), "royal") != null, "%s has real art" % slot)
+	# An unknown slot still has nowhere to go, and must not be silently dropped.
+	check(ArmorBuilder.slots_without_layers({"pauldron": "iron"}).has("pauldron"),
+		"an unknown slot keeps its shell boxes")
 
-	var mesh := ArmorBuilder.build_layer_merged_mesh(by_layer[1]["parts"], 1)
-	check(mesh != null and mesh.get_surface_count() == 1, "a layer merges into one surface")
+	for g in ArmorBuilder.layer_groups(mixed):
+		var m := ArmorBuilder.build_layer_merged_mesh(g["parts"], g)
+		check(m != null and m.get_surface_count() == 1, "group %s merges into one surface" % g["id"])
+		check(MCMaterials.make_armor_group(g) != null, "group %s has a material" % g["id"])
+	var slots_seen: Dictionary = {}
+	for g in ArmorBuilder.layer_groups(mixed):
+		slots_seen[String(g["slot"])] = true
+	check(slots_seen.size() == 4, "each of the four pieces is its own group (%d)" % slots_seen.size())
 
 func test_held_items() -> void:
 	# Every weapon id that appears in the shipped data has to resolve to something drawable. With a

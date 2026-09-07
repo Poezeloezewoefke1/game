@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2377 assertions, 0 failures
+## 1. Automated test suite — 2391 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2377
+PASSED: 2391
 FAILED: 0
 ALL TESTS PASSED
 ```
@@ -419,6 +419,27 @@ line-up:
 Enemies render through MultiMesh, and each armour group needs its own texture, so a group gets one
 extra MultiMesh per layer sharing the skin's transforms — the merged skin mesh drops the slots the
 layers now draw. Verified by cropping into a live board render.
+
+**The three slots vanilla has no equipment layer for**, plus this project's invented liveries, were
+the last things still drawn as coloured boxes. All four are now real art:
+
+- **Royal and cinder liveries** are dyed leather. Minecraft has no coloured plate armour, but
+  leather is dyeable, so a livery is the real leather layer multiplied by its dye with the undyed
+  overlay on top — the same compositing vanilla does, and what a player who actually wanted a royal
+  or Cindercrest uniform in Minecraft would have to wear.
+- **Capes** use banner cloth, dyed the same way. Minecraft ships no cape texture at all — capes are
+  per-account and not part of a resource pack — so banner cloth is the closest real one, on vanilla's
+  own 10×16×1 CapeModel box.
+- **Elytra** have a texture and a model of their own (`entity/equipment/wings/elytra`, one 10×20×2
+  wing at uv (22,0) mirrored for the other side), so both are used directly.
+- **The crown** is the one shape Minecraft has no equivalent for, so the geometry stays this
+  project's; the surface is the gold block's own art rather than an invented yellow.
+
+Only the *shape* of the crown is now non-vanilla. Across every enemy, tower and hero in the shipped
+data, `slots_without_layers` returns empty — nothing is left on the coloured shell boxes
+(`tests/enemy_item_check.gd` prints this per enemy; `tests/visual_armor_test.gd` renders all twelve
+combinations front and back). The boxes are still the no-pack fallback, and are still exercised: with
+`assets/resourcepack/` moved aside the suite runs 2246 assertions with 0 failures.
 
 **Held items.** Weapons were coloured boxes; they are now built from the pack's own art, and
 Minecraft turns out to build three different kinds of thing:

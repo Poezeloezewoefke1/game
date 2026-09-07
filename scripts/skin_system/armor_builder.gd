@@ -119,6 +119,7 @@ static func build_piece_mesh(boxes: Array, pivot_px: Vector3) -> ArrayMesh:
 
 const LAYER_1_INFLATE := 1.0
 const LAYER_2_INFLATE := 0.5
+const LAYER_TEX_SIZE := Vector2(64, 32)
 
 ## slot -> [layer, [part ids]]
 const SLOT_COVERAGE := {
@@ -128,36 +129,100 @@ const SLOT_COVERAGE := {
 	"boots": [1, [MCGeometry.Part.RIGHT_LEG, MCGeometry.Part.LEFT_LEG]],
 }
 
-## True when real armour layers can be drawn for this set — i.e. a pack is installed and it has a
-## texture for at least one equipped tier.
+## This project's own liveries. Minecraft has no coloured plate armour, but it does have dyed
+## leather, so a livery is drawn as exactly that: the real leather layer multiplied by the dye. That
+## keeps them on genuine Minecraft art instead of flat-coloured boxes, and it is what a player who
+## actually wanted a royal or Cindercrest uniform in Minecraft would have to wear.
+const LIVERIES := ["royal", "cinder"]
+
+## Slots the four equipment layers do not cover, and the real texture each is drawn from.
+##   cape    -- banner cloth, multiplied by the livery dye the way a dyed banner is. Minecraft ships
+##              no cape texture (capes are per-account), and banner cloth is its nearest real one.
+##   elytra  -- has a texture of its own, and vanilla's own two-wing model.
+##   crown   -- Minecraft has no crown, so the shape stays this project's, but the surface is the
+##              gold block's own art rather than an invented colour.
+const EXTRA_PIECES := {
+	"cape": {
+		"texture": "entity/banner/banner_base", "tex_size": Vector2(64, 64), "dyed": true,
+		# Vanilla CapeModel is a 10x16x1 cloth hanging off the shoulders.
+		"parts": [{"part": MCGeometry.Part.BODY, "min": Vector3(-5, 7, 2.2),
+			"size": Vector3(10, 16, 1), "uv": Vector2i(0, 0), "uv_dims": Vector3i(20, 40, 1),
+			"mirror": false}],
+	},
+	"elytra": {
+		"texture": "entity/equipment/wings/elytra", "tex_size": Vector2(64, 32),
+		# Vanilla ElytraModel: one 10x20x2 wing at uv (22,0), mirrored for the other side.
+		"parts": [
+			{"part": MCGeometry.Part.BODY, "min": Vector3(0.5, 5, 2.0), "size": Vector3(9, 18, 1.5),
+				"uv": Vector2i(22, 0), "uv_dims": Vector3i(10, 20, 2), "mirror": false},
+			{"part": MCGeometry.Part.BODY, "min": Vector3(-9.5, 5, 2.0), "size": Vector3(9, 18, 1.5),
+				"uv": Vector2i(22, 0), "uv_dims": Vector3i(10, 20, 2), "mirror": true},
+		],
+	},
+	"crown": {
+		"block": "gold_block", "tex_size": Vector2(16, 16), "tiled": true, "glint": 1.0,
+		"parts": [
+			{"part": MCGeometry.Part.HEAD, "min": Vector3(-4.5, 31.5, -4.5), "size": Vector3(9, 2, 9)},
+			{"part": MCGeometry.Part.HEAD, "min": Vector3(-4.0, 33.5, -4.5), "size": Vector3(1.2, 2, 1)},
+			{"part": MCGeometry.Part.HEAD, "min": Vector3(-1.5, 33.5, -4.5), "size": Vector3(1.2, 2, 1)},
+			{"part": MCGeometry.Part.HEAD, "min": Vector3(1.0, 33.5, -4.5), "size": Vector3(1.2, 2, 1)},
+			{"part": MCGeometry.Part.HEAD, "min": Vector3(3.5, 33.5, -4.5), "size": Vector3(1.2, 2, 1)},
+		],
+	},
+}
+
+## The pack image for an equipment layer, with this project's liveries resolved to dyed leather.
+## Null when there is no pack, or it has nothing for this material.
+static func layer_image(material: String, layer: int) -> Image:
+	if LIVERIES.has(material):
+		return ResourcePack.dyed_leather_layer(layer, TIER_COLORS.get(material, Color.WHITE))
+	return ResourcePack.armor_layer(material, layer)
+
+## The pack image for one of the extra slots, dyed where the piece takes a dye. Null when absent.
+static func extra_image(slot: String, tier: String) -> Image:
+	var entry: Dictionary = EXTRA_PIECES.get(slot, {})
+	if entry.is_empty() or not ResourcePack.available():
+		return null
+	if entry.has("block"):
+		return ResourcePack.block_image(String(entry["block"]))
+	var img := ResourcePack.raw_image(String(entry["texture"]))
+	if img != null and bool(entry.get("dyed", false)):
+		img = img.duplicate()
+		var dye: Color = TIER_COLORS.get(String(parse_tier(tier)["base"]), Color.WHITE)
+		for y in img.get_height():
+			for x in img.get_width():
+				var c := img.get_pixel(x, y)
+				img.set_pixel(x, y, Color(c.r * dye.r, c.g * dye.g, c.b * dye.b, c.a))
+	return img
+
+## True when a pack is installed and it can draw at least one piece of this set for real.
 static func layers_available(armor: Dictionary) -> bool:
 	if not ResourcePack.available():
 		return false
 	for slot in armor.keys():
-		if not SLOT_COVERAGE.has(slot):
-			continue
-		var t := parse_tier(String(armor[slot]))
-		if ResourcePack.armor_layer(String(t["base"]), int(SLOT_COVERAGE[slot][0])) != null:
+		if _drawable(String(slot), String(armor[slot])):
 			return true
 	return false
 
-## The slots of `armor` that real layers cannot draw: anything outside the four equipment slots
-## (capes, elytra, crowns) and any tier the pack has no texture for (this project's invented royal and
-## cinder liveries). These keep the shell-box treatment so nothing vanishes when a pack is installed.
+## The slots of `armor` that no real texture can draw, which keep the shell-box treatment so nothing
+## vanishes when a pack is installed. With the pack this project ships, this is normally empty.
 static func slots_without_layers(armor: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	for slot in armor.keys():
-		var s := String(slot)
-		if not SLOT_COVERAGE.has(s):
-			out[s] = armor[slot]
-			continue
-		var t := parse_tier(String(armor[slot]))
-		if ResourcePack.armor_layer(String(t["base"]), int(SLOT_COVERAGE[s][0])) == null:
-			out[s] = armor[slot]
+		if not _drawable(String(slot), String(armor[slot])):
+			out[String(slot)] = armor[slot]
 	return out
 
-## Describes the armour of `armor` as layer pieces, grouped so each group is one draw with one
-## texture. Returns [{material, layer, glint, parts: [{part, min, size, uv, uv_dims, mirror, pivot}]}].
+static func _drawable(slot: String, tier: String) -> bool:
+	if SLOT_COVERAGE.has(slot):
+		return layer_image(String(parse_tier(tier)["base"]), int(SLOT_COVERAGE[slot][0])) != null
+	if EXTRA_PIECES.has(slot):
+		return extra_image(slot, tier) != null
+	return false
+
+## Describes a set as drawable groups, one per texture, so each group is one draw call. Returns
+## [{id, material, layer, glint, tex_size, inflate, tiled, slot, tier,
+##   parts: [{part, min, size, uv, uv_dims, mirror, pivot}]}].
 ## The armour model is always the standard 4-wide-arm humanoid, as in vanilla, even over a slim skin.
 static func layer_groups(armor: Dictionary) -> Array:
 	var defs := MCGeometry.part_defs(false, true)      # classic body, legacy net == the armour net
@@ -168,11 +233,15 @@ static func layer_groups(armor: Dictionary) -> Array:
 		var t := parse_tier(String(armor[slot]))
 		var material := String(t["base"])
 		var layer := int(SLOT_COVERAGE[slot][0])
-		if ResourcePack.armor_layer(material, layer) == null:
+		if layer_image(material, layer) == null:
 			continue
 		var key := "%s:%d" % [material, layer]
 		if not groups.has(key):
-			groups[key] = {"material": material, "layer": layer, "glint": float(t["glint"]), "parts": []}
+			groups[key] = {
+				"id": key, "material": material, "layer": layer, "glint": float(t["glint"]),
+				"tex_size": LAYER_TEX_SIZE, "tiled": false, "slot": slot, "tier": String(armor[slot]),
+				"inflate": LAYER_1_INFLATE if layer == 1 else LAYER_2_INFLATE, "parts": [],
+			}
 		elif float(t["glint"]) > 0.0:
 			groups[key]["glint"] = 1.0
 		var seen: Dictionary = {}
@@ -186,26 +255,48 @@ static func layer_groups(armor: Dictionary) -> Array:
 				"part": part, "min": def["min"], "size": Vector3(def["size"]),
 				"uv": def["uv"], "uv_dims": def["size"], "mirror": def["mirror"], "pivot": def["pivot"],
 			})
+	# Capes, elytra and crowns are not equipment layers -- each is its own model with its own
+	# texture, so each becomes a group of its own rather than joining one.
+	for slot in EXTRA_PIECES.keys():
+		var s := String(slot)
+		if not armor.has(s) or extra_image(s, String(armor[s])) == null:
+			continue
+		var entry: Dictionary = EXTRA_PIECES[s]
+		var tier := String(armor[s])
+		var parts: Array = []
+		for p in entry["parts"]:
+			var pd: Dictionary = (p as Dictionary).duplicate()
+			pd["pivot"] = MCGeometry.part_def(defs, int(pd["part"]))["pivot"]
+			parts.append(pd)
+		groups["extra:" + s] = {
+			"id": "%s:%s" % [s, parse_tier(tier)["base"]], "material": s, "layer": 0,
+			"glint": maxf(float(entry.get("glint", 0.0)), float(parse_tier(tier)["glint"])),
+			"tex_size": entry.get("tex_size", LAYER_TEX_SIZE), "tiled": bool(entry.get("tiled", false)),
+			"slot": s, "tier": tier, "inflate": 0.0, "parts": parts,
+		}
 	return groups.values()
 
-## One armour layer group as a mesh relative to a body part's pivot (node-based characters).
-static func build_layer_piece_mesh(parts: Array, layer: int, pivot_px: Vector3) -> ArrayMesh:
+## One group as a mesh relative to a body part's pivot (node-based characters).
+static func build_layer_piece_mesh(parts: Array, group: Dictionary, pivot_px: Vector3) -> ArrayMesh:
 	var b := MCMeshBuilder.new()
-	b.tex_size = Vector2(64, 32)
 	b.local_origin = pivot_px
-	var inflate := LAYER_1_INFLATE if layer == 1 else LAYER_2_INFLATE
-	for p in parts:
-		b.add_skin_box(p["min"], p["size"], p["uv"], p["uv_dims"], p["mirror"], inflate,
-			int(p["part"]), p["pivot"])
+	_emit(b, parts, group)
 	return b.commit()
 
-## Every armour layer group of a set merged into one mesh in character space (MultiMesh rendering).
-## One mesh per group, because each group needs its own texture.
-static func build_layer_merged_mesh(parts: Array, layer: int) -> ArrayMesh:
+## One group merged into a single mesh in character space (MultiMesh rendering).
+static func build_layer_merged_mesh(parts: Array, group: Dictionary) -> ArrayMesh:
 	var b := MCMeshBuilder.new()
-	b.tex_size = Vector2(64, 32)
-	var inflate := LAYER_1_INFLATE if layer == 1 else LAYER_2_INFLATE
-	for p in parts:
-		b.add_skin_box(p["min"], p["size"], p["uv"], p["uv_dims"], p["mirror"], inflate,
-			int(p["part"]), p["pivot"])
+	_emit(b, parts, group)
 	return b.commit()
+
+static func _emit(b: MCMeshBuilder, parts: Array, group: Dictionary) -> void:
+	b.tex_size = group.get("tex_size", LAYER_TEX_SIZE)
+	var inflate := float(group.get("inflate", LAYER_1_INFLATE))
+	var glint := float(group.get("glint", 0.0))
+	var tiled := bool(group.get("tiled", false))
+	for p in parts:
+		if tiled:
+			b.add_texture_box(p["min"], p["size"], int(p["part"]), p["pivot"], glint)
+		else:
+			b.add_skin_box(p["min"], p["size"], p["uv"], p["uv_dims"], p["mirror"], inflate,
+				int(p["part"]), p["pivot"], glint)

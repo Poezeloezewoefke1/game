@@ -276,8 +276,7 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 	var riders: Array = []   # MultiMeshes that ride the skin's transforms: armour layers, held item
 	if model == "" and ArmorBuilder.layers_available(d.get("armor", {})):
 		for g in SkinLibrary.get_armor_layer_meshes(d.get("armor", {})):
-			var amat := MCMaterials.make_armor_layer(String(g["material"]), int(g["layer"]), true,
-				float(g["glint"]) > 0.0)
+			var amat := MCMaterials.make_armor_group(g["group"], true)
 			if amat == null:
 				continue
 			var amm := MultiMesh.new()

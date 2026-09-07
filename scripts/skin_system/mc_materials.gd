@@ -24,9 +24,38 @@ static func armor_layer_texture(material: String, layer: int) -> Texture2D:
 	var key := "%s:%d" % [material, layer]
 	if _layer_tex.has(key):
 		return _layer_tex[key]
-	var img := ResourcePack.armor_layer(material, layer)
+	var img := ArmorBuilder.layer_image(material, layer)
 	_layer_tex[key] = ImageTexture.create_from_image(img) if img != null else null
 	return _layer_tex[key]
+
+## The texture for one group from ArmorBuilder.layer_groups -- an equipment layer, or a cape, elytra
+## or crown, which are their own models with their own art. Null when the pack cannot draw it.
+static func armor_group_texture(group: Dictionary) -> Texture2D:
+	var key := "g:" + String(group.get("id", ""))
+	if _layer_tex.has(key):
+		return _layer_tex[key]
+	var img: Image = null
+	if int(group.get("layer", 0)) > 0:
+		img = ArmorBuilder.layer_image(String(group["material"]), int(group["layer"]))
+	else:
+		img = ArmorBuilder.extra_image(String(group["slot"]), String(group["tier"]))
+	_layer_tex[key] = ImageTexture.create_from_image(img) if img != null else null
+	return _layer_tex[key]
+
+## A material that draws one armour group: the character shader with the group's texture standing in
+## for the skin, so GPU limb animation still moves it with the body part it is attached to.
+static func make_armor_group(group: Dictionary, gpu_anim: bool = false) -> ShaderMaterial:
+	var tex := armor_group_texture(group)
+	if tex == null:
+		return null
+	var m := make(tex, false, gpu_anim)
+	if float(group.get("glint", 0.0)) > 0.0:
+		var g := glint_texture()
+		if g != null:
+			m.set_shader_parameter("glint_tex", g)
+			m.set_shader_parameter("glint_has_tex", 1.0)
+			m.set_shader_parameter("glint_strength", 1.0)
+	return m
 
 ## Minecraft's scrolling enchantment overlay. Null when no pack is installed.
 static func glint_texture() -> Texture2D:
@@ -35,22 +64,6 @@ static func glint_texture() -> Texture2D:
 		if img != null:
 			_glint_tex = ImageTexture.create_from_image(img)
 	return _glint_tex
-
-## A material that draws an armour layer: the same character shader, but with the layer texture
-## standing in for the skin so the GPU limb animation still applies.
-static func make_armor_layer(material: String, layer: int, gpu_anim: bool = false,
-		glint: bool = false) -> ShaderMaterial:
-	var tex := armor_layer_texture(material, layer)
-	if tex == null:
-		return null
-	var m := make(tex, false, gpu_anim)
-	if glint:
-		var g := glint_texture()
-		if g != null:
-			m.set_shader_parameter("glint_tex", g)
-			m.set_shader_parameter("glint_has_tex", 1.0)
-			m.set_shader_parameter("glint_strength", 1.0)
-	return m
 
 ## The texture a real held item is drawn with, or null when the pack cannot draw it.
 static func item_texture(weapon_id: String) -> Texture2D:

@@ -88,9 +88,7 @@ func set_armor(armor_set: Dictionary) -> void:
 ## needs its own texture, and one child per body part so GPU limb animation still moves it.
 func _build_armor_layers(defs: Array) -> void:
 	for group in ArmorBuilder.layer_groups(armor):
-		var layer := int(group["layer"])
-		var mat := MCMaterials.make_armor_layer(String(group["material"]), layer, false,
-			float(group["glint"]) > 0.0)
+		var mat := MCMaterials.make_armor_group(group)
 		if mat == null:
 			continue
 		var by_part: Dictionary = {}
@@ -102,8 +100,8 @@ func _build_armor_layers(defs: Array) -> void:
 		for pid in by_part.keys():
 			var def := MCGeometry.part_def(defs, pid)
 			var mi := MeshInstance3D.new()
-			mi.name = "Armor_%s_%s_%d" % [def["name"], String(group["material"]), layer]
-			mi.mesh = ArmorBuilder.build_layer_piece_mesh(by_part[pid], layer, def["pivot"])
+			mi.name = "Armor_%s_%s" % [def["name"], String(group["id"]).replace(":", "_")]
+			mi.mesh = ArmorBuilder.build_layer_piece_mesh(by_part[pid], group, def["pivot"])
 			mi.material_override = mat
 			parts[def["name"]].add_child(mi)
 			armor_nodes.append(mi)

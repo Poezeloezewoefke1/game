@@ -208,5 +208,5 @@ this is why the runners exist.
 
 The suite covers the skin parser, UV mapping, character generation, armour, weapons, damage, path
 maths, the enemy pool, enemy and tower data integrity, the Gear Rule, hero data, wave generation and
-ramp, boss phases, currency, save round-tripping, relationships and lore-database integrity: 2377
+ramp, boss phases, currency, save round-tripping, relationships and lore-database integrity: 2391
 assertions.

@@ -31,5 +31,27 @@ func _ready() -> void:
 		print("  %s  %-20s %-26s verts=%-5d merged_boxes=%s" % [
 			"REAL " if ok else "DOUBLE", id, held, mesh.surface_get_array_len(0), merged_carries_boxes])
 	print("real=%d boxes=%d" % [real, boxes])
-	print("========================================")
+
+	print("\n=========== ENEMY ARMOUR (MultiMesh path) ===========")
+	var shell_left: Array = []
+	for id in DataDB.enemies.keys():
+		var d: Dictionary = DataDB.enemies[id]
+		var set: Dictionary = d.get("armor", {})
+		if set.is_empty() or String(d.get("model", "")) != "":
+			continue
+		var shell := ArmorBuilder.slots_without_layers(set)
+		for k in shell.keys():
+			if not shell_left.has(k):
+				shell_left.append(k)
+		var ids: Array = []
+		var bad := 0
+		for g in SkinLibrary.get_armor_layer_meshes(set):
+			ids.append(String(g["group"]["id"]))
+			if g["mesh"] == null or MCMaterials.make_armor_group(g["group"], true) == null:
+				bad += 1
+		print("  %-20s groups=%-2d %-56s shell=%s%s" % [
+			id, ids.size(), ", ".join(PackedStringArray(ids)), shell.keys(),
+			"  !! %d UNDRAWABLE" % bad if bad > 0 else ""])
+	print("slots still on coloured shell boxes across all enemies: %s" % [shell_left])
+	print("====================================================")
 	get_tree().quit(0)

@@ -134,16 +134,35 @@ static func armor_layer(material: String, layer: int = 1) -> Image:
 	var key := "a:%s:%d" % [mat, layer]
 	if _cache.has(key):
 		return _cache[key]
-	var dir := "entity/equipment/humanoid" if layer == 1 else "entity/equipment/humanoid_leggings"
-	var img := _load("%s/%s" % [dir, mat])
-	if img != null and mat == "leather":
-		_tint(img, LEATHER_TINT)
-		# The overlay carries the parts that are never dyed (buckles, stitching); it goes on untinted.
+	var img: Image = null
+	if mat == "leather":
+		img = dyed_leather_layer(layer, LEATHER_TINT)
+	else:
+		img = _load("%s/%s" % [_equipment_dir(layer), mat])
+	_cache[key] = img
+	return img
+
+## Leather is the only armour Minecraft lets a player colour, so a coloured livery is dyed leather:
+## the layer ships greyscale, the game multiplies it by the dye, and the overlay carries the parts
+## that are never dyed (buckles, stitching) and goes on top untinted. `armor_layer` uses this with
+## vanilla's default brown; anything wanting another colour asks for it here.
+static func dyed_leather_layer(layer: int, dye: Color) -> Image:
+	var key := "dl:%d:%s" % [layer, dye.to_html(false)]
+	if _cache.has(key):
+		return _cache[key]
+	var dir := _equipment_dir(layer)
+	var img := _load("%s/leather" % dir)
+	if img != null:
+		img = img.duplicate()
+		_tint(img, dye)
 		var overlay := _load("%s/leather_overlay" % dir)
 		if overlay != null:
 			img.blend_rect(overlay, Rect2i(Vector2i.ZERO, overlay.get_size()), Vector2i.ZERO)
 	_cache[key] = img
 	return img
+
+static func _equipment_dir(layer: int) -> String:
+	return "entity/equipment/humanoid" if layer == 1 else "entity/equipment/humanoid_leggings"
 
 ## The scrolling overlay Minecraft draws over enchanted gear.
 static func glint_image(for_armor: bool = true) -> Image:

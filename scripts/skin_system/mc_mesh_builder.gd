@@ -51,6 +51,14 @@ func add_color_box(bmin: Vector3, size: Vector3, color: Color, part_id: int, piv
 		rects[face] = Rect2(0, 0, fw / pattern_scale * tex_size.x, fh / pattern_scale * tex_size.y)
 	_add_box(bmin, size, rects, false, color, part_id, 1.0, glint, pivot_px, true)
 
+## Adds a box whose every face maps to the whole texture. Block art (a gold band, a stone slab) has
+## no skin net of its own, so there is no rectangle to pick out -- each face just wears the tile.
+func add_texture_box(bmin: Vector3, size: Vector3, part_id: int, pivot_px: Vector3,
+		glint: float = 0.0) -> void:
+	var full := Rect2(0, 0, tex_size.x, tex_size.y)
+	var rects := {"right": full, "left": full, "front": full, "back": full, "top": full, "bottom": full}
+	_add_box(bmin, size, rects, false, Color.WHITE, part_id, 0.0, glint, pivot_px, false)
+
 ## Adds one textured quad. Corners are in pixels, given TL, TR, BR, BL as seen from outside; UVs are
 ## already normalised. Used by the extruded item sprites, which are not boxes.
 func add_quad(tl: Vector3, tr: Vector3, br: Vector3, bl: Vector3, uv_tl: Vector2, uv_tr: Vector2,
