@@ -52,6 +52,7 @@ func _ready() -> void:
 	test_armor_layers()
 	_section("Held items")
 	test_held_items()
+	test_held_pose()
 	test_cc_limits()
 	test_downgrade_scaling()
 	_section("Lore database integrity")
@@ -883,6 +884,41 @@ func test_held_items() -> void:
 	check(not WeaponBuilder.has_real_item("not_a_real_item"), "an unknown weapon has no real art")
 	check(WeaponBuilder.build_real_mesh("not_a_real_item") == null, "and builds no real mesh")
 	check(WeaponBuilder.build_mesh("not_a_real_item") != null, "but still gets a box model")
+
+## The pose the fist holds an item in. These are the properties that make an item read as held and
+## stay visible on the board -- all three were wrong at some point and none of them shows up in a
+## single screenshot, because each only fails from certain walking directions.
+func test_held_pose() -> void:
+	var basis := MCGeometry.held_item_basis()
+	var blade: Vector3 = basis * Vector3(0, 1, 0)
+	var face: Vector3 = basis * Vector3(0, 0, 1)
+	# Out to the character's right. Without this a character walking away from the board camera hides
+	# their own weapon behind their torso, which is a quarter of every path.
+	check(blade.x > 0.35, "the item swings clear of the body (x = %.2f)" % blade.x)
+	check(blade.y < 0.0, "and hangs downward out of the fist (y = %.2f)" % blade.y)
+	# The board camera looks down at 38 degrees and cannot move. An item sprite is one pixel thick, so
+	# a face that squares up with that line of sight is not thin, it is gone. Check the worst walking
+	# direction rather than a convenient one.
+	var to_camera := Vector3(0, sin(deg_to_rad(38.0)), -cos(deg_to_rad(38.0)))
+	var worst := 1.0
+	var worst_yaw := 0.0
+	for step in 72:
+		var yaw := TAU * float(step) / 72.0
+		var n: Vector3 = Basis.from_euler(Vector3(0, yaw, 0)) * face
+		var seen := absf(n.dot(to_camera))
+		if seen < worst:
+			worst = seen
+			worst_yaw = rad_to_deg(yaw)
+	check(worst > 0.25, "the item never turns edge-on to the board camera (worst %.2f at %.0f deg)"
+		% [worst, worst_yaw])
+	# And the longest item in the game must not drag its tip through the floor.
+	var arm_pivot: Vector3 = MCGeometry.part_def(
+		MCGeometry.part_defs(false, false), MCGeometry.Part.RIGHT_ARM)["pivot"]
+	var socket := arm_pivot + MCGeometry.held_item_offset(false)
+	check(socket.y > 12.0 and socket.y < 16.0, "the socket sits in the fist, not the wrist (y = %.0f px)"
+		% socket.y)
+	var tip_y := socket.y + blade.y * 20.0
+	check(tip_y > 0.0, "a 20px item's tip clears the ground (%.1f px)" % tip_y)
 
 func _unique_count(values: Array) -> int:
 	var seen: Dictionary = {}

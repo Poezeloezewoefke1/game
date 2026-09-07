@@ -1,7 +1,10 @@
 class_name WeaponBuilder
 extends RefCounted
-## Procedural blocky item models built from coloured boxes. Item space: handle base at origin, item extends +Y.
-## Units are skin pixels. The character system places the item in the right hand and tilts it forward.
+## Procedural blocky item models built from coloured boxes.
+##
+## Item space: units are skin pixels, the item extends +Y, and the origin is the point the fist closes
+## on -- so a sword's handle end sits slightly below it and its blade above. MCGeometry.held_item_basis
+## then decides how the hand carries that.
 
 const WOOD := Color(0.45, 0.30, 0.15)
 const DARK := Color(0.16, 0.15, 0.17)
@@ -139,6 +142,11 @@ const ITEM_DEPTH_PX := 1.0
 const ITEM_SCALE := 0.85
 ## Alpha at or below this counts as empty when tracing the sprite's silhouette.
 const ALPHA_CUT := 0.5
+## How far along the item, in sprite pixels, the fist closes. A hand grips a sword part-way up the
+## handle with the pommel poking out below it; putting the very corner of the sprite in the fist
+## instead makes the item look balanced on the fingertips rather than held.
+const GRIP_HANDHELD_PX := 3.5
+const GRIP_GENERATED_PX := 2.0
 
 ## Sprite items: this project's weapon id -> the pack's item texture and its vanilla pose.
 ## `handheld` is vanilla's tool pose (rolled onto the sprite diagonal); false is `generated`.
@@ -307,15 +315,17 @@ static func build_real_mesh(weapon_id: String, xform: Transform3D = Transform3D.
 
 ## Vanilla's display transform for a held sprite, reduced to what matters here: `handheld` rolls the
 ## sprite 45 degrees so the handle-to-tip diagonal points up out of the fist, `generated` leaves it
-## upright. Either way the grip ends up at the origin with the item extending +Y, which is the same
-## contract the box models use, so the hand socket does not need to know which kind it is holding.
+## upright. Either way the item ends up extending +Y with the point the fist closes on at the origin,
+## which is the same contract the box models use, so the hand socket does not need to know which kind
+## it is holding.
 static func _sprite_pose(handheld: bool) -> Transform3D:
 	var half := 8.0 * ITEM_SCALE
 	if not handheld:
-		return Transform3D(Basis.IDENTITY, Vector3(0, half, 0))
+		return Transform3D(Basis.IDENTITY, Vector3(0, half - GRIP_GENERATED_PX * ITEM_SCALE, 0))
 	var basis := Basis.from_euler(Vector3(0, 0, deg_to_rad(45.0)))
-	# The handle is the sprite's bottom-left corner; after the roll it sits at -sqrt(2) * half.
-	return Transform3D(basis, Vector3(0, sqrt(2.0) * half, 0))
+	# The handle end is the sprite's bottom-left corner, which the roll sends to -sqrt(2) * half.
+	# Lift by a little less than that, so the grip lands up the handle and the pommel clears the fist.
+	return Transform3D(basis, Vector3(0, sqrt(2.0) * half - GRIP_HANDHELD_PX * ITEM_SCALE, 0))
 
 ## Extrudes a sprite into a slab. `b.xform` must already carry the pose.
 static func _extrude_sprite(b: MCMeshBuilder, src: Image, glint: float, part_id: int,
