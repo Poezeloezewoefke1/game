@@ -4,12 +4,12 @@
       "id": "4cvit",
       "asset": "assets/skins/4cvit.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "arachn1d",
@@ -782,23 +782,23 @@
       "id": "deputy_ace",
       "asset": "assets/skins/deputy_ace.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "eggchan",
       "asset": "assets/skins/eggchan.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "flamefrags",
@@ -815,23 +815,23 @@
       "id": "fymada",
       "asset": "assets/skins/fymada.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "jaden_man",
       "asset": "assets/skins/jaden_man.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "lawman",
@@ -848,12 +848,12 @@
       "id": "leow0ok",
       "asset": "assets/skins/leow0ok.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "slim",
-      "placeholder": true
+      "model": "classic",
+      "placeholder": false
     },
     {
       "id": "lettucek",
@@ -870,12 +870,12 @@
       "id": "lomedy",
       "asset": "assets/skins/lomedy.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "mafia_invis",
@@ -892,23 +892,23 @@
       "id": "mapicc",
       "asset": "assets/skins/mapicc.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "minutetech",
       "asset": "assets/skins/minutetech.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "parrotx2",
@@ -947,12 +947,12 @@
       "id": "purpled",
       "asset": "assets/skins/purpled.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "reddoons",
@@ -969,23 +969,23 @@
       "id": "reinadrop",
       "asset": "assets/skins/reinadrop.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "slim",
-      "placeholder": true
+      "model": "classic",
+      "placeholder": false
     },
     {
       "id": "royal_soldier",
       "asset": "assets/skins/royal_soldier.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "saparata",
@@ -1024,12 +1024,12 @@
       "id": "spepticle",
       "asset": "assets/skins/spepticle.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "spokeishere",
@@ -1046,12 +1046,12 @@
       "id": "theobaldthebird",
       "asset": "assets/skins/theobaldthebird.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "uv_test",

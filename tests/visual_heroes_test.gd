@@ -1,12 +1,13 @@
 extends Node3D
 ## Renders the four playable heroes side by side so the supplied skins can be eyeballed.
 
-const HEROES := ["parrotx2", "wemmbu", "spokeishere", "flamefrags"]
+const HEROES := ["royal_soldier", "theobaldthebird", "eggchan", "lomedy", "mapicc",
+	"leow0ok", "minutetech"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
 	add_child(cam)
-	cam.position = Vector3(0, 2.0, -7.0)
+	cam.position = Vector3(0, 2.4, -11.0)
 	cam.look_at(Vector3(0, 1.05, 0))
 	cam.fov = 38
 	var sun := DirectionalLight3D.new()
@@ -26,14 +27,14 @@ func _ready() -> void:
 		var c := MinecraftCharacter.new()
 		add_child(c)
 		c.setup(SkinLibrary.get_skin(HEROES[i]), {}, "")
-		c.position = Vector3(-2.7 + 1.8 * float(i), 0, 0)
+		c.position = Vector3(-5.4 + 1.8 * float(i), 0, 0)
 		c.rotation_degrees.y = 180.0
 		c.play("idle")
 		var lbl := Label3D.new()
 		add_child(lbl)
 		lbl.text = HEROES[i]
-		lbl.position = Vector3(-2.7 + 1.8 * float(i), 2.35, 0)
-		lbl.font_size = 96
+		lbl.position = Vector3(-5.4 + 1.8 * float(i), 2.35, 0)
+		lbl.font_size = 72
 		lbl.pixel_size = 0.0025
 		lbl.rotation_degrees.y = 180.0
 
