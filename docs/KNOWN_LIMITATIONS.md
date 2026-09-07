@@ -5,27 +5,28 @@ as working when it is not.
 
 ---
 
-## 1. Most character skins are still placeholders
+## 1. Character skins are supplied; two identical sets remain
 
-**The four playable heroes now use real skins supplied by the project owner** — ParrotX2, Wemmbu,
-SpokeIsHere and FlameFrags. They were dropped into `assets/skins/` and the pipeline picked them up
-with no code change, which is what it was built for.
+**Every character in the game now uses a real skin supplied by the project owner** — the four
+playable heroes, all fourteen tower characters, and all seventeen enemies, bosses and supporting
+characters. The only procedural skins left are `uv_test` and `uv_test_legacy`, which are test
+fixtures for the UV-mapping tests and are meant to stay generated.
 
-**The other 34 skins are still procedurally generated.** They are not the real creators' Minecraft
-skins and not close approximations — they are colour-coded stand-ins built from a palette and a few
-marker features (an egg head for Eggchan, a hat for Deputy_Ace).
+Two things about them are worth knowing:
 
-That is deliberate: a publicly available skin is not automatically licensed for redistribution, so
-nothing was downloaded. Supply a licensed PNG and the game uses it immediately.
+- **Six characters share one skin.** `chungie`, `chungie_b`, `chungie_c`, `cindercrest_soldier`,
+  `lawman` and `pirate` are byte-identical — the Minecraft default. For the chungies that reads
+  correctly (they *are* the new players Cindercrest is killing), but `chungie_b` and `chungie_c`
+  exist to give the horde visual variety and currently give none, and a Cindercrest veteran looking
+  like a new player is backwards. Their armour tiers still tell them apart in play. Dropping distinct
+  PNGs at those ids fixes it with no code change.
+- **`mafia_invis` has no supplied skin on purpose.** The Invisible Mafia is invisible; the enemy
+  renders with the `F_INVISIBLE` ghost treatment, and the generated silhouette is only what shows
+  when a detection tower reveals it.
 
-**To fix:** drop a Minecraft-compatible PNG at `assets/skins/<id>.png` or `user://skins/<id>.png`.
-64×64, legacy 64×32 and HD multiples all work; slim arms are auto-detected. The complete list of ids
-awaiting a real skin is in [ASSET_LICENSES.md](ASSET_LICENSES.md). No code change is needed.
-
-**On the supplied skins:** the four heroes and all fourteen tower characters are used here at the
-owner's direction and recorded in the manifest as `supplied_by_developer`. That covers use inside this
-project; it is not a redistribution licence, so confirm rights with each skin's author before shipping
-the game publicly.
+**On the supplied skins:** they are used at the owner's direction and recorded in the manifest as
+`supplied_by_developer`. That covers use inside this project; it is not a redistribution licence, so
+confirm rights with each skin's author before shipping the game publicly.
 
 **On the bundled Minecraft textures:** `assets/resourcepack/` holds a vanilla-layout Minecraft
 resource pack — Mojang's artwork, not this project's. It is committed at the project owner's explicit
@@ -33,6 +34,10 @@ direction after the licensing position was raised. **Mojang's permission has not
 not claimed.** Anyone redistributing this repository, or a build made from it, is responsible for
 clearing that. The dependency is deliberately shallow: delete the directory and `ResourcePack` falls
 back to the generated placeholders, so nothing breaks.
+
+**On the music:** `assets/audio/music_main.mp3` is CHAOS CONSTRUCT by AZALI, supplied by the owner
+from YouTube. No licence from the artist has been obtained or is claimed. The generated original
+tracks are still in the tree; reverting is a one-line data change.
 
 ---
 
@@ -143,7 +148,9 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
   needs `rcedit`, a Windows tool unavailable here. The in-game window icon is set correctly.
 - **Music is short loops.** Each track is 8 bars (roughly 17 seconds) of synthesised chiptune. It
   loops seamlessly but will get repetitive over a long run.
-- **No voice acting.** Characters speak through on-screen dialogue only.
+- **Voice acting is one character deep.** ParrotX2 has all thirteen lines recorded and playing;
+  every other character is still on-screen dialogue only. The playback path is convention-based, so
+  the remaining sets need files and no code (see docs/VOICE_LINES.md).
 - **Godot logs a resource leak at exit.** Static caches (shaders, the armour texture, block textures,
   prop meshes) outlive the scene tree teardown. Harmless at shutdown; it does not leak during play.
 - **Enemies do not path around obstacles.** They follow a fixed polyline with a lateral offset. Walls
