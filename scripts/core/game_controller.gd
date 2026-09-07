@@ -21,6 +21,9 @@ const HERO_MOVE_COOLDOWN := 12.0
 ## or the first zoom input would snap the view in.
 const CAM_MIN_DISTANCE := 12.0
 const CAM_MAX_DISTANCE := 280.0
+## Fixed viewing angle for a board, in radians below the horizon. See _build_camera for why it is
+## shallow rather than top-down.
+const BOARD_PITCH := 0.663      ## 38 degrees
 
 var placing_tower_id: String = ""
 var placement_preview: Node3D
@@ -67,19 +70,22 @@ func _build_camera() -> void:
 	camera.fov = 52.0
 	camera.far = 400.0
 	camera_rig.add_child(camera)
-	# Frame the painted board. It is a 2D map, so the camera sits high and square-on to it: no yaw,
-	# and a steep pitch, so the board reads as a board while the characters on it still look 3D.
+	# A fixed camera, square-on to the board, at a shallow angle.
+	#
+	# The angle is the whole point. A near-top-down camera foreshortens a standing character's height
+	# by cos(pitch): at the 66 degrees this used to use, a chungie measured 18 pixels tall on a 900px
+	# viewport — on screen, but only as a speck, because you were looking at the top of its head. A
+	# shallower angle both un-squashes the characters AND shortens the board's on-screen depth
+	# (which scales with sin(pitch)), so it costs nothing in framing. At 38 degrees the same
+	# character is about three times taller.
 	var b: Rect2i = map_builder.board_bounds
 	if map_builder.flat_board and b.size.x > 0:
-		# A long lens, viewed from further back. At the default 52 degrees the board is a strong
-		# trapezoid — near edge much wider than the far one — which reads as a 3D world seen from
-		# above. Narrowing the angle and retreating flattens the projection towards orthographic, so
-		# the map reads as a board while the characters on it keep enough perspective to look solid.
+		# A long lens keeps the board from turning into a strong trapezoid at this angle.
 		camera.fov = 34.0
 		_cam_target = Vector3(float(b.position.x) + float(b.size.x) * 0.5, 0.0,
 			float(b.position.y) + float(b.size.y) * 0.5)
 		_cam_yaw = 0.0
-		_cam_pitch = -1.15
+		_cam_pitch = -BOARD_PITCH
 		_cam_distance = _fit_distance(float(b.size.x), float(b.size.y))
 	else:
 		var mid := path.position_at(path.total_length * 0.5)
@@ -106,6 +112,9 @@ func _fit_distance(w: float, d: float) -> float:
 		aspect = vp.get_visible_rect().size.x / vp.get_visible_rect().size.y
 	var tan_v := tan(deg_to_rad(camera.fov) * 0.5)
 	var tan_h := tan_v * aspect
+	# A board lies flat, so its depth axis foreshortens by sin(pitch) as seen from the camera while
+	# its width does not. Characters standing on it are a separate concern: their height foreshortens
+	# by cos(pitch), which is what BOARD_PITCH is chosen for.
 	var need_v := (d * sin(absf(_cam_pitch))) * 0.5 / tan_v
 	var need_h := w * 0.5 / tan_h
 	# The HUD's side and bottom panels cover part of the viewport, so leave headroom beyond a bare fit.
@@ -412,7 +421,12 @@ func _process(delta: float) -> void:
 	if hero_move_cooldown > 0.0:
 		hero_move_cooldown = maxf(0.0, hero_move_cooldown - delta)
 
+## Panning and rotating are disabled on a board: the camera is a fixed vantage point framing the
+## whole map, so moving it can only take part of the map off screen. Zoom is kept — it serves the
+## same goal as the fixed angle, seeing the characters clearly.
 func _update_camera_input(delta: float) -> void:
+	if map_builder != null and map_builder.flat_board:
+		return
 	var move := Vector2.ZERO
 	if Input.is_action_pressed("cam_left"):
 		move.x -= 1.0
