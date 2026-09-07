@@ -38,7 +38,6 @@ The following are **procedurally generated placeholders**, not the real characte
 | `clownpierce` | classic | `assets/skins/clownpierce.png` |
 | `deputy_ace` | classic | `assets/skins/deputy_ace.png` |
 | `eggchan` | classic | `assets/skins/eggchan.png` |
-| `flamefrags` | classic | `assets/skins/flamefrags.png` |
 | `fymada` | classic | `assets/skins/fymada.png` |
 | `jaden_man` | classic | `assets/skins/jaden_man.png` |
 | `lawman` | classic | `assets/skins/lawman.png` |
@@ -48,7 +47,6 @@ The following are **procedurally generated placeholders**, not the real characte
 | `mafia_invis` | classic | `assets/skins/mafia_invis.png` |
 | `mapicc` | classic | `assets/skins/mapicc.png` |
 | `minutetech` | classic | `assets/skins/minutetech.png` |
-| `parrotx2` | classic | `assets/skins/parrotx2.png` |
 | `pirate` | classic | `assets/skins/pirate.png` |
 | `princezam` | classic | `assets/skins/princezam.png` |
 | `purpled` | classic | `assets/skins/purpled.png` |
@@ -59,11 +57,9 @@ The following are **procedurally generated placeholders**, not the real characte
 | `sargelaw` | classic | `assets/skins/sargelaw.png` |
 | `shoebilly` | classic | `assets/skins/shoebilly.png` |
 | `spepticle` | classic | `assets/skins/spepticle.png` |
-| `spokeishere` | slim | `assets/skins/spokeishere.png` |
 | `theobaldthebird` | classic | `assets/skins/theobaldthebird.png` |
 | `uv_test` | classic | `assets/skins/uv_test.png` |
 | `uv_test_legacy` | classic | `assets/skins/uv_test_legacy.png` |
-| `wemmbu` | classic | `assets/skins/wemmbu.png` |
 | `yungyx` | classic | `assets/skins/yungyx.png` |
 | `zoe` | slim | `assets/skins/zoe.png` |
 
@@ -150,7 +146,7 @@ The following are **procedurally generated placeholders**, not the real characte
 | `assets/skins/clownpierce.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/deputy_ace.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/eggchan.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
-| `assets/skins/flamefrags.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
+| `assets/skins/flamefrags.png` | skin | supplied_by_developer | Skin supplied by the project owner (original character skin). | Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly. | Character 3D model texture |
 | `assets/skins/fymada.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/jaden_man.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/lawman.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
@@ -160,7 +156,7 @@ The following are **procedurally generated placeholders**, not the real characte
 | `assets/skins/mafia_invis.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/mapicc.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/minutetech.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
-| `assets/skins/parrotx2.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
+| `assets/skins/parrotx2.png` | skin | supplied_by_developer | Skin supplied by the project owner (original character skin). | Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly. | Character 3D model texture |
 | `assets/skins/pirate.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/princezam.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/purpled.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
@@ -171,11 +167,11 @@ The following are **procedurally generated placeholders**, not the real characte
 | `assets/skins/sargelaw.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/shoebilly.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/spepticle.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
-| `assets/skins/spokeishere.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
+| `assets/skins/spokeishere.png` | skin | supplied_by_developer | Skin supplied by the project owner (original character skin). | Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly. | Character 3D model texture |
 | `assets/skins/theobaldthebird.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/uv_test.png` | skin | generated_test | build tools | Project-original | Automated UV-mapping test |
 | `assets/skins/uv_test_legacy.png` | skin | generated_test | build tools | Project-original | Automated UV-mapping test |
-| `assets/skins/wemmbu.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
+| `assets/skins/wemmbu.png` | skin | supplied_by_developer | Skin supplied by the project owner (original character skin). | Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly. | Character 3D model texture |
 | `assets/skins/yungyx.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 | `assets/skins/zoe.png` | skin | generated_placeholder | UNSTABLE: LAST STAND build tools (procedural) | Project-original placeholder. Replace with a developer-licensed skin of the real character. | Character 3D model texture |
 

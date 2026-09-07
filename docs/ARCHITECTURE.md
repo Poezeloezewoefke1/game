@@ -149,6 +149,23 @@ crits multiply, and splash falls off linearly to 40% at the rim.
 
 ## Map building
 
+A map definition is rendered one of two ways, chosen by `MapBuilder.flat_board`.
+
+**Flat board (the shipping look).** `BoardPainter` composites the definition into a single top-down
+image — one 16×16 block texture per world unit — and `MapBuilder` puts it on one quad at y = 0. The
+map is genuinely 2D; only the characters standing on it are 3D. Terrain patches, the road, walls,
+trees, rocks, stalls and tents are all painted, with drop shadows under anything that would have been
+tall and a darkened rim along the road so it reads as a road at a glance. Build zones are flattened
+to ground level (`MapBuilder.zone_data()`), the ground raycast collapses to the single y = 0 plane,
+and depth fog is skipped: from the distance a whole board is framed at, fog stops reading as
+atmosphere and just drains the map's contrast.
+
+The camera matches: no yaw, a steep pitch, and a long lens (34° rather than 52°) from further back,
+which flattens the projection towards orthographic so the board reads as a board. `_fit_distance()`
+sizes the pull-back from the board's own dimensions, accounting for the foreshortening of its depth
+axis and for the fact that Godot's `fov` is the vertical angle.
+
+**Voxel world.** The original renderer, kept because it is what the per-face diagnostics exercise.
 `MapBuilder` reads a map definition and emits a handful of merged meshes. Terrain columns, the road,
 fort walls, towers, trees, rocks, market stalls and the camp all funnel into one `_occupied`
 dictionary keyed by block coordinate; a second pass emits only the faces that touch air, grouped by

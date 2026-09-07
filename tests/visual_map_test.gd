@@ -38,12 +38,14 @@ func _ready() -> void:
 	print("[MAP] faces emitted per block texture:")
 	for key in game.map_builder.block_face_counts.keys():
 		print("[MAP]   %-16s %d" % [key, int(game.map_builder.block_face_counts[key])])
-	# high wide overview
-	game._cam_target = Vector3(0, 0, 0)
-	game._cam_distance = 78.0
-	game._cam_yaw = 0.6
-	game._cam_pitch = -1.05
-	game._update_camera()
+	# A flat board is already framed to fit by GameController; overriding that would show an angle
+	# the game never uses. Only the voxel world needs the wide diagnostic sweep.
+	if not game.map_builder.flat_board:
+		game._cam_target = Vector3(0, 0, 0)
+		game._cam_distance = 78.0
+		game._cam_yaw = 0.6
+		game._cam_pitch = -1.05
+		game._update_camera()
 	# a few enemies so scale reads
 	for i in 40:
 		game.enemies.spawn("chungie_t5", game.path.total_length * float(i) / 40.0)

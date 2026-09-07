@@ -14,7 +14,7 @@ Maps are built procedurally from the definitions in `data/maps/maps.json` — te
 - **Location:** Fort Feather (confirmed canon)
 - **Arc:** kingdoms_saga · **Enemy faction:** cindercrest
 - **Boss:** saparata
-- **Waves:** 25 · **Starting emeralds:** 700 · **Lives:** 100
+- **Waves:** 25 · **Starting emeralds:** 1000 · **Lives:** 100
 - **Build zones:** 18 · **Path points:** 15 · **Difficulty:** Beginner
 - **Unlocked from the start:** yes
 
@@ -24,31 +24,31 @@ Military base built by Parrot east of the kingdom to train soldiers and defend a
 
 | # | Wave | Reward | Composition |
 |---|---|---|---|
-| 1 | Scouts | 90 ⬧ | 8× chungie_t1 *(events: dialogue)* |
-| 2 | First Push | 100 ⬧ | 14× chungie_t1 |
-| 3 | Iron Column | 115 ⬧ | 10× chungie_t1, 5× chungie_t2 *(events: dialogue)* |
-| 4 | Runners | 125 ⬧ | 8× speedster, 8× chungie_t2 |
-| 5 | Archers on the Ridge | 140 ⬧ | 12× chungie_t2, 4× archer *(events: dialogue)* |
-| 6 | First Elytra | 155 ⬧ | 10× chungie_t2, 5× elytra_glider *(events: announce)* |
-| 7 | Diamond Line | 175 ⬧ | 10× chungie_t3, 10× chungie_t2 |
-| 8 | TNT Runners | 190 ⬧ | 8× tnt_runner, 12× chungie_t2 *(events: dialogue)* |
-| 9 | Potion Support | 205 ⬧ | 12× chungie_t3, 4× potion_brewer |
-| 10 | The Invisible Ones | 230 ⬧ | 10× chungie_t3, 6× invisible_player *(events: announce)* |
-| 11 | Shield Wall | 250 ⬧ | 4× shield_bearer, 14× chungie_t3 |
-| 12 | Enchanted Gear | 275 ⬧ | 10× chungie_t4, 5× archer *(events: dialogue)* |
-| 13 | Cavalry | 300 ⬧ | 8× horse_rider, 12× chungie_t3 |
-| 14 | Builders and Walls | 320 ⬧ | 4× builder, 12× chungie_t4 |
-| 15 | The Assassins | 350 ⬧ | 6× assassin, 12× chungie_t4, 4× invisible_player *(events: dialogue)* |
-| 16 | Netherite | 400 ⬧ | 10× chungie_t5, 10× chungie_t4 *(events: announce)* |
-| 17 | Minecart Assault | 430 ⬧ | 8× minecart_rider, 4× tnt_minecart, 8× chungie_t5 |
-| 18 | Totems | 460 ⬧ | 8× totem_carrier, 10× chungie_t5, 3× potion_brewer |
-| 19 | ShoeBilly_ | 600 ⬧ | 12× chungie_t5, 1× shoebilly, 6× assassin *(events: minibossintro, dialogue)* |
-| 20 | The Wither | 650 ⬧ | 1× wither, 14× chungie_t5, 8× elytra_glider *(events: announce)* |
-| 21 | Cindercrest Warriors | 700 ⬧ | 8× chungie_t6, 12× chungie_t5, 4× shield_bearer *(events: dialogue)* |
-| 22 | The Blimp | 800 ⬧ | 16× chungie_t5, 4× chungie_t6 *(events: blimp, announce, dialogue)* |
-| 23 | Commanders | 900 ⬧ | 3× chungie_t7, 10× chungie_t6, 8× assassin |
-| 24 | Everything They Have | 1000 ⬧ | 14× chungie_t6, 4× chungie_t7, 2× wither, 10× elytra_glider, 8× totem_carrier *(events: dialogue)* |
-| 25 | SAPARATA **(BOSS)** | 2500 ⬧ | *(events: boss)* |
+| 1 | Scouts | 198 ⬧ | 8× chungie_t1 *(events: dialogue)* |
+| 2 | First Push | 220 ⬧ | 14× chungie_t1 |
+| 3 | Iron Column | 253 ⬧ | 10× chungie_t1, 5× chungie_t2 *(events: dialogue)* |
+| 4 | Runners | 250 ⬧ | 6× speedster, 6× chungie_t2 |
+| 5 | Archers on the Ridge | 280 ⬧ | 10× chungie_t2, 3× archer *(events: dialogue)* |
+| 6 | First Elytra | 310 ⬧ | 8× chungie_t2, 4× elytra_glider *(events: announce)* |
+| 7 | Diamond Line | 350 ⬧ | 8× chungie_t3, 8× chungie_t2 |
+| 8 | TNT Runners | 380 ⬧ | 6× tnt_runner, 10× chungie_t2 *(events: dialogue)* |
+| 9 | Potion Support | 369 ⬧ | 11× chungie_t3, 4× potion_brewer |
+| 10 | The Invisible Ones | 414 ⬧ | 9× chungie_t3, 6× invisible_player *(events: announce)* |
+| 11 | Shield Wall | 450 ⬧ | 4× shield_bearer, 13× chungie_t3 |
+| 12 | Enchanted Gear | 495 ⬧ | 10× chungie_t4, 5× archer *(events: dialogue)* |
+| 13 | Cavalry | 540 ⬧ | 8× horse_rider, 12× chungie_t3 |
+| 14 | Builders and Walls | 576 ⬧ | 4× builder, 12× chungie_t4 |
+| 15 | The Assassins | 630 ⬧ | 6× assassin, 12× chungie_t4, 4× invisible_player *(events: dialogue)* |
+| 16 | Netherite | 640 ⬧ | 10× chungie_t5, 10× chungie_t4 *(events: announce)* |
+| 17 | Minecart Assault | 688 ⬧ | 8× minecart_rider, 4× tnt_minecart, 8× chungie_t5 |
+| 18 | Totems | 736 ⬧ | 8× totem_carrier, 11× chungie_t5, 3× potion_brewer |
+| 19 | ShoeBilly_ | 960 ⬧ | 13× chungie_t5, 1× shoebilly, 6× assassin *(events: minibossintro, dialogue)* |
+| 20 | The Wither | 1040 ⬧ | 1× wither, 15× chungie_t5, 9× elytra_glider *(events: announce)* |
+| 21 | Cindercrest Warriors | 1120 ⬧ | 9× chungie_t6, 13× chungie_t5, 4× shield_bearer *(events: dialogue)* |
+| 22 | The Blimp | 1280 ⬧ | 18× chungie_t5, 5× chungie_t6 *(events: blimp, announce, dialogue)* |
+| 23 | Commanders | 1440 ⬧ | 3× chungie_t7, 12× chungie_t6, 9× assassin |
+| 24 | Everything They Have | 1600 ⬧ | 17× chungie_t6, 5× chungie_t7, 2× wither, 12× elytra_glider, 9× totem_carrier *(events: dialogue)* |
+| 25 | SAPARATA **(BOSS)** | 4000 ⬧ | *(events: boss)* |
 
 
 ### Merchant City

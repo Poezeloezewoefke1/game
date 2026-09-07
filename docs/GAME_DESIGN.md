@@ -135,10 +135,13 @@ their subject, so the research database is revealed by playing.
 
 ## Presentation
 
-Blocky, readable, and deliberately not photoreal. Characters are built from the standard humanoid box
-layout so that community skin files map correctly. Armour is separate 3D geometry, shaped as shells so
-the character's face stays visible and identifiable under a full helmet. Enchanted gear gets an
-animated glint. The camera frames the whole battlefield by default and zooms to inspect.
+Blocky, readable, and deliberately not photoreal. **The map is 2D and the characters on it are 3D** —
+the board is one painted top-down surface, built from the same Minecraft block textures a voxel world
+would use, and the whole of it is on screen at once. Characters are built from the standard humanoid
+box layout so that community skin files map correctly. Armour is separate 3D geometry, shaped as
+shells so the character's face stays visible and identifiable under a full helmet. Enchanted gear gets
+an animated glint. The camera looks square-on at the board through a long lens, framing all of it by
+default, and zooms to inspect.
 
 Everything the player needs to read at a glance is a silhouette or a colour: gear tier by armour
 material, faction by tint, threat by size, and boss phase by the banner across the top.

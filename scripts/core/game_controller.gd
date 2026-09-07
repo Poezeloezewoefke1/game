@@ -17,6 +17,10 @@ var hud
 var vfx: Node3D
 
 const HERO_MOVE_COOLDOWN := 12.0
+## Camera zoom range. The upper bound has to clear the framing distance computed for a flat board,
+## or the first zoom input would snap the view in.
+const CAM_MIN_DISTANCE := 12.0
+const CAM_MAX_DISTANCE := 280.0
 
 var placing_tower_id: String = ""
 var placement_preview: Node3D
@@ -61,18 +65,49 @@ func _build_camera() -> void:
 	camera.fov = 52.0
 	camera.far = 400.0
 	camera_rig.add_child(camera)
-	# Frame the whole battlefield: centre on the middle of the path and pull back far enough that
-	# both the entrance and the base are on screen.
-	var mid := path.position_at(path.total_length * 0.5)
-	var spread := 0.0
-	for i in 9:
-		var p := path.position_at(path.total_length * float(i) / 8.0)
-		spread = maxf(spread, Vector2(p.x - mid.x, p.z - mid.z).length())
-	_cam_target = Vector3(mid.x, 0, mid.z)
-	_cam_distance = clampf(spread * 2.4, 28.0, 70.0)
-	_cam_yaw = 0.35
-	_cam_pitch = -0.95
+	# Frame the painted board. It is a 2D map, so the camera sits high and square-on to it: no yaw,
+	# and a steep pitch, so the board reads as a board while the characters on it still look 3D.
+	var b: Rect2i = map_builder.board_bounds
+	if map_builder.flat_board and b.size.x > 0:
+		# A long lens, viewed from further back. At the default 52 degrees the board is a strong
+		# trapezoid — near edge much wider than the far one — which reads as a 3D world seen from
+		# above. Narrowing the angle and retreating flattens the projection towards orthographic, so
+		# the map reads as a board while the characters on it keep enough perspective to look solid.
+		camera.fov = 34.0
+		_cam_target = Vector3(float(b.position.x) + float(b.size.x) * 0.5, 0.0,
+			float(b.position.y) + float(b.size.y) * 0.5)
+		_cam_yaw = 0.0
+		_cam_pitch = -1.15
+		_cam_distance = _fit_distance(float(b.size.x), float(b.size.y))
+	else:
+		var mid := path.position_at(path.total_length * 0.5)
+		var spread := 0.0
+		for i in 9:
+			var p := path.position_at(path.total_length * float(i) / 8.0)
+			spread = maxf(spread, Vector2(p.x - mid.x, p.z - mid.z).length())
+		_cam_target = Vector3(mid.x, 0, mid.z)
+		_cam_distance = clampf(spread * 2.4, 28.0, 70.0)
+		_cam_yaw = 0.35
+		_cam_pitch = -0.95
 	_update_camera()
+
+## Distance at which a board of `w` x `d` world units fits the view at the current pitch.
+##
+## The board lies flat, so its depth axis is foreshortened by sin(pitch) as seen by the camera while
+## its width is not; and Godot's Camera3D.fov is the *vertical* angle, so the horizontal one has to
+## be derived from the viewport aspect. Fitting only the vertical angle against the larger side —
+## which is what a single-axis estimate does — pushes a tall map much further away than it needs.
+func _fit_distance(w: float, d: float) -> float:
+	var vp := get_viewport()
+	var aspect := 16.0 / 9.0
+	if vp != null and vp.get_visible_rect().size.y > 0.0:
+		aspect = vp.get_visible_rect().size.x / vp.get_visible_rect().size.y
+	var tan_v := tan(deg_to_rad(camera.fov) * 0.5)
+	var tan_h := tan_v * aspect
+	var need_v := (d * sin(absf(_cam_pitch))) * 0.5 / tan_v
+	var need_h := w * 0.5 / tan_h
+	# The HUD's side and bottom panels cover part of the viewport, so leave headroom beyond a bare fit.
+	return clampf(maxf(need_v, need_h) * 1.18, 30.0, CAM_MAX_DISTANCE)
 
 func _build_managers() -> void:
 	var faction: Dictionary = DataDB.factions.get(String(map_def.get("faction", "cindercrest")), {})
@@ -86,7 +121,8 @@ func _build_managers() -> void:
 
 	towers = TowerManager.new()
 	add_child(towers)
-	towers.setup(enemies, projectiles, map_def.get("build_zones", []))
+	# zone_data(), not map_def: on a flat board the zones are flattened to ground level.
+	towers.setup(enemies, projectiles, map_builder.zone_data())
 
 	blimp = BlimpController.new()
 	add_child(blimp)
@@ -184,10 +220,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sell") and towers.selected != null:
 		towers.sell(towers.selected)
 	if event.is_action_pressed("zoom_in"):
-		_cam_distance = clampf(_cam_distance - 2.5, 12.0, 70.0)
+		_cam_distance = clampf(_cam_distance - 2.5, CAM_MIN_DISTANCE, CAM_MAX_DISTANCE)
 		_update_camera()
 	if event.is_action_pressed("zoom_out"):
-		_cam_distance = clampf(_cam_distance + 2.5, 12.0, 70.0)
+		_cam_distance = clampf(_cam_distance + 2.5, CAM_MIN_DISTANCE, CAM_MAX_DISTANCE)
 		_update_camera()
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_handle_click(event.position)
@@ -262,6 +298,11 @@ func _ground_point(screen_pos: Vector2) -> Vector3:
 	var dir := camera.project_ray_normal(screen_pos)
 	if absf(dir.y) < 0.0001:
 		return from
+	# On a flat board every zone is at ground level, so the single y = 0 intersection below is the
+	# answer. Testing the raised heights as well would land the ray somewhere else in x/z and could
+	# pick a different zone than the one under the cursor.
+	if map_builder != null and map_builder.flat_board:
+		return from + dir * (-from.y / dir.y)
 	# Intersect a set of candidate heights so elevated zones can be clicked.
 	var best := from + dir * 100.0
 	var best_dist := INF

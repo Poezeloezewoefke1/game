@@ -299,10 +299,22 @@ The investigation is worth recording, because the first two hypotheses were wron
    repair cap (`repair_cap`, enforced in `Tower._tick_repair` and reset each wave) rather than by
    shrinking the numbers alone, so the medic identity survives without leaks becoming free.
 
-7. **Campaign results were not reproducible.** The enemy RNG was seeded from the clock, and two runs
-   of the same build finished "won with 80 lives" and "lost on wave 23". The simulation now takes a
-   seed argument, and `tools/balance_sweep.sh` reports a distribution across seeds instead of trusting
-   one run.
+7. **Campaign results were not reproducible — and seeding alone did not fix it.** The enemy RNG was
+   seeded from the clock, so two runs of one build finished "won with 80 lives" and "lost on wave 23".
+   The simulation was given a seed argument and `tools/balance_sweep.sh` was written to report a
+   distribution rather than trust one run.
+
+   **That was not enough, and the first version of this section wrongly called the result
+   reproducible.** Re-running the *committed* build at seed 1 later produced a defeat on wave 19 where
+   the recorded sweep had a victory with 59 lives. The cause was the timestep, not the RNG: the game
+   advances on wall-clock `delta`, so under different machine load each simulated step covers a
+   different slice of game time and the run diverges. A seeded run is only reproducible if the
+   timestep is fixed as well.
+
+   Fixed by running the simulation with `--fixed-fps 60` (baked into `tools/balance_sweep.sh`) and
+   setting `Engine.time_scale = 3.0` for a 1/20 s step. Two runs of the same build and seed now agree
+   exactly, verified. The simulation also detects a variable timestep at runtime and prints a loud
+   warning rather than reporting a number that means nothing.
 
 ---
 
@@ -310,21 +322,25 @@ The investigation is worth recording, because the first two hypotheses were wron
 
 `tests/balance_sim.gd` plays a full 25-wave campaign with an AI player bound by the same rules as a
 human: the map's real starting emeralds, purchases and upgrades only when affordable, hero abilities
-on cooldown, towers placed in the free zone furthest from the ones already built. `tools/balance_sweep.sh`
-runs it across seeds. After the fixes and tuning in section 8, ParrotX2 on Fort Feather at normal:
+on cooldown, towers placed in the free zone furthest from the ones already built.
+
+**Run it with `--fixed-fps 60`.** Without a fixed timestep the result is not reproducible and means
+nothing — see section 8.7. `tools/balance_sweep.sh` does this for you.
+
+ParrotX2 on Fort Feather at normal, on the 2D board:
 
 | seed | outcome | wave  | lives   | leaks | boss killed |
 |------|---------|-------|---------|-------|-------------|
-| 1    | VICTORY | 25/25 | 59/100  | 23    | yes         |
-| 2    | VICTORY | 25/25 | 49/100  | 24    | yes         |
-| 3    | VICTORY | 25/25 | 66/100  | 27    | yes         |
-| 4    | VICTORY | 25/25 | 61/100  | 22    | yes         |
-| 5    | VICTORY | 25/25 | 55/100  | 24    | yes         |
-| 7    | VICTORY | 25/25 | 65/100  | 22    | yes         |
+| 1    | VICTORY | 25/25 | 26/100  | 35    | yes         |
+| 2    | VICTORY | 25/25 | 65/100  | 23    | yes         |
+| 3    | DEFEAT  | 24/25 | 0/100   | 38    | no          |
+| 4    | VICTORY | 25/25 | 33/100  | 39    | yes         |
+| 5    | VICTORY | 25/25 | 14/100  | 37    | yes         |
 
-Six of six wins, ending on roughly half the life bar with 22-27 leaks and Saparata killed. The shape
-of a run is now the intended one: no leaks through wave 7 while the board is being built, the first
-real damage around wave 13, and steady pressure through the back half.
+Four wins from five, Saparata killed in every win, and the one loss comes on wave 24 of 25. Wins end
+on 14–65 lives. For a benchmark player that never sells a tower, never re-targets and never
+repositions its hero, losing one run in five at the very end is about right: a human with the same
+board should win reliably but not comfortably.
 
 Reproduce with:
 
@@ -338,3 +354,26 @@ what that does and does not establish.
 Hero repositioning is covered by `tests/headless_run.gd`, which relocates the hero to a build zone
 mid-run and asserts the cooldown starts and the bond multiplier stays fixed across 21 aura refreshes
 (the loop that used to compound it).
+
+---
+
+## 10. The 2D board
+
+The map is now painted flat (`BoardPainter`) instead of extruded into voxels, with the 3D characters
+standing on it. Verified by screenshot at `docs/screenshots/04-fort-feather-map.png` and
+`05-gameplay.png`, and by `tests/dump_board.gd`, which writes the painted board straight to a PNG with
+no camera or lighting involved so the art can be checked on its own.
+
+Three things were found and fixed by looking at the renders rather than the code:
+
+1. **Depth fog washed the board out.** Framing a whole board puts the camera ~150 units back, where
+   the map's fog density drained all contrast uniformly. Fog is now skipped for a flat board.
+2. **Pale blocks clipped to white.** Sand came out as a flat white rectangle once the sun and the
+   filmic tonemap were applied over already-shaded painted art. The board material is tinted to 0.82
+   to keep the texture.
+3. **The board read as a 3D world, not a board.** At the default 52° field of view it was a strong
+   trapezoid. A 34° lens from further back flattens the projection towards orthographic.
+
+Build zones are flattened to ground level on a board, so tower and hero models stand on the painted
+surface rather than floating at the voxel world's elevations. Targeting is unaffected: `query_range`
+was already planar in x/z, so no tower's coverage changed.

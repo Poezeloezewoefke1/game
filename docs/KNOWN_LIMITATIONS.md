@@ -5,19 +5,26 @@ as working when it is not.
 
 ---
 
-## 1. The character skins are placeholders
+## 1. Most character skins are still placeholders
 
-**All 38 character skins are procedurally generated.** They are not the real creators' Minecraft
-skins, and they are not close approximations — they are colour-coded stand-ins built from a palette
-and a few marker features (a crown for Parrot, a hood for Wemmbu, an egg head for Eggchan).
+**The four playable heroes now use real skins supplied by the project owner** — ParrotX2, Wemmbu,
+SpokeIsHere and FlameFrags. They were dropped into `assets/skins/` and the pipeline picked them up
+with no code change, which is what it was built for.
 
-This is deliberate. The brief said not to download third-party assets, and a publicly available skin
-is not automatically licensed for redistribution. So the *pipeline* is the deliverable: supply a
-licensed PNG and the game uses it immediately.
+**The other 34 skins are still procedurally generated.** They are not the real creators' Minecraft
+skins and not close approximations — they are colour-coded stand-ins built from a palette and a few
+marker features (an egg head for Eggchan, a hat for Deputy_Ace).
+
+That is deliberate: a publicly available skin is not automatically licensed for redistribution, so
+nothing was downloaded. Supply a licensed PNG and the game uses it immediately.
 
 **To fix:** drop a Minecraft-compatible PNG at `assets/skins/<id>.png` or `user://skins/<id>.png`.
 64×64, legacy 64×32 and HD multiples all work; slim arms are auto-detected. The complete list of ids
 awaiting a real skin is in [ASSET_LICENSES.md](ASSET_LICENSES.md). No code change is needed.
+
+**On the four that were supplied:** they are used here at the owner's direction and are recorded in
+the manifest as `supplied_by_developer`. That covers use inside this project; it is not a
+redistribution licence, so confirm rights with each skin's author before shipping the game publicly.
 
 ---
 
@@ -84,9 +91,15 @@ What it does **not** establish, and these are real gaps:
 - **Only one hero and one map are tuned.** The sweep above is ParrotX2 on Fort Feather at normal.
   Wemmbu, FlameFrags and SpokeIsHere have had no campaign-level tuning at all, and neither has
   Merchant City or the easy/hard difficulty multipliers.
-- **Run-to-run variance is wide.** Before seeding, two runs of an identical build finished "won with
-  80 lives" and "lost on wave 23". Seeded runs are reproducible, but the spread across seeds is still
-  large enough that a single run should never be used to judge a change.
+- **Run-to-run variance is wide, and reproducibility took two fixes.** Seeding the RNG was not
+  enough: the game advances on wall-clock delta, so the same build at the same seed produced "won
+  with 59 lives" and "lost on wave 19" depending on machine load. The simulation must be run with
+  `--fixed-fps 60` (which `tools/balance_sweep.sh` does, and which the sim now warns about if
+  missing). Even then the spread across seeds is wide enough that a single run should never be used
+  to judge a change.
+- **The AI loses one run in five** on the current tuning, always in the last two waves. That is
+  deliberate — a benchmark that always wins tells you nothing — but it means the margin is thin, and
+  a change that looks harmless can push it over.
 - **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
 - **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
   game *feels* good — only about whether it can be won.

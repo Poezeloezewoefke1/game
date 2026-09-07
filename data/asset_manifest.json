@@ -804,12 +804,12 @@
       "id": "flamefrags",
       "asset": "assets/skins/flamefrags.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "fymada",
@@ -914,12 +914,12 @@
       "id": "parrotx2",
       "asset": "assets/skins/parrotx2.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "pirate",
@@ -1035,12 +1035,12 @@
       "id": "spokeishere",
       "asset": "assets/skins/spokeishere.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
-      "model": "slim",
-      "placeholder": true
+      "model": "classic",
+      "placeholder": false
     },
     {
       "id": "theobaldthebird",
@@ -1077,12 +1077,12 @@
       "id": "wemmbu",
       "asset": "assets/skins/wemmbu.png",
       "type": "skin",
-      "source": "generated_placeholder",
-      "creator": "UNSTABLE: LAST STAND build tools (procedural)",
-      "license": "Project-original placeholder. Replace with a developer-licensed skin of the real character.",
+      "source": "supplied_by_developer",
+      "creator": "Skin supplied by the project owner (original character skin).",
+      "license": "Provided by the project owner for use in this project. Not cleared for redistribution outside it; confirm rights with the skin's author before shipping publicly.",
       "usage": "Character 3D model texture",
       "model": "classic",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "id": "yungyx",

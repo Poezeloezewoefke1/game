@@ -344,10 +344,10 @@ One of two survivors of the Skymore massacre, forced to farm for Cindercrest, ca
 
 | Tier | Upgrade | Cost | Effect |
 |---|---|---|---|
-| 1 | **Bandages** | 300 ⬧ | Restores 1 life every 20 seconds. |
-| 2 | **Field Hospital** | 720 ⬧ | Restores 2 lives every 15 seconds. |
-| 3 | **Triage** | 1900 ⬧ | Restores 3 lives every 12 seconds. |
-| 4 | **Oxeye Daisy** | 5000 ⬧ | Signature: restores 6 lives every 10 seconds and briefly shields the base after a leak. |
+| 1 | **Bandages** | 300 ⬧ | Restores 1 life every 20 seconds, up to 2 per wave. |
+| 2 | **Field Hospital** | 720 ⬧ | Restores 2 lives every 15 seconds, up to 4 per wave. |
+| 3 | **Triage** | 1900 ⬧ | Restores 3 lives every 12 seconds, up to 6 per wave. |
+| 4 | **Oxeye Daisy** | 5000 ⬧ | Signature: restores 5 lives every 10 seconds, up to 10 per wave, and briefly shields the base after a leak. |
 
 ### Wheat and Thorns
 
@@ -554,10 +554,10 @@ Mayor of Capitol City, who was ordered to evacuate the citizens when Cindercrest
 
 | Tier | Upgrade | Cost | Effect |
 |---|---|---|---|
-| 1 | **Evacuation Order** | 280 ⬧ | The base starts each wave with 5 extra lives of buffer. |
-| 2 | **Safe Corridors** | 680 ⬧ | +10 lives buffer per wave. |
-| 3 | **Civic Shelters** | 1800 ⬧ | +18 lives per wave and leaks do 2 less damage. |
-| 4 | **Get Them Out** | 4800 ⬧ | Signature: +40 lives per wave and leaks do 5 less damage. |
+| 1 | **Evacuation Order** | 280 ⬧ | The base starts each wave with 2 extra lives of buffer. |
+| 2 | **Safe Corridors** | 680 ⬧ | +4 lives buffer per wave. |
+| 3 | **Civic Shelters** | 1800 ⬧ | +7 lives per wave and leaks do 2 less damage. |
+| 4 | **Get Them Out** | 4800 ⬧ | Signature: +14 lives per wave and leaks do 3 less damage. |
 
 ### Civic Order
 

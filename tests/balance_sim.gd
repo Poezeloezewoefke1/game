@@ -5,9 +5,17 @@ extends Node3D
 ## afford, and uses hero abilities on cooldown. If this loses, the game is too hard; if it never drops
 ## a life, the game is too easy.
 ##
-##   godot --headless --path . -s tests/run_headless.gd -- res://tests/balance_sim.gd 9000
+## MUST be run with --fixed-fps, or the results are not reproducible:
 ##
-## Optional user args after the frame count: <hero_id> <difficulty> <map_id>
+##   godot --headless --fixed-fps 60 --path . -s tests/run_headless.gd -- \
+##       res://tests/balance_sim.gd 80000 parrotx2 normal fort_feather 1
+##
+## Without it the game advances on wall-clock delta, so the size of each simulated step depends on
+## how fast the machine happened to run that frame. Two runs of the same build at the same seed then
+## diverge — observed as far apart as "won with 59 lives" and "lost on wave 19". Seeding the RNG is
+## necessary but not sufficient; the timestep has to be fixed too.
+##
+## Optional user args after the frame count: <hero_id> <difficulty> <map_id> <seed>
 
 var game
 var decision_timer := 0.0
@@ -19,6 +27,8 @@ var result := {}
 var peak_live := 0
 var first_leak_wave := -1
 var run_seed: int = 12345
+var _step_seen: float = -1.0
+var _warned_variable_step: bool = false
 
 # How far along the path enemies get before they die, bucketed into tenths. A board that deletes
 # everything at the spawn point piles up in bucket 0, which is the signature of a wave whose enemies
@@ -47,7 +57,10 @@ const UPGRADE_PLAN := {
 }
 
 func _ready() -> void:
-	Engine.time_scale = 10.0
+	# With --fixed-fps 60 this makes every simulated step exactly 1/20 s. Coarser steps run a
+	# campaign faster but change how the game behaves (cooldowns and movement quantise differently),
+	# so this trades sim wall-time for fidelity rather than being a free speed-up.
+	Engine.time_scale = 3.0
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 2:
 		GameState.selected_hero_id = String(args[2])
@@ -103,6 +116,7 @@ func on_frame(_f: int) -> void:
 	if finished:
 		return
 	var delta := get_process_delta_time()
+	_check_fixed_timestep(delta)
 	decision_timer += delta
 	ability_timer += delta
 	if decision_timer >= 1.0:
@@ -148,6 +162,19 @@ func _spend() -> void:
 				best_cost = cost
 	if best != null:
 		best.apply_upgrade(best_path)
+
+## Fails loudly if the run is not on a fixed timestep. A variable step silently makes the whole
+## result meaningless for comparison, and it is invisible in the output otherwise.
+func _check_fixed_timestep(delta: float) -> void:
+	if _warned_variable_step:
+		return
+	if _step_seen < 0.0:
+		_step_seen = delta
+		return
+	if absf(delta - _step_seen) > 0.0005:
+		_warned_variable_step = true
+		push_warning("[SIM] variable timestep (%.4f vs %.4f) — rerun with --fixed-fps 60" % [delta, _step_seen])
+		print("[SIM] *** WARNING: variable timestep. This run is NOT reproducible. Use --fixed-fps 60. ***")
 
 ## Picks the free build zone furthest from the towers already placed. Taking the first free zone
 ## instead clumps the whole board around the path's entrance, which understates what a competent
