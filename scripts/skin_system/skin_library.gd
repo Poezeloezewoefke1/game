@@ -91,6 +91,21 @@ func get_armor_layer_meshes(armor: Dictionary) -> Array:
 	_merged_meshes[key] = out
 	return out
 
+## The held item as its own merged mesh, positioned in the character's hand. Separate from the skin
+## mesh for the same reason the armour layers are: it wears a different texture.
+## Returns {} when the pack cannot draw this weapon, in which case the box model is already merged in.
+func get_held_item_mesh(weapon_id: String, slim: bool) -> Dictionary:
+	if weapon_id == "" or not WeaponBuilder.has_real_item(weapon_id):
+		return {}
+	var key := "held|%s|%s" % [weapon_id, slim]
+	if _merged_meshes.has(key):
+		return _merged_meshes[key]
+	var mesh := WeaponBuilder.build_real_mesh(weapon_id, MCMeshBuilder.hand_transform(slim),
+		MCMeshBuilder.hand_pivot(slim), MCGeometry.Part.HELD)
+	var out: Dictionary = {"mesh": mesh, "weapon": weapon_id} if mesh != null else {}
+	_merged_meshes[key] = out
+	return out
+
 func clear_cache() -> void:
 	_skins.clear(); _materials.clear(); _merged_meshes.clear()
 

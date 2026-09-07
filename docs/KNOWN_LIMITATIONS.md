@@ -169,7 +169,7 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
 
 Because the list above is long, it is worth being equally precise about the other side:
 
-- 2198 automated assertions pass with 0 failures.
+- 2377 automated assertions pass with 0 failures.
 - A full run builds, places and upgrades towers, spawns and kills enemies, pays out and advances waves
   with no errors logged.
 - All five boss phases fire in order; the mini-boss spawns; the blimp flies, drops 10 paratroopers,

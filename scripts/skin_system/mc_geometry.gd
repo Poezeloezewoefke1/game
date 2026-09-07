@@ -80,5 +80,10 @@ static func face_rects(uv: Vector2i, dims: Vector3i, mirror: bool) -> Dictionary
 static func held_item_offset(slim: bool) -> Vector3:
 	return Vector3(0.0, -10.0, -1.0) if not slim else Vector3(0.0, -10.0, -1.0)
 
+## The item is tipped past horizontal so it points forward and slightly down out of the hanging fist,
+## which is where Minecraft's own third-person pose puts it. The exact angle matters more here than it
+## does in Minecraft: a real item sprite is one pixel thick, so if its flat face does not turn towards
+## the board camera it disappears edge-on. At this angle the face points almost straight up, which is
+## where the camera is (38 degrees above the board) whichever way the character happens to be walking.
 static func held_item_basis() -> Basis:
-	return Basis.from_euler(Vector3(deg_to_rad(-75.0), 0.0, 0.0))
+	return Basis.from_euler(Vector3(deg_to_rad(-100.0), 0.0, 0.0))

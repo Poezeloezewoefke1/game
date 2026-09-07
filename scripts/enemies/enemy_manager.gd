@@ -273,7 +273,7 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 	mmi.extra_cull_margin = 16.0
 	add_child(mmi)
 	# Real armour layers: one MultiMesh each, sharing the skin's transforms.
-	var armor_layers: Array = []
+	var riders: Array = []   # MultiMeshes that ride the skin's transforms: armour layers, held item
 	if model == "" and ArmorBuilder.layers_available(d.get("armor", {})):
 		for g in SkinLibrary.get_armor_layer_meshes(d.get("armor", {})):
 			var amat := MCMaterials.make_armor_layer(String(g["material"]), int(g["layer"]), true,
@@ -292,7 +292,26 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 			ammi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			ammi.extra_cull_margin = 16.0
 			add_child(ammi)
-			armor_layers.append(amm)
+			riders.append(amm)
+	# The held item is a third rider on the same transforms, for the same reason: its own texture.
+	if model == "":
+		var held_id := String(d.get("held", ""))
+		var item := SkinLibrary.get_held_item_mesh(held_id, SkinLibrary.get_skin(skin_id).slim)
+		var imat := MCMaterials.make_item(held_id, true) if not item.is_empty() else null
+		if imat != null:
+			var imm := MultiMesh.new()
+			imm.transform_format = MultiMesh.TRANSFORM_3D
+			imm.use_custom_data = true
+			imm.use_colors = true
+			imm.mesh = item["mesh"]
+			imm.instance_count = 0
+			var immi := MultiMeshInstance3D.new()
+			immi.multimesh = imm
+			immi.material_override = imat
+			immi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			immi.extra_cull_margin = 16.0
+			add_child(immi)
+			riders.append(imm)
 
 	var extra_node: Node3D = null
 	if String(d.get("extras", "")) != "":
@@ -310,7 +329,7 @@ func _create_group(key: String, di: int, model: String, skin_id: String) -> int:
 		add_child(emmi)
 		extra_node = emmi
 	groups.append({"key": key, "mmi": mmi, "mm": mm, "slots": PackedInt32Array(), "def_idx": di,
-		"skin": skin_id, "extra": extra_node, "armor_layers": armor_layers, "tint_applied": false})
+		"skin": skin_id, "extra": extra_node, "riders": riders, "tint_applied": false})
 	return groups.size() - 1
 
 # ================================================================================================
@@ -775,8 +794,8 @@ func _upload_visuals() -> void:
 			extra_mm = (extra_node as MultiMeshInstance3D).multimesh
 			if extra_mm.instance_count != n:
 				extra_mm.instance_count = n
-		var armor_mms: Array = g.get("armor_layers", [])
-		for amm: MultiMesh in armor_mms:
+		var rider_mms: Array = g.get("riders", [])
+		for amm: MultiMesh in rider_mms:
 			if amm.instance_count != n:
 				amm.instance_count = n
 		if n == 0:
@@ -795,7 +814,7 @@ func _upload_visuals() -> void:
 			var ghost := 0.55 if (flags[slot] & F_INVISIBLE) != 0 else 0.0
 			mm.set_instance_custom_data(k, Color(phase[slot], flash, ghost, 0.85 * moving))
 			mm.set_instance_color(k, tint)
-			for amm: MultiMesh in armor_mms:
+			for amm: MultiMesh in rider_mms:
 				amm.set_instance_transform(k, xform)
 				amm.set_instance_custom_data(k, Color(phase[slot], flash, ghost, 0.85 * moving))
 				amm.set_instance_color(k, tint)

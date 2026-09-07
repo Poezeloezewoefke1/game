@@ -309,8 +309,18 @@ func _watchtower(s: Dictionary) -> void:
 func _banner(s: Dictionary) -> void:
 	var pos: Array = s.get("pos", [0, 0, 0])
 	var mi := MeshInstance3D.new()
-	mi.mesh = WeaponBuilder.build_mesh("royal_banner" if String(s.get("color", "royal")) == "royal" else "cinder_banner")
-	mi.material_override = MCMaterials.make(SkinLibrary.get_skin("chungie").get_texture(), false, false)
+	var banner := "royal_banner" if String(s.get("color", "royal")) == "royal" else "cinder_banner"
+	# A planted banner stands on its pole, so it wants the model without the hand's tilt.
+	var real_mat := MCMaterials.make_item(banner)
+	# Cancelling the hand tilt leaves the model gripped at its middle, so lift it onto its foot.
+	var real_mesh: ArrayMesh = WeaponBuilder.build_real_mesh(banner,
+		Transform3D(MCGeometry.held_item_basis(), Vector3(0, 9, 0))) if real_mat != null else null
+	if real_mesh != null:
+		mi.mesh = real_mesh
+		mi.material_override = real_mat
+	else:
+		mi.mesh = WeaponBuilder.build_mesh(banner)
+		mi.material_override = MCMaterials.make(SkinLibrary.get_skin("chungie").get_texture(), false, false)
 	mi.position = Vector3(pos[0], pos[1], pos[2])
 	mi.scale = Vector3(1.6, 1.6, 1.6)
 	add_child(mi)

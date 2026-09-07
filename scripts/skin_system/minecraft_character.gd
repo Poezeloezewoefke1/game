@@ -117,8 +117,15 @@ func set_held(weapon_id: String) -> void:
 		return
 	held_node = MeshInstance3D.new()
 	held_node.name = "Held"
-	held_node.mesh = WeaponBuilder.build_mesh(weapon_id)
-	held_node.material_override = material
+	# Real Minecraft art when the pack has it; the coloured boxes are the fallback.
+	var item_mat := MCMaterials.make_item(weapon_id)
+	var item_mesh: ArrayMesh = WeaponBuilder.build_real_mesh(weapon_id) if item_mat != null else null
+	if item_mesh != null:
+		held_node.mesh = item_mesh
+		held_node.material_override = item_mat
+	else:
+		held_node.mesh = WeaponBuilder.build_mesh(weapon_id)
+		held_node.material_override = material
 	held_node.position = MCGeometry.held_item_offset(skin.slim) * MCGeometry.PX
 	held_node.basis = MCGeometry.held_item_basis()
 	parts["RightArm"].add_child(held_node)

@@ -24,6 +24,8 @@ const WATER_TINT := Color(0.247, 0.463, 0.894)
 ## Vanilla's default (undyed) leather colour. The leather layers ship greyscale because the game
 ## multiplies them by the dye at runtime, so loading them raw gives white armour.
 const LEATHER_TINT := Color(0.647, 0.412, 0.247)
+## Vanilla's water-bottle colour. Potion sprites ship greyscale for the same reason leather does.
+const POTION_TINT := Color(0.220, 0.451, 0.851)
 
 ## This project's block ids -> {path, tint}. A block missing from here simply has no pack texture and
 ## keeps its generated one.
@@ -55,6 +57,7 @@ const BLOCKS := {
 	"iron_block": {"path": "block/iron_block"},
 	"tnt_side": {"path": "block/tnt_side"},
 	"tnt_top": {"path": "block/tnt_top"},
+	"tnt_bottom": {"path": "block/tnt_bottom"},
 	"water": {"path": "block/water_still", "tint": "water"},
 	"lava": {"path": "block/lava_still"},
 	"wool_red": {"path": "block/red_wool"},
@@ -150,12 +153,30 @@ static func glint_image(for_armor: bool = true) -> Image:
 	_cache[key] = _load("misc/enchanted_glint_armor" if for_armor else "misc/enchanted_glint_item")
 	return _cache[key]
 
-## An inventory item icon, e.g. "diamond_sword".
+## An inventory item icon, e.g. "diamond_sword". Potions are composited the way the game does it:
+## the sprite ships as a greyscale liquid that gets multiplied by the potion colour, with the glass
+## bottle as a separate overlay, so loading `potion` raw gives a white blob and no bottle.
 static func item_image(item: String) -> Image:
 	var key := "i:" + item
 	if _cache.has(key):
 		return _cache[key]
-	_cache[key] = _load("item/" + item)
+	var img := _load("item/" + item)
+	if img != null and (item == "potion" or item == "splash_potion" or item == "lingering_potion"):
+		img = img.duplicate()
+		_tint(img, POTION_TINT)
+		var overlay := _load("item/%s_overlay" % item)
+		if overlay != null:
+			img.blend_rect(overlay, Rect2i(Vector2i.ZERO, overlay.get_size()), Vector2i.ZERO)
+	_cache[key] = img
+	return img
+
+## Any texture in the pack addressed by its vanilla-relative path, e.g.
+## "entity/shield/shield_base_nopattern". Null when the pack has no such file.
+static func raw_image(rel: String) -> Image:
+	var key := "r:" + rel
+	if _cache.has(key):
+		return _cache[key]
+	_cache[key] = _load(rel)
 	return _cache[key]
 
 # ================================================================================================

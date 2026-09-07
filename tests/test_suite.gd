@@ -50,6 +50,8 @@ func _ready() -> void:
 	test_relationships()
 	test_skin_models()
 	test_armor_layers()
+	_section("Held items")
+	test_held_items()
 	test_cc_limits()
 	test_downgrade_scaling()
 	_section("Lore database integrity")
@@ -802,6 +804,69 @@ func test_armor_layers() -> void:
 
 	var mesh := ArmorBuilder.build_layer_merged_mesh(by_layer[1]["parts"], 1)
 	check(mesh != null and mesh.get_surface_count() == 1, "a layer merges into one surface")
+
+func test_held_items() -> void:
+	# Every weapon id that appears in the shipped data has to resolve to something drawable. With a
+	# pack installed that means real Minecraft art; without one, the box models still have to answer.
+	var used: Dictionary = {}
+	for id in DataDB.enemies.keys():
+		var h := String((DataDB.enemies[id] as Dictionary).get("held", ""))
+		if h != "":
+			used[h] = true
+	for id in DataDB.towers.keys():
+		var h := String((DataDB.towers[id] as Dictionary).get("weapon", ""))
+		if h != "":
+			used[h] = true
+	for id in DataDB.heroes.keys():
+		var h := String((DataDB.heroes[id] as Dictionary).get("weapon", ""))
+		if h != "":
+			used[h] = true
+	check(used.size() >= 15, "the data uses a decent spread of weapons (%d)" % used.size())
+	for w in used.keys():
+		check(WeaponBuilder.build_mesh(w) != null, "%s has a fallback box model" % w)
+
+	if not ResourcePack.available():
+		check(true, "no resource pack installed; real item tests skipped")
+		return
+
+	for w in used.keys():
+		check(WeaponBuilder.has_real_item(w), "%s is drawn from real Minecraft art" % w)
+		var mesh := WeaponBuilder.build_real_mesh(w)
+		check(mesh != null and mesh.get_surface_count() == 1, "%s builds one surface" % w)
+		check(MCMaterials.make_item(w) != null, "%s has an item material" % w)
+		# The hand socket's contract: the grip is the origin of the item's own frame. Where the model
+		# sits around that varies -- a sword hangs off it, a banner is gripped mid-pole and straddles
+		# it -- so the invariant is only that no part of the item strays out of arm's reach.
+		var aabb := mesh.get_aabb()
+		check(aabb.position.length() < 1.6 and aabb.end.length() < 1.6,
+			"%s stays within reach of the grip (%.2f)" % [w, maxf(aabb.position.length(), aabb.end.length())])
+		check(aabb.size.length() < 3.0, "%s is a sane size for a hand (%.2f)" % [w, aabb.size.length()])
+
+	# An enchanted item must carry the glint, and must not be confused with its plain twin.
+	check(float(WeaponBuilder.split_glint("diamond_sword_enchanted")["glint"]) > 0.0,
+		"an _enchanted suffix carries the glint")
+	check_eq(String(WeaponBuilder.split_glint("diamond_sword_enchanted")["id"]), "diamond_sword",
+		"the glint suffix is stripped before the texture lookup")
+	check(MCMaterials.item_texture("diamond_sword_enchanted") == MCMaterials.item_texture("diamond_sword"),
+		"enchanted and plain share one texture")
+
+	# The merged MultiMesh character must not also carry the box weapon, or every armed enemy would
+	# be holding two of them.
+	var skin := SkinLibrary.get_skin("chungie")
+	var bare := MCMeshBuilder.build_merged_character(skin, {}, "")
+	var armed := MCMeshBuilder.build_merged_character(skin, {}, "iron_sword")
+	check_eq(armed.surface_get_array_len(0), bare.surface_get_array_len(0),
+		"a real item is left out of the merged skin mesh")
+	var rider := SkinLibrary.get_held_item_mesh("iron_sword", skin.slim)
+	check(not rider.is_empty(), "the merged path gets the item as its own mesh instead")
+	# In the merged mesh the item is positioned at the hand rather than at the origin.
+	var hand_aabb: AABB = (rider["mesh"] as ArrayMesh).get_aabb()
+	check(hand_aabb.position.y > 0.2, "the merged item sits up at hand height, not on the floor")
+
+	# A weapon the pack has no art for must fall back rather than disappear.
+	check(not WeaponBuilder.has_real_item("not_a_real_item"), "an unknown weapon has no real art")
+	check(WeaponBuilder.build_real_mesh("not_a_real_item") == null, "and builds no real mesh")
+	check(WeaponBuilder.build_mesh("not_a_real_item") != null, "but still gets a box model")
 
 func _unique_count(values: Array) -> int:
 	var seen: Dictionary = {}

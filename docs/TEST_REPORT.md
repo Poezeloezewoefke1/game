@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2198 assertions, 0 failures
+## 1. Automated test suite — 2377 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2198
+PASSED: 2377
 FAILED: 0
 ALL TESTS PASSED
 ```
@@ -27,6 +27,7 @@ ALL TESTS PASSED
 | Character generation | Merged mesh is one surface with ≥144 vertices; CUSTOM0/CUSTOM1 present for GPU animation; armour and weapons add geometry; six part nodes with pivots at 24px (head) and 12px (leg); right arm on +X; animation states; the attack animation emits its hit frame; facing −Z gives yaw 0 |
 | Armor system | Tier parsing; `_enchanted` suffix; netherite outscores leather; enchanting adds points; every tier in the catalog produces geometry with a real colour; **the helmet does not seal the face shut**; slim and classic have the same piece count |
 | Weapons | Every weapon in the catalog builds geometry; the mace mesh has vertices; enchanted weapons carry the glint flag |
+| Held items | Every weapon id used by the shipped data has a fallback box model and, with a pack installed, real Minecraft art, one surface, an item material, a size and position that stay within reach of the grip; the `_enchanted` suffix carries the glint and resolves to the plain item's texture; the merged MultiMesh character drops the box weapon when the real one is drawn; an unknown weapon falls back instead of vanishing |
 | Damage calculation | Armour formula at 0/50/95%; full and half pierce; the 10% floor; over-cap armour; damage types vs shields and structures; true damage; guaranteed and zero-chance crits; splash falloff at centre, rim and midpoint; mace height bonus and its cap |
 | Path | Length is the sum of segments; start/end/midpoints; clamping before and past the ends; tangent direction; lateral offset distance; range queries; nearest-point projection |
 | Enemy pool | Capacity; spawn returns a live slot; type round-trip; position follows path distance; spatial query finds near and excludes far; damage applies; lethal damage kills; slot reuse; **pool exhaustion is graceful and never exceeds capacity**; slow, stun and knockback; knockback clamps at the path start; bosses resist slows and cannot be knocked back |
@@ -419,8 +420,43 @@ Enemies render through MultiMesh, and each armour group needs its own texture, s
 extra MultiMesh per layer sharing the skin's transforms — the merged skin mesh drops the slots the
 layers now draw. Verified by cropping into a live board render.
 
+**Held items.** Weapons were coloured boxes; they are now built from the pack's own art, and
+Minecraft turns out to build three different kinds of thing:
+
+- **Sprites.** Most items are the flat 16×16 inventory icon extruded into a slab 1/16 of a block
+  thick. Front and back quads carry the whole sprite, and an edge quad is emitted wherever an opaque
+  pixel borders a transparent one, which is what gives a sword its stepped rim instead of a
+  cardboard silhouette. Vanilla also poses two classes of sprite differently — tools use the
+  `handheld` transform, rolled onto the sprite's handle-to-tip diagonal, and everything else uses
+  `generated`, standing upright — and both are reproduced, because a sword posed like a potion
+  points sideways out of the fist.
+- **Box models.** Shields and banners are not sprites at all: the game draws them from small box
+  models with their own entity textures (`shield_base_nopattern`, `banner_base`), so they are built
+  with the same box net the body parts use, at vanilla's own UV offsets. Banner cloth ships white
+  and is multiplied by the dye colour, exactly like leather armour.
+- **Blocks.** TNT is a block, so it is a cube wearing `tnt_side`/`tnt_top`/`tnt_bottom` composited
+  into a box net.
+
+Two things only showed up on screen:
+
+1. **The potion was a white blob.** `item/potion.png` is the greyscale *liquid*; the glass is a
+   separate `potion_overlay`, and the game multiplies the first by the potion colour before
+   compositing. Same trap as leather.
+2. **The pose that suited boxes hides sprites.** A box weapon reads from any angle; a one-pixel slab
+   disappears edge-on. The hand's forward tilt was −75°, which left the sprite's face nearly
+   parallel to the board camera's line of sight — the items were being drawn correctly and were
+   still almost invisible. At −100° the face turns towards the camera whichever way the character is
+   walking, and the item still points forward and slightly down out of the fist, which is where
+   Minecraft's own third-person pose puts it.
+
+All 22 weapon ids in the shipped data resolve to real art (`tests/item_check.gd`), and all 24 armed
+enemies get it on the MultiMesh path with the box model correctly dropped from the merged skin mesh
+rather than drawn underneath it (`tests/enemy_item_check.gd`). Rendered for eyeballing by
+`tests/visual_items_test.gd`, which can shoot the line-up from the front, the side, or the board
+camera's own angle.
+
 **Glint.** The procedural stripe is replaced by Minecraft's own `enchanted_glint_armor.png`, sampled
 twice with different scroll directions and speeds and added on top; the stripe remains as the
-no-pack fallback.
+no-pack fallback. Items use `enchanted_glint_item.png`, which is the sheet vanilla uses for them.
 
 **Blocks.** Covered in section 10's notes on tinting and animated-texture frames.

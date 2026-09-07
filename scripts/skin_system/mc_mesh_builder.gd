@@ -51,6 +51,28 @@ func add_color_box(bmin: Vector3, size: Vector3, color: Color, part_id: int, piv
 		rects[face] = Rect2(0, 0, fw / pattern_scale * tex_size.x, fh / pattern_scale * tex_size.y)
 	_add_box(bmin, size, rects, false, color, part_id, 1.0, glint, pivot_px, true)
 
+## Adds one textured quad. Corners are in pixels, given TL, TR, BR, BL as seen from outside; UVs are
+## already normalised. Used by the extruded item sprites, which are not boxes.
+func add_quad(tl: Vector3, tr: Vector3, br: Vector3, bl: Vector3, uv_tl: Vector2, uv_tr: Vector2,
+		uv_br: Vector2, uv_bl: Vector2, normal: Vector3, part_id: int, pivot_px: Vector3,
+		glint: float = 0.0) -> void:
+	var base := verts.size()
+	var n := (xform.basis * normal).normalized()
+	var pivot := (xform * (pivot_px - local_origin)) * MCGeometry.PX
+	var corners := [tl, tr, br, bl]
+	var quv := [uv_tl, uv_tr, uv_br, uv_bl]
+	for i in 4:
+		verts.push_back((xform * ((corners[i] as Vector3) - local_origin)) * MCGeometry.PX)
+		normals.push_back(n)
+		uvs.push_back(quv[i])
+		colors.push_back(Color.WHITE)
+		custom0.append_array(PackedFloat32Array([float(part_id), 0.0, glint, 0.0]))
+		custom1.append_array(PackedFloat32Array([pivot.x, pivot.y, pivot.z, 0.0]))
+	if flip_winding:
+		indices.append_array(PackedInt32Array([base, base + 2, base + 1, base, base + 3, base + 2]))
+	else:
+		indices.append_array(PackedInt32Array([base, base + 1, base + 2, base, base + 2, base + 3]))
+
 func _add_box(bmin: Vector3, size: Vector3, rects: Dictionary, mirror: bool, color: Color,
 		part_id: int, use_color: float, glint: float, pivot_px: Vector3, pattern: bool) -> void:
 	var x0 := bmin.x
@@ -132,6 +154,16 @@ static func build_part_mesh(skin: SkinData, def: Dictionary) -> ArrayMesh:
 		b.add_skin_box(def["min"], size, def["uv_outer"], def["size"], def["mirror"], def["inflate_outer"], def["part"], def["pivot"])
 	return b.commit()
 
+## The transform that puts an item's grip in the character's right hand, in character pixel space.
+static func hand_transform(slim: bool) -> Transform3D:
+	var pivot: Vector3 = MCGeometry.part_def(MCGeometry.part_defs(slim, false),
+		MCGeometry.Part.RIGHT_ARM)["pivot"]
+	return Transform3D(MCGeometry.held_item_basis(), pivot + MCGeometry.held_item_offset(slim))
+
+## The right arm's pivot in character pixel space -- what a held item has to swing around.
+static func hand_pivot(slim: bool) -> Vector3:
+	return MCGeometry.part_def(MCGeometry.part_defs(slim, false), MCGeometry.Part.RIGHT_ARM)["pivot"]
+
 ## Builds a full character (all parts + armor + held item) as ONE mesh in character space, for MultiMesh rendering.
 ## armor: Dictionary slot -> tier id (see ArmorBuilder); held: weapon id (see WeaponBuilder)
 static func build_merged_character(skin: SkinData, armor: Dictionary = {}, held: String = "", extras: Array = []) -> ArrayMesh:
@@ -149,7 +181,9 @@ static func build_merged_character(skin: SkinData, armor: Dictionary = {}, held:
 	for box in ArmorBuilder.boxes_for_set(armor, skin.slim):
 		var pivot: Vector3 = MCGeometry.part_def(defs, box["part"])["pivot"]
 		b.add_color_box(box["min"], box["size"], box["color"], box["part"], pivot, box.get("glint", 0.0))
-	if held != "":
+	# A real item needs its own texture, so it cannot join this surface; SkinLibrary builds it as a
+	# separate mesh and the caller renders it alongside, the way the armour layers are handled.
+	if held != "" and not WeaponBuilder.has_real_item(held):
 		var arm_def := MCGeometry.part_def(defs, MCGeometry.Part.RIGHT_ARM)
 		var pivot: Vector3 = arm_def["pivot"]
 		var hand := pivot + MCGeometry.held_item_offset(skin.slim)

@@ -37,11 +37,11 @@ func on_frame(f: int) -> void:
 			var mmi: MultiMeshInstance3D = g["mmi"]
 			var mm: MultiMesh = g["mm"]
 			var mesh_ok := mm.mesh != null and (mm.mesh as Mesh).get_surface_count() > 0
-			print("[REAL]   group %-22s instances=%-4d mesh_surfaces=%s visible=%s mat=%s armor_mms=%d"
+			print("[REAL]   group %-22s instances=%-4d mesh_surfaces=%s visible=%s mat=%s riders=%d"
 				% [String(g["key"]), mm.instance_count,
 					str((mm.mesh as Mesh).get_surface_count() if mm.mesh != null else -1),
 					str(mmi.visible), str(mmi.material_override != null),
-					(g.get("armor_layers", []) as Array).size()])
+					(g.get("riders", []) as Array).size()])
 			if not mesh_ok:
 				print("[REAL]   !! group %s HAS NO MESH" % String(g["key"]))
 
