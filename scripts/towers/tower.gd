@@ -34,6 +34,9 @@ var crit_chance: float = 0.0
 var crit_mult: float = 2.0
 var damage_type: String = "melee"
 var projectile_kind: String = "melee_swing"
+## Multiplier on the projectile's travel speed from upgrades. It is not only cosmetic: a crossbow
+## cart's blast scales with the bolt's velocity, the way Minecraft's does.
+var projectile_speed_mult: float = 1.0
 var attack_style: String = "slash"
 var detect_invisible: bool = false
 var hit_air: bool = false
@@ -109,6 +112,7 @@ func recompute_stats() -> void:
 	var rate_mult := 1.0
 	var damage_mult := 1.0
 	var range_mult := 1.0
+	var proj_speed_mult := 1.0
 	var paths: Array = def.get("paths", [])
 	for p in range(min(3, paths.size())):
 		var tier_list: Array = (paths[p] as Dictionary).get("tiers", [])
@@ -119,6 +123,7 @@ func recompute_stats() -> void:
 			range_r += float(eff.get("range_add", 0.0))
 			range_mult *= float(eff.get("range_mult", 1.0))
 			rate_mult *= float(eff.get("rate_mult", 1.0))
+			proj_speed_mult *= float(eff.get("projectile_speed_mult", 1.0))
 			pierce += int(eff.get("pierce_add", 0))
 			splash += float(eff.get("splash_add", 0.0))
 			armor_pen += float(eff.get("armor_pen_add", 0.0))
@@ -153,6 +158,7 @@ func recompute_stats() -> void:
 	damage *= damage_mult
 	range_r *= range_mult
 	attack_time *= rate_mult
+	projectile_speed_mult = proj_speed_mult
 	if specials.has("detect_invisible"):
 		detect_invisible = true
 	if specials.has("hit_air"):
@@ -375,6 +381,15 @@ func _payload() -> Dictionary:
 			"execute_threshold", "boss_damage_mult"]:
 		if specials.has(key):
 			p[key] = specials[key]
+	if projectile_speed_mult != 1.0:
+		p["projectile_speed"] = float(ProjectileManager.KIND_SPECS.get(projectile_kind, {})
+			.get("speed", 20.0)) * projectile_speed_mult
+	if specials.has("xbow_cart"):
+		# The crossbow cart is fired from here, so the bolt needs to know where the shooter is and
+		# how hard it is being shot. See ProjectileManager's crossbow-cart section.
+		p["xbow_cart"] = true
+		p["origin"] = global_position + Vector3(0, 1.4, 0)
+		p["bolt_speed_ratio"] = projectile_speed_mult
 	return p
 
 # ================================================================================================

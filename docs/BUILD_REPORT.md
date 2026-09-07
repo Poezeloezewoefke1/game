@@ -139,8 +139,10 @@ Forward+ (Vulkan) renderer is used, with OpenGL 3 as the configured fallback.
 Measured in this environment; see [TEST_REPORT.md](TEST_REPORT.md) for the full tables.
 
 - **Game logic:** 50 → 1000 concurrent enemies costs **+0.5 ms** frame time, **+6 nodes**, **+0.7 MB**.
-- **Rendering:** frame time and draw calls are **flat** from 50 to 1000 enemies (133.3 ms, ~580 calls)
-  under a software rasteriser — enemy count adds no draw calls.
+- **Rendering:** draw calls and node count are **flat** from 50 to 1000 enemies (828 → 848 calls,
+  +10 nodes) — enemy count adds instances, not draws. Frame time is also flat, but that is llvmpipe's
+  133 ms floor for a 1280×720 frame rather than a result; see TEST_REPORT.md, which also records that
+  the previous figures here were measured while no enemy was being drawn at all.
 - **No GPU frame rate is claimed.** This VM has no GPU.
 
 ## Reproducing this build

@@ -60,10 +60,15 @@ and shown next to every Codex entry in game. Treat `supported` as "the wiki says
 This VM has **no GPU**. Rendering measurements used Mesa's llvmpipe software rasteriser, which spends
 133 ms per frame filling 1280×720 regardless of scene content.
 
-What that testing *does* establish is the thing the architecture was built for: **frame time and draw
-calls are flat from 50 to 1000 enemies** (133.29 ms → 133.27 ms; 580 → 578 draw calls). Enemy count
-adds no draw calls and no measurable cost. Headless timing shows the game logic for 1000 enemies costs
-0.5 ms per frame.
+What that testing *does* establish, because these are counted rather than timed: **draw calls and node
+count are flat from 50 to 1000 enemies** (828 → 848 calls, 10 extra nodes). Enemy count adds
+instances, not draws. Headless timing shows the game logic for 1000 enemies costs 0.5 ms per frame.
+
+It does **not** establish that the renderer scales, even though the frame times are also flat: 133 ms
+is what llvmpipe charges for a 1280×720 frame regardless of contents, so the flatness of the timing
+is the rasteriser's floor, not a result. An earlier version of this file quoted those frame times as
+if they were evidence; worse, they were measured while the enemy MultiMeshes were empty and nothing
+was drawn at all. Both are corrected in [TEST_REPORT.md](TEST_REPORT.md).
 
 What it does **not** establish is an actual frame rate on a real machine. No fps figure for real
 hardware is claimed anywhere in this repository, and none should be inferred.

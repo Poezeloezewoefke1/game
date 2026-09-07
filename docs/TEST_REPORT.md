@@ -132,18 +132,27 @@ xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3
   -s tests/run_visual.gd -- res://tests/stress_test.gd build/stress.png 1400
 ```
 
-| Enemies | FPS | Mean frame | Draw calls |
-|---|---|---|---|
-| 50 | 7.5 | 133.29 ms | 580 |
-| 100 | 7.5 | 133.28 ms | 580 |
-| 250 | 7.5 | 133.39 ms | 580 |
-| 500 | 7.5 | 133.33 ms | 578 |
-| 1000 | 7.5 | 133.27 ms | 578 |
+| Enemies | FPS | Mean frame | p95 | Nodes | Draw calls |
+|---|---|---|---|---|---|
+| 50 | 7.5 | 133.33 ms | 147.58 ms | 588 | 828 |
+| 100 | 7.5 | 133.34 ms | 144.17 ms | 600 | 844 |
+| 250 | 7.5 | 133.35 ms | 144.05 ms | 600 | 852 |
+| 500 | 7.5 | 133.32 ms | 144.46 ms | 598 | 848 |
+| 1000 | 7.5 | 133.40 ms | 149.38 ms | 598 | 848 |
 
-**Read this carefully.** The 7.5 fps is llvmpipe filling 1280×720 in software; there is no GPU in this
-VM. The number that matters is that **frame time and draw calls are flat from 50 to 1000 enemies** —
-133.29 ms vs 133.27 ms, 580 vs 578 calls. Adding 950 enemies added no draw calls and no measurable
-cost. The frame time is fill-rate bound on the software rasteriser, not geometry bound.
+**These numbers replace an earlier table that was measuring nothing.** The previous run was taken
+while the enemy MultiMeshes had an instance_count of 0 — no enemy was being drawn at all (see the
+rendering bug in section 13) — so "adding 950 enemies costs no draw calls" was true in the most
+useless possible sense. The table above is a re-run with the enemies actually on screen.
+
+**And read the rest carefully too.** The 7.5 fps is llvmpipe filling 1280×720 in software; there is
+no GPU in this VM, and 133 ms is the floor it charges for a frame whatever is in it. That floor is
+*why* the frame times look flat, so this run cannot distinguish "the instancing scales well" from
+"the rasteriser was saturated either way", and it should not be quoted as evidence of the former.
+
+What it does establish, because these are counted rather than timed: **draw calls and node count stay
+flat from 50 to 1000 enemies** — 828 to 848 calls and 10 extra nodes across a twentyfold increase in
+units. Enemy count adds instances, not draws, which is the thing the architecture was built for.
 
 **No frame rate on real GPU hardware has been measured, and none is claimed.** See
 [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).

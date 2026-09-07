@@ -30,6 +30,7 @@ func _ready() -> void:
 	test_enemy_pool()
 	test_enemy_rendering()
 	test_spatial_grid()
+	test_xbow_cart()
 	_section("Enemy data")
 	test_enemy_data()
 	_section("Gear progression")
@@ -338,6 +339,63 @@ func test_path() -> void:
 	check(ranges.size() >= 1, "range query finds the covered stretch")
 	check_near(p.nearest_distance_to(Vector3(5, 0, 3)), 5.0, 0.6, "nearest distance projects onto the path")
 
+## The crossbow cart: Minecraft's strongest single attack, and a technique rather than an item, so
+## what is checked is that it behaves like the technique. A cart that lands and explodes on arrival
+## is just a grenade; the point is that it parks on its rail, gets shot, and detonates instantly with
+## a rolled power between TNT's 4 and a drawn bow's 9.5.
+func test_xbow_cart() -> void:
+	# The upgrade that grants it exists and is where the research says it belongs: on the character
+	# the wiki records as the server's master of cart combat.
+	var theo: Dictionary = DataDB.towers.get("theobaldthebird", {})
+	check(not theo.is_empty(), "TheobaldTheBird is defined")
+	var tier: Dictionary = ((theo.get("paths", [])[0] as Dictionary).get("tiers", [])[3] as Dictionary)
+	check_eq(String(tier.get("name", "")), "Crossbow Cart", "his signature cart upgrade is the xbow cart")
+	check((tier.get("effects", {}) as Dictionary).get("special", []).has("xbow_cart"),
+		"and it grants the xbow_cart behaviour")
+
+	# The power roll. Minecraft: base 4, plus a random bonus capped at +7.5, with a fully drawn bow
+	# reaching 9.5. A faster bolt must widen the range, never narrow it, and never exceed the cap.
+	var base := ProjectileManager.xbow_power_range(1.0)
+	check_near(base.x, 4.0, 0.001, "the blast starts at TNT's own power of 4")
+	check_near(base.y, 9.5, 0.001, "a normally drawn bolt tops out at 9.5, as a drawn bow does")
+	var fast := ProjectileManager.xbow_power_range(2.0)
+	check(fast.y > base.y, "a faster bolt rolls a bigger maximum (%.1f > %.1f)" % [fast.y, base.y])
+	check(ProjectileManager.xbow_power_range(9.0).y <= 4.0 + 7.5 + 0.001,
+		"and the bonus is capped at +7.5 however fast it goes")
+
+	# The two stages, driven for real through the pooled projectile manager.
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(60, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 100)
+	mgr.rng.seed = 99
+	var proj := ProjectileManager.new()
+	add_child(proj)
+	proj.setup(mgr)
+	var victim := mgr.spawn("chungie_t3", 10.0)
+	check(victim >= 0, "spawned something to shoot at")
+	var hp_before := mgr.hp[victim]
+
+	var data := {"damage": 100.0, "damage_type": "explosive", "splash": 2.0, "armor_pen": 0.3,
+		"source": "theobaldthebird", "xbow_cart": true, "origin": Vector3(0, 2, 6),
+		"bolt_speed_ratio": 1.0, "filter": {"hit_ground": true}}
+	proj.fire("tnt_cart", Vector3(0, 2, 6), victim, data)
+	# Fly the cart in (about 12 units at 16/s, so give it comfortably longer than that). It must NOT
+	# have resolved yet when it gets there -- it is sitting on its rail waiting to be shot.
+	for i in 120:
+		proj._process(0.016)
+		if bool(data.get("armed", false)):
+			break
+	check(bool(data.get("armed", false)), "the cart lands on its rail instead of exploding on arrival")
+	check_near(mgr.hp[victim], hp_before, 0.001, "and has done no damage yet")
+	# Now run out the arm time: the bolt arrives and sets it off.
+	for i in 60:
+		proj._process(0.016)
+	check(mgr.hp[victim] < hp_before, "the bolt detonates it (%.0f -> %.0f)" % [hp_before, mgr.hp[victim]])
+	proj.queue_free()
+	mgr.queue_free()
+
 ## The spatial grid, which everything that asks "what is near here" goes through: tower targeting,
 ## splash damage, death explosions, auras. Each cell used to keep only the FIRST unit that landed in
 ## it, because pushing into `_grid[key]` pushed into a copy -- so a tight column of enemies four units
@@ -378,6 +436,9 @@ func test_enemy_rendering() -> void:
 	var p := MapPath.new()
 	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(100, 0, 0)]))
 	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 200)
+	# Enemies pick a skin at random from their pool, which decides how many visual groups exist, so
+	# seed it: otherwise this test asserts a different number of things on every run.
+	mgr.rng.seed = 424242
 
 	# Three different types, so they land in more than one visual group.
 	var ids := ["chungie_t1", "chungie_t3", "archer"]
