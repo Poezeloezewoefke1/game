@@ -385,6 +385,40 @@ func test_walls_and_leak_mitigation() -> void:
 	check(mgr.dist[flyer] > 16.0, "a flyer passes over a wall (%.1f)" % mgr.dist[flyer])
 	mgr.clear_all()
 
+	# A wall that carries a detonation must take its neighbours with it when it goes. Fort Feather
+	# ships detonate_damage 300 in radius 4 and nothing read either field, so the ability neither
+	# blocked nor exploded -- it placed an inert lump.
+	var bystander := mgr.spawn("chungie_t1", 30.0)
+	var bomb := mgr.spawn("cobble_wall", 30.5)
+	check(bystander >= 0 and bomb >= 0, "spawned a wall with a bystander beside it")
+	mgr.detonate_damage[bomb] = 300.0
+	mgr.detonate_radius[bomb] = 4.0
+	var bystander_hp := mgr.hp[bystander]
+	# Killed outright.
+	mgr.kill(bomb, "test")
+	mgr._process(0.016)                            # blasts are queued, then drained
+	check(mgr.hp[bystander] < bystander_hp or mgr.alive[bystander] == 0,
+		"the wall's detonation hits what is next to it")
+	# And by expiry, which is how a timed wall normally goes -- that path does not run death
+	# abilities at all, so a detonation hung off those would never fire in a real game.
+	var bystander3 := mgr.spawn("chungie_t1", 70.0)
+	var timed := mgr.spawn("cobble_wall", 70.5)
+	mgr.detonate_damage[timed] = 300.0
+	mgr.detonate_radius[timed] = 4.0
+	var hp3 := mgr.hp[bystander3]
+	mgr.kill(timed, "expire", false)               # exactly what the expire ability does
+	mgr._process(0.016)
+	check(mgr.hp[bystander3] < hp3 or mgr.alive[bystander3] == 0,
+		"and detonates on expiry too, not only when destroyed")
+	# And a wall with no detonation set must not explode, since the builder enemy uses the same entity.
+	var bystander2 := mgr.spawn("chungie_t1", 50.0)
+	var dud := mgr.spawn("cobble_wall", 50.5)
+	var hp2 := mgr.hp[bystander2]
+	mgr.kill(dud, "test")
+	mgr._process(0.016)
+	check_near(mgr.hp[bystander2], hp2, 0.001, "a wall with no detonation set goes quietly")
+	mgr.clear_all()
+
 	# Leak mitigation. The pool applies whatever the run supplies and nothing more.
 	var lives_start := 100
 	GameState.max_lives = lives_start

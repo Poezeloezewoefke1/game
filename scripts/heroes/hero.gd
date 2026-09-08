@@ -402,6 +402,10 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 					# The hero's wall is a barricade, not a sponge: this one stops the lane. The
 					# builder enemy's walls use the same entity and deliberately do not.
 					enemies.blocks_path[slot] = 1
+					# ...and it goes off when it goes down. Both halves of Fort Feather were dead:
+					# nothing read detonate_damage or detonate_radius either.
+					enemies.detonate_damage[slot] = float(e.get("detonate_damage", 0.0))
+					enemies.detonate_radius[slot] = float(e.get("detonate_radius", 3.0))
 		"summon":
 			_summon(int(e.get("count", 3)), float(e.get("duration", 15.0)), e)
 		"convert":

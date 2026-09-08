@@ -84,6 +84,9 @@ var pos_z: PackedFloat32Array = PackedFloat32Array()
 var scripted: PackedByteArray = PackedByteArray()       # 1 = external controller drives movement
 ## 1 for a structure that physically stops units walking the lane (see _wall_ahead).
 var blocks_path: PackedByteArray = PackedByteArray()
+## Per-slot blast left behind when a unit dies, set by whoever placed it. Zero damage means none.
+var detonate_damage: PackedFloat32Array = PackedFloat32Array()
+var detonate_radius: PackedFloat32Array = PackedFloat32Array()
 var _walls: PackedInt32Array = PackedInt32Array()
 ## Set by whoever owns the run. Takes a leak's threat and returns the lives it actually costs, so
 ## tower leak_reduction and the hero's leak cap can apply. Unset means the threat lands in full.
@@ -172,6 +175,7 @@ func _resize(n: int) -> void:
 	phase.resize(n); y_offset.resize(n); cd_a.resize(n); cd_b.resize(n); group_idx.resize(n)
 	used_once.resize(n); spawn_time.resize(n); pos_x.resize(n); pos_y.resize(n); pos_z.resize(n)
 	scripted.resize(n); active_pos.resize(n); blocks_path.resize(n)
+	detonate_damage.resize(n); detonate_radius.resize(n)
 	free_slots.resize(n)
 	for i in n:
 		alive[i] = 0
@@ -228,6 +232,8 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	# the entity block by definition turned the builder into a saboteur that walled in its own side,
 	# which cost the benchmark 14 leaks in a run and handed it a flawless campaign.
 	blocks_path[slot] = 1 if ((mask & F_STRUCTURE) != 0 and bool(d.get("blocks_path", false))) else 0
+	detonate_damage[slot] = 0.0
+	detonate_radius[slot] = 0.0
 	var spread := float(d.get("lane_spread", 0.7))
 	lateral[slot] = rng.randf_range(-spread, spread) if is_nan(lateral_override) else lateral_override
 	y_offset[slot] = float(d.get("fly_height", 0.0)) if (mask & F_FLYING) != 0 else 0.0
@@ -363,6 +369,12 @@ func _process(delta: float) -> void:
 	time_now += delta
 	_rebuild_walls()
 	_update_units(delta)
+	# Blasts are queued rather than applied inline (see _drain_deaths), and until now the only thing
+	# that drained the queue was damage(). A death that goes through kill() instead -- an expiry, a
+	# boss script, a wall coming down on its timer -- left its blast sitting there until some
+	# unrelated damage happened to flush it, at which point it went off late from a stale position.
+	if not _draining and not _pending_blasts.is_empty():
+		_drain_deaths()
 	_rebuild_grid()
 	_upload_visuals()
 
@@ -627,6 +639,21 @@ func kill(slot: int, source_id: String = "", count_stat: bool = true) -> void:
 	_grid_dirty = true
 	if count_stat:
 		total_killed += 1
+	# Per-slot detonation, set by whoever placed the unit. This lives in kill() rather than in
+	# _death_abilities because that only runs when something is damaged to zero, and a wall normally
+	# goes by EXPIRING -- which is the common case for Fort Feather, whose whole identity is a
+	# barricade that blows up when it comes down. Per-slot rather than per-definition because the
+	# builder enemy uses the same cobble_wall as a damage sponge and must not explode.
+	if detonate_damage[slot] > 0.0:
+		_pending_blasts.append({
+			"centre": unit_position(slot),
+			"radius": detonate_radius[slot],
+			"damage": detonate_damage[slot],
+			"exclude": slot,
+		})
+		detonate_damage[slot] = 0.0
+		EventBus.camera_shake.emit(0.4, 0.25)
+		AudioMgr.play_sfx_at("explosion", unit_position(slot), -3.0)
 	free_slots.push_back(slot)
 	EventBus.enemy_killed.emit(slot, String(d.get("id", "")), source_id)
 	if (flags[slot] & (F_BOSS | F_MINI_BOSS)) != 0:
