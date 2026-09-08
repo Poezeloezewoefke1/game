@@ -399,6 +399,9 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 				if slot >= 0:
 					enemies.hp[slot] = float(e.get("hp", 1500.0))
 					enemies.max_hp[slot] = enemies.hp[slot]
+					# The hero's wall is a barricade, not a sponge: this one stops the lane. The
+					# builder enemy's walls use the same entity and deliberately do not.
+					enemies.blocks_path[slot] = 1
 		"summon":
 			_summon(int(e.get("count", 3)), float(e.get("duration", 15.0)), e)
 		"convert":

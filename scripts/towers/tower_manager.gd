@@ -389,6 +389,9 @@ func spawn_wall(source: Tower, hp: float, thorns: float) -> void:
 	if slot >= 0:
 		enemies.hp[slot] = hp
 		enemies.max_hp[slot] = hp
+		# A tower's wall is a barricade and stops the lane. The builder enemy's, which is the same
+		# entity, is a damage sponge for its own side and deliberately does not.
+		enemies.blocks_path[slot] = 1
 
 func _on_enemy_killed(_slot: int, _type_id: String, killer_id: String) -> void:
 	if global_bounty > 0:

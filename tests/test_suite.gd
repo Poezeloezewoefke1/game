@@ -357,8 +357,12 @@ func test_walls_and_leak_mitigation() -> void:
 	var walker := mgr.spawn("chungie_t1", 10.0)
 	var wall := mgr.spawn("cobble_wall", 16.0)
 	check(walker >= 0 and wall >= 0, "spawned a walker and a wall")
-	check_eq(int(mgr.blocks_path[wall]), 1, "a structure blocks the lane by default")
-	check_eq(int(mgr.blocks_path[walker]), 0, "a walking enemy does not")
+	# Blocking belongs to whoever placed the wall, not to the entity. Both sides use cobble_wall for
+	# opposite purposes: the builder enemy's soaks up tower fire for the column behind it, the hero's
+	# and the tower's barricade the lane. So a bare spawn blocks nothing.
+	check_eq(int(mgr.blocks_path[wall]), 0, "a wall does not block the lane just for existing")
+	check_eq(int(mgr.blocks_path[walker]), 0, "and neither does a walking enemy")
+	mgr.blocks_path[wall] = 1                     # placed as a barricade
 	var wall_hp_before := mgr.hp[wall]
 	for i in 240:
 		mgr._process(0.05)
@@ -372,6 +376,7 @@ func test_walls_and_leak_mitigation() -> void:
 	var flyer := mgr.spawn("elytra_glider", 10.0)
 	var wall2 := mgr.spawn("cobble_wall", 16.0)
 	check(flyer >= 0 and wall2 >= 0, "spawned a flyer and a second wall")
+	mgr.blocks_path[wall2] = 1
 	mgr.y_offset[flyer] = 0.0                     # already at cruising height, not dropping in
 	for i in 200:
 		mgr._process(0.05)

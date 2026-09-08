@@ -220,9 +220,14 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	used_once[slot] = 0
 	spawn_time[slot] = time_now
 	scripted[slot] = 0
-	# A structure blocks the lane unless its definition opts out. Walls are the whole reason the
-	# category exists; anything else that wants to be scenery can set "blocks_path": false.
-	blocks_path[slot] = 1 if ((mask & F_STRUCTURE) != 0 and bool(d.get("blocks_path", true))) else 0
+	# Blocking is set by whoever PLACES a wall, not by what a wall is, and it defaults to off.
+	#
+	# The same cobble_wall entity is used by both sides for opposite purposes. The builder enemy's is
+	# a damage sponge -- its codex says "walls that soak up arrows", and its whole job is to absorb
+	# tower fire for the column behind it. The hero's is a barricade dropped across the lane. Making
+	# the entity block by definition turned the builder into a saboteur that walled in its own side,
+	# which cost the benchmark 14 leaks in a run and handed it a flawless campaign.
+	blocks_path[slot] = 1 if ((mask & F_STRUCTURE) != 0 and bool(d.get("blocks_path", false))) else 0
 	var spread := float(d.get("lane_spread", 0.7))
 	lateral[slot] = rng.randf_range(-spread, spread) if is_nan(lateral_override) else lateral_override
 	y_offset[slot] = float(d.get("fly_height", 0.0)) if (mask & F_FLYING) != 0 else 0.0
