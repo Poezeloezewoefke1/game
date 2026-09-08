@@ -113,10 +113,16 @@ What it does **not** establish, and these are real gaps:
 
   | hero | result |
   |---|---|
-  | ParrotX2 | 3 of 3 wins, on 100/100, 100/100 and 96/100 lives |
-  | Wemmbu | 0 of 3, dead at waves 19/19/19 |
+  | ParrotX2 | **4 of 5**, wins on 60–100 lives, the loss on wave 21 |
   | FlameFrags | 1 of 3, dead at waves 18/18 |
-  | SpokeIsHere | 0 of 3, dead at waves 19/21/17 |
+  | Wemmbu | 0 of 3, dead at waves 20/20/19 |
+  | SpokeIsHere | 0 of 3, dead at waves 20/21/17 |
+
+  A round of work aimed squarely at this moved ParrotX2 into the band the curve has been fitted
+  towards all along — 4 of 5 with the loss on the wave-21 cliff, which supersedes the claim above
+  that no slope reaches 4 of 5 — but **it did not close the gap**, and the three heroes are no better
+  off in outcome terms than before it. What that round found is recorded further down, after the
+  controls, because the measurements turned out to be worth more than the attempt.
 
   A control run pins down what that means. ParrotX2 stripped of **every ability and passive** dies on
   wave 19 with 49 leaks — which is where the other three finish *with their full kits*. Their
@@ -129,6 +135,22 @@ What it does **not** establish, and these are real gaps:
   done in his run and still losing. Raising their numbers is not obviously the fix — closing the gap
   by damage alone needs something like a fivefold increase — so this needs a design decision about
   their kits, not a tuning pass, and it is not one to make silently on the owner's characters.
+
+  - **Their late passives were unreachable, and now are not.** Heroes top out at level 11, so
+    Wemmbu's Totem of Undying (unlock 12), SpokeIsHere's Totem of NULL (13) and FlameFrags' Trained
+    by Theo (14) could never fire. All three now unlock at 9. ParrotX2's First 100 Days is
+    deliberately left at 15, unreachable: he is the hero who needs no help, and +3 lives a wave is
+    not the buff to hand him. That is a balance decision, not an oversight.
+  - **Buffing an ability a hero never unlocks does nothing at all.** SpokeIsHere's Purgatory and
+    Totem of NULL were both raised substantially and his run came back **byte-identical** — because
+    he finishes a losing campaign at level 7 and neither ability had ever unlocked. Losing costs
+    kills, kills are XP, and XP is the kit: a hero that is behind is locked out of the tools that
+    would catch it up. Enemies that leak now pay their XP too, which breaks that loop in principle,
+    though honestly it barely moves it in practice — leaks are about 12% of enemies, so SpokeIsHere
+    is still level 7.
+  - **FlameFrags is the one that responded**, going from a wave-18 death to a win once Trained by
+    Theo became reachable and his ultimate started sharing its buff with nearby towers. He is still
+    only 1 of 3.
 
   ParrotX2's aura passive was measured contributing nothing — removing it changed the result by
   zero — but that measurement is superseded and the reason matters. Its radius is 9 units, and at the
@@ -206,14 +228,20 @@ consumes them, not by anything failing:
   authored and both unread. The buff is now shared with towers within his attack range (his own stat,
   not a new constant), and the duel picks a boss or mini-boss ahead of a merely high-HP target, which
   is what its description promises. Its ability text has been updated to say the buff is shared.
-- **Wemmbu's Gambit does nothing, and is not fixed.** `mace_height_bonus` multiplies damage by
+- **Wemmbu's Gambit did nothing, and has been re-authored.** `mace_height_bonus` multiplies damage by
   `1 + max(0, attacker.y − target.y) × 0.35`. The board was converted to a flat painted plane, and
   measurement confirms every build zone, the hero, the whole path and every enemy sit at exactly
   `y = 0.0` — so the multiplier is 1.0, always, for Wemmbu's level-1 signature passive and for the
   tower that shares the formula. There is no height on this board to key off, so making it work means
   either giving the board real elevation or re-authoring the passive around something else. Both are
   design decisions about the owner's character rather than repairs, so it is reported, not guessed at.
-  It is very likely part of why Wemmbu is the weakest hero of the four.
+  On the owner's instruction to choose, it was re-authored rather than met with new terrain: the
+  passive now winds up, adding +50% to the next blow for every second Wemmbu goes without landing
+  one, capped at +150% — the same ceiling the height rule had. It keeps what a mace is for, a heavy
+  committed hit that rewards patience, without needing a third dimension the board does not have.
+  The real Density rule is still applied whenever a target genuinely is below the attacker, so this
+  costs nothing if a map with elevation ever arrives, and the tower sharing the formula is untouched.
+  The ability's description says plainly that it is a game mechanic adapted for a flat board.
 
 ### Something the benchmark could not do
 
@@ -287,7 +315,7 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
 
 Because the list above is long, it is worth being equally precise about the other side:
 
-- 2495 automated assertions pass with 0 failures (2322 with the resource pack removed).
+- 2501 automated assertions pass with 0 failures (2322 with the resource pack removed).
 - A full run builds, places and upgrades towers, spawns and kills enemies, pays out and advances waves
   with no errors logged.
 - All five boss phases fire in order; the mini-boss spawns; the blimp flies, drops 10 paratroopers,

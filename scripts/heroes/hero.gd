@@ -49,6 +49,8 @@ var lifesteal_used: int = 0
 ## Radius over which an active self buff is shared with nearby towers, 0 when it is not shared.
 ## Set from the effect's `aura` flag; see the self_buff branch of _execute_effect.
 var buff_aura_radius: float = 0.0
+## When the hero last landed a hit, for the mace wind-up (see the mace_height passive).
+var _last_hit_time: float = -99.0
 
 # global buffs granted to every tower
 var global_until: float = 0.0
@@ -278,8 +280,27 @@ func _on_attack_hit() -> void:
 		var e: Dictionary = p.get("effect", {})
 		match String(e.get("type", "")):
 			"mace_height":
+				# The mace's Density mechanic scales with the height you strike from, and this board
+				# has no height: it is a flat painted plane, and every build zone, the hero, the whole
+				# path and every enemy measure y = 0.0 exactly. So this multiplied by 1.0 forever --
+				# Wemmbu's level-1 signature passive did nothing at all in a shipped game.
+				#
+				# The wind-up below is the flat-board substitute: the blow lands harder the longer it
+				# has been since the last one, which preserves what the mace is FOR (a heavy, slow,
+				# committed hit that rewards patience) without needing a third dimension the board
+				# does not have. It is a game mechanic, not the Minecraft one, and the ability's
+				# description says so.
+				#
+				# `mace_height` is still honoured when a target really is below the attacker, so this
+				# keeps working unchanged if a map with elevation ever arrives -- and the tower that
+				# shares DamageCalc.mace_height_bonus is untouched.
 				var height := global_position.y - enemies.unit_position(slot).y
-				dmg *= DamageCalc.mace_height_bonus(height)
+				if height > 0.01:
+					dmg *= DamageCalc.mace_height_bonus(height)
+				else:
+					dmg *= DamageCalc.mace_windup_bonus(time_now - _last_hit_time,
+						float(e.get("windup_per_second", 0.5)), float(e.get("windup_cap", 2.5)))
+				_last_hit_time = time_now
 			"focus_ramp":
 				if slot == focus_target:
 					focus_time = minf(focus_time + attack_time, float(e.get("ramp_time", 4.0)))

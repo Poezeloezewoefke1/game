@@ -20,13 +20,13 @@
       "weaknesses": ["No support or economy", "Short range until levelled", "Ultimate has a long cooldown"],
       "level_stats": {"damage_per_level": 6.5, "range_per_level": 0.12, "rate_per_level": 0.012},
       "passives": [
-        {"name": "Gambit", "unlock": 1, "desc": "The mace hits harder the higher the ground it strikes from. +35% damage per unit of elevation over the target, up to +150%. (From the mace's Density mechanic.)", "effect": {"type": "mace_height"}},
+        {"name": "Gambit", "unlock": 1, "desc": "GAME MECHANIC: the mace winds up. Every second Wemmbu goes without landing a hit adds +50% to the next one, up to +150%. On ground that has elevation it uses the mace's real Density rule instead, +35% per unit of height over the target. (From the mace's Density mechanic, adapted because the board is flat.)", "effect": {"type": "mace_height", "windup_per_second": 0.5, "windup_cap": 2.5}},
         {"name": "Wind Burst", "unlock": 5, "desc": "Every third hit knocks enemies back down the path. (From Gambit's Wind Burst II enchantment.)", "effect": {"type": "periodic_knockback", "every": 3, "force": 2.0}},
-        {"name": "Totem of Undying", "unlock": 12, "desc": "GAME MECHANIC: when the base would take a fatal leak, Wemmbu stops it once per run. Inspired by the pit Arachn1d dropped him into.", "effect": {"type": "death_save", "uses": 1}}
+        {"name": "Totem of Undying", "unlock": 9, "desc": "GAME MECHANIC: when the base would take a fatal leak, Wemmbu stops it once per run. Inspired by the pit Arachn1d dropped him into.", "effect": {"type": "death_save", "uses": 1}}
       ],
       "abilities": [
         {"slot": 0, "name": "Stab Shot", "unlock": 1, "cooldown": 14.0, "desc": "Calls a focused orbital strike on the strongest enemy: 260 explosive damage in a 3-unit blast, shattering armor. (Wemmbu used stab shots to break ShoeBilly's helmet at Steampunk City.)", "lore_confidence": "supported", "effect": {"type": "strike", "damage": 260, "radius": 3.0, "damage_type": "explosive", "armor_pen": 0.7, "target": "strongest", "shake": 0.5}},
-        {"slot": 1, "name": "Cobweb Trap", "unlock": 4, "cooldown": 18.0, "desc": "GAME MECHANIC: throws cobwebs over a stretch of path, cutting enemy speed by 70% for 5 seconds. (Wemmbu trapped ShoeBilly in webs.)", "lore_confidence": "supported", "effect": {"type": "area_slow", "radius": 5.0, "slow_mult": 0.3, "duration": 5.0, "at": "self"}},
+        {"slot": 1, "name": "Cobweb Trap", "unlock": 4, "cooldown": 18.0, "desc": "GAME MECHANIC: throws cobwebs over a wide stretch of path, cutting enemy speed by 70% for 8 seconds. (Wemmbu trapped ShoeBilly in webs.)", "lore_confidence": "supported", "effect": {"type": "area_slow", "radius": 7.0, "slow_mult": 0.3, "duration": 8.0, "at": "self"}},
         {"slot": 2, "name": "Clutch", "unlock": 8, "cooldown": 30.0, "desc": "GAME MECHANIC: Golden Apple and Totem. For 8 seconds Wemmbu attacks twice as fast and cannot be disabled.", "lore_confidence": "supported", "effect": {"type": "self_buff", "duration": 8.0, "rate_mult": 0.5, "damage_mult": 1.3, "stun_immune": true}},
         {"slot": 3, "name": "Orbital Strike: Nuke Shot", "unlock": 10, "cooldown": 70.0, "desc": "ULTIMATE. Hundreds of TNT fall along the whole lane in front of Wemmbu: 900 explosive damage in a 9-unit radius, ignoring most armor. (The nuke shot at the Battle for Capital City.)", "lore_confidence": "canon_confirmed", "effect": {"type": "strike", "damage": 900, "radius": 9.0, "damage_type": "explosive", "armor_pen": 0.85, "target": "densest", "shake": 1.2, "delay": 1.1, "telegraph": true}}
       ]
@@ -47,7 +47,7 @@
       "passives": [
         {"name": "1v1 Me", "unlock": 1, "desc": "GAME MECHANIC: +40% damage against whichever enemy Flame has been attacking longest, growing to +120% over 4 seconds.", "effect": {"type": "focus_ramp", "max_bonus": 1.2, "ramp_time": 4.0}},
         {"name": "Lomedy's Mace", "unlock": 6, "desc": "GAME MECHANIC: every 6th hit lands as a mace blow with a 2-unit blast. (Lomedy gave Flame his old teammate's mace.)", "effect": {"type": "periodic_splash", "every": 6, "radius": 2.0, "mult": 1.8}},
-        {"name": "Trained by Theo", "unlock": 14, "desc": "GAME MECHANIC: Flame's kills drop a TNT minecart that explodes for 120 damage. (He trained in cart combat with TheobaldTheBird.)", "effect": {"type": "kill_explosion", "damage": 120, "radius": 2.4}}
+        {"name": "Trained by Theo", "unlock": 9, "desc": "GAME MECHANIC: Flame's kills drop a TNT minecart that explodes for 120 damage. (He trained in cart combat with TheobaldTheBird.)", "effect": {"type": "kill_explosion", "damage": 120, "radius": 2.4}}
       ],
       "abilities": [
         {"slot": 0, "name": "Duel Challenge", "unlock": 1, "cooldown": 16.0, "desc": "GAME MECHANIC: locks the nearest elite, mini-boss or boss into a duel — it stops moving for 3 seconds and takes 220 damage.", "lore_confidence": "supported", "effect": {"type": "duel", "damage": 220, "stun": 3.0, "prefer_boss": true}},
@@ -97,12 +97,12 @@
       "passives": [
         {"name": "Invisible Player", "unlock": 1, "desc": "Sees invisible enemies and grants that sight to towers within 8 units. (Spoke operated invisibly when he contacted Flame.)", "effect": {"type": "detect_aura", "radius": 8.0}},
         {"name": "Wind Charge", "unlock": 5, "desc": "Every hit pushes enemies slightly back down the path. (Spoke wind-charged Mapicc into the void.)", "effect": {"type": "hit_knockback", "force": 0.35}},
-        {"name": "Totem of NULL", "unlock": 13, "desc": "GAME MECHANIC: enemies killed by Spoke have a 20% chance to leave a NULL mark that makes nearby enemies take +25% damage for 4 seconds.", "effect": {"type": "kill_mark", "chance": 0.2, "vulnerability": 0.25, "radius": 3.5, "duration": 4.0}}
+        {"name": "Totem of NULL", "unlock": 9, "desc": "GAME MECHANIC: enemies killed by Spoke have a 35% chance to leave a NULL mark that makes nearby enemies take +25% damage for 6 seconds.", "effect": {"type": "kill_mark", "chance": 0.35, "vulnerability": 0.25, "radius": 5.0, "duration": 6.0}}
       ],
       "abilities": [
         {"slot": 0, "name": "Turncoat", "unlock": 1, "cooldown": 20.0, "desc": "GAME MECHANIC: converts the strongest non-boss enemy in range into an ally that fights for 10 seconds. (From his infiltration of the Mafia.)", "lore_confidence": "supported", "effect": {"type": "convert", "duration": 10.0, "damage_mult": 1.0, "max_tier": 7}},
         {"slot": 1, "name": "Into the Void", "unlock": 4, "cooldown": 18.0, "desc": "GAME MECHANIC: a wind charge hurls everything nearby 10 units back down the path and deals 150 damage.", "lore_confidence": "supported", "effect": {"type": "area_knockback", "radius": 5.5, "force": 10.0, "damage": 150}},
-        {"slot": 2, "name": "Purgatory", "unlock": 8, "cooldown": 28.0, "desc": "GAME MECHANIC: a stretch of path becomes Purgatory. Everything inside is stunned for 4 seconds and takes 35% more damage for 8.", "lore_confidence": "supported", "effect": {"type": "area_stun", "radius": 6.0, "stun": 4.0, "vulnerability": 0.35, "vuln_duration": 8.0}},
+        {"slot": 2, "name": "Purgatory", "unlock": 8, "cooldown": 28.0, "desc": "GAME MECHANIC: a stretch of path becomes Purgatory. Everything inside is stunned for 4 seconds and takes 50% more damage for 10.", "lore_confidence": "supported", "effect": {"type": "area_stun", "radius": 7.0, "stun": 4.0, "vulnerability": 0.5, "vuln_duration": 10.0}},
         {"slot": 3, "name": "The NULL Answers", "unlock": 10, "cooldown": 80.0, "desc": "ULTIMATE. Spoke's army arrives: six NULL soldiers fight for 20 seconds, every enemy on the map is slowed by 50% for 10 seconds, and the wave takes 400 damage.", "lore_confidence": "canon_confirmed", "effect": {"type": "null_army", "count": 6, "duration": 20.0, "damage": 400, "global_slow": 0.5, "slow_duration": 10.0, "summon_damage": 70, "character": "spokeishere"}}
       ]
     }

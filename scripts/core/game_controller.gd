@@ -211,6 +211,7 @@ func _connect_signals() -> void:
 	EventBus.run_defeat.connect(_on_defeat)
 	EventBus.all_waves_cleared.connect(_on_all_waves_cleared)
 	EventBus.enemy_killed.connect(_on_enemy_killed)
+	EventBus.enemy_leaked.connect(_on_enemy_leaked)
 	EventBus.wave_cleared.connect(_on_wave_cleared)
 	EventBus.camera_shake.connect(_on_camera_shake)
 	EventBus.boss_event.connect(_on_boss_event)
@@ -598,6 +599,22 @@ func _update_float_texts(delta: float) -> void:
 func _on_enemy_killed(slot: int, type_id: String, killer_id: String) -> void:
 	if hero != null and is_instance_valid(hero):
 		hero.on_enemy_killed(slot, killer_id)
+		hero.add_xp(int(DataDB.enemies.get(type_id, {}).get("xp", 2)))
+
+## A hero levels for fighting the war, not for landing the last hit.
+##
+## XP came only from kills, which put a struggling run into a spiral: the board leaks, so it kills
+## less, so the hero levels slower, so the abilities that would have stopped the leaking never unlock,
+## so it leaks more. It is not hypothetical -- SpokeIsHere finished a losing campaign at level 7 with
+## Purgatory (unlock 8) and Totem of NULL (9) never once available, and buffing both of them changed
+## his result by literally nothing, because neither code path ran. Meanwhile ParrotX2 wins, so he
+## reaches 11 and gets his whole kit. Progression was rewarding the hero who needed it least.
+##
+## An enemy that reaches the base still taught the hero something, so it pays the same XP it would
+## have paid for dying. That makes the total XP a campaign offers a property of the campaign -- the
+## authored 5,805 across Fort Feather -- rather than of how well the run happens to be going.
+func _on_enemy_leaked(_slot: int, type_id: String, _damage: int) -> void:
+	if hero != null and is_instance_valid(hero):
 		hero.add_xp(int(DataDB.enemies.get(type_id, {}).get("xp", 2)))
 
 func _on_wave_cleared(_index: int) -> void:

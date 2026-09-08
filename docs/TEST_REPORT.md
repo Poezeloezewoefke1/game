@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2495 assertions, 0 failures
+## 1. Automated test suite — 2501 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2495
+PASSED: 2501
 FAILED: 0
 ALL TESTS PASSED
 ```

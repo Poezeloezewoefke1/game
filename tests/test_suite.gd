@@ -471,6 +471,15 @@ func test_walls_and_leak_mitigation() -> void:
 	check_eq(gc.mitigated_leak(12, 0, 1), 1, "the hero ultimate's cap goes under the bound")
 	check_eq(gc.mitigated_leak(12, 17, 1), 1, "and still costs a life, never zero")
 
+	# The mace. On this board the height bonus can never fire -- everything sits at y = 0 -- so the
+	# passive built on it multiplied by 1.0 forever. The wind-up is the flat-board stand-in.
+	check_near(DamageCalc.mace_height_bonus(0.0), 1.0, 0.001, "no height, no height bonus")
+	check_near(DamageCalc.mace_height_bonus(2.0), 1.7, 0.001, "height still pays where it exists")
+	check_near(DamageCalc.mace_windup_bonus(0.0), 1.0, 0.001, "a hit straight after another is unbuffed")
+	check_near(DamageCalc.mace_windup_bonus(2.0), 2.0, 0.001, "two seconds of wind-up doubles it")
+	check_near(DamageCalc.mace_windup_bonus(30.0), 2.5, 0.001, "and it caps, like the height bonus")
+	check_near(DamageCalc.mace_windup_bonus(-5.0), 1.0, 0.001, "a negative gap cannot reduce damage")
+
 ## Free placement. Towers and the hero used to snap into numbered slots; now they stand wherever
 ## they are put, so the rules that replaced the slots are what need pinning: stay on the board, stay
 ## off the road, and do not stand inside somebody else.

@@ -51,3 +51,10 @@ static func splash_falloff(distance: float, radius: float, min_fraction: float =
 ## Mace bonus: damage scales with the height the attacker struck from (Density-style).
 static func mace_height_bonus(height_delta: float, per_unit: float = 0.35, cap: float = 2.5) -> float:
 	return clampf(1.0 + maxf(0.0, height_delta) * per_unit, 1.0, cap)
+
+## The flat-board stand-in for the height bonus above: a blow lands harder the longer it has been
+## since the last one. Used when the attacker and its target are at the same elevation, which on a
+## painted 2D board is always -- every build zone, the hero, the path and every enemy measure y = 0,
+## so mace_height_bonus() returns exactly 1.0 and the mace passive built on it did nothing at all.
+static func mace_windup_bonus(idle_seconds: float, per_second: float = 0.5, cap: float = 2.5) -> float:
+	return clampf(1.0 + maxf(0.0, idle_seconds) * per_second, 1.0, cap)
