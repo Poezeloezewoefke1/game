@@ -79,7 +79,7 @@ def curve(wave: int) -> tuple[float, float, float]:
     #
     #   0.13   5 of 5, never losing a life       no campaign at all
     #   0.20   5 of 5, 71-96 lives                still comfortable
-    #   0.22   see TEST_REPORT section 9
+    #   0.22   4 of 5, wins on 51-98 lives      <- this one
     #   0.245  3 of 5, wins on 72-84 lives, both losses at wave 21
     #   0.30   lost at wave 21
     #

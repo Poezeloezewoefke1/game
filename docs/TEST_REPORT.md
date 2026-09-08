@@ -353,16 +353,48 @@ ParrotX2 on Fort Feather at normal, on the 2D board:
 
 | seed | outcome | wave  | lives   | leaks | boss killed |
 |------|---------|-------|---------|-------|-------------|
-| 1    | VICTORY | 25/25 | 36/100  | 34    | yes         |
-| 2    | VICTORY | 25/25 | 75/100  | 23    | yes         |
-| 3    | VICTORY | 25/25 | 13/100  | 36    | yes         |
-| 4    | VICTORY | 25/25 | 39/100  | 36    | yes         |
-| 5    | DEFEAT  | 24/25 | 0/100   | 37    | no          |
+| 1    | VICTORY | 25/25 | 65/100  | 22    | yes         |
+| 2    | VICTORY | 25/25 | 98/100  | 13    | yes         |
+| 3    | VICTORY | 25/25 | 72/100  | 21    | yes         |
+| 4    | DEFEAT  | 21/25 | 0/100   | 34    | no          |
+| 5    | VICTORY | 25/25 | 51/100  | 28    | yes         |
 
-Four wins from five, Saparata killed in every win, wins ending on 13–75 lives, and the single loss on
-wave 24 of 25. For a benchmark player that never sells a tower, never re-targets and never repositions
-its hero, losing one run in five at the very end is about right: a human with the same board should
-win reliably but not comfortably.
+Four wins from five, Saparata killed in every win, wins ending on 51–98 lives. Wave 25 *is* the boss
+wave, so a VICTORY is by definition a boss kill.
+
+**These numbers are a refit, and the reason is worth reading.** The spatial-grid bug (section 13) meant
+splash and tower targeting only ever saw the first unit in each 4×4 cell. The entire previous curve had
+therefore been fitted against a board doing a fraction of the damage it was configured for. With the
+bug fixed the benchmark won 5 of 5 without losing a life, and the sim said exactly why: mean kill depth
+0.42, enemies dying less than halfway down the path, with damage spread evenly across six towers rather
+than any one being overtuned.
+
+Refitting took five sweeps, bracketing the late-game HP slope:
+
+| slope | result |
+|---|---|
+| 0.13 | 5 of 5, never lost a life — no campaign at all |
+| 0.20 | 5 of 5, 71–96 lives — still comfortable |
+| **0.22** | **4 of 5, wins on 51–98 lives** |
+| 0.245 | 3 of 5, wins on 72–84, **both** losses at wave 21 |
+| 0.30 | lost at wave 21 |
+
+Two things that only showed up by doing it this way rather than by picking a number:
+
+1. **The late curve's constant has to meet the mid-game curve where it ends.** A first attempt jumped
+   from 1.73 at wave 15 to 2.90 at wave 16 and the run simply died there. A 68% step in one wave is a
+   wall, not a difficulty curve.
+2. **Wave 21 is where it breaks when it breaks, and that is authored content.** Wave 20 is a wither
+   plus ten flying elytra gliders; wave 21 follows immediately with ten tier-6 chungies and five shield
+   bearers at 50% armour who also block a third of all projectiles. Flyers, then heavy armour, back to
+   back. A person answers that by buying into it. The benchmark cannot — it follows one fixed build
+   order and never adapts — so above about 0.24 it falls over there every time. That is the benchmark's
+   ceiling showing rather than the curve's, which is why the shipped slope sits below it, and why the
+   one loss lands on wave 21 rather than in the last two waves as it used to.
+
+The seeds are also markedly bimodal: a board either holds comfortably into the nineties or breaks
+outright, with little in between. Seed 1 finishing on 65 and seed 2 on 98 under the identical curve is
+seed composition talking, not the slope, which is another reason a single run is worthless as evidence.
 
 Reproduce with:
 

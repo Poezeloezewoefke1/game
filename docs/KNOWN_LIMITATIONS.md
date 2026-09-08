@@ -115,9 +115,17 @@ What it does **not** establish, and these are real gaps:
   `--fixed-fps 60` (which `tools/balance_sweep.sh` does, and which the sim now warns about if
   missing). Even then the spread across seeds is wide enough that a single run should never be used
   to judge a change.
-- **The AI loses one run in five** on the current tuning, always in the last two waves. That is
-  deliberate — a benchmark that always wins tells you nothing — but it means the margin is thin, and
-  a change that looks harmless can push it over.
+- **The AI loses one run in five** on the current tuning. That is deliberate — a benchmark that always
+  wins tells you nothing — but the loss now lands on wave 21 rather than in the last two waves, and
+  that is a limitation of the benchmark rather than of the curve. Wave 20 is a wither plus ten flying
+  elytra gliders and wave 21 follows it with tier-6 chungies and shield bearers at 50% armour: flyers,
+  then heavy armour, back to back. A person buys into that; the AI cannot, because it follows one
+  fixed build order. Pushing the difficulty past the point where the AI clears wave 21 would be tuning
+  the game down to suit the measuring instrument, so the curve deliberately stops below it.
+- **Outcomes are bimodal across seeds.** A board either holds comfortably into the nineties or breaks
+  outright, with little in between — seed 1 finishes on 65 lives and seed 2 on 98 under the identical
+  curve. That is wave composition talking, not the tuning, and it is one more reason a single run is
+  worthless as evidence about a change.
 - **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
 - **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
   game *feels* good — only about whether it can be won.
