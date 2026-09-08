@@ -77,16 +77,26 @@ def curve(wave: int) -> tuple[float, float, float]:
     #
     # Fitting the slope below took four sweeps and it is a bracket, not a guess:
     #
-    #   0.13  won 5 of 5, never losing a life          -- no campaign at all
-    #   0.20  won 5 of 5, mean 83 lives (71-96)        -- still comfortable
-    #   0.245 see the table in TEST_REPORT section 9
-    #   0.30  lost the run at wave 21                  -- a wall, not a curve
+    #   0.13   5 of 5, never losing a life       no campaign at all
+    #   0.20   5 of 5, 71-96 lives                still comfortable
+    #   0.22   see TEST_REPORT section 9
+    #   0.245  3 of 5, wins on 72-84 lives, both losses at wave 21
+    #   0.30   lost at wave 21
     #
-    # The aim is a benchmark that wins most runs and loses the occasional one at
-    # the very end.  A benchmark that never loses measures nothing, and one that
-    # loses in the middle is measuring a wall.
+    # The aim is a benchmark that wins most runs and loses the occasional one
+    # near the end.  One that never loses measures nothing; one that loses at
+    # the same mid-late wave every time is measuring a wall rather than a curve.
+    #
+    # Wave 21 is where it breaks when it breaks, and that is authored content
+    # rather than an artifact: wave 20 is a wither plus ten flying elytra
+    # gliders, and 21 follows it with ten tier-6 chungies and five shield
+    # bearers at 50% armour who also block a third of all projectiles.  Flyers
+    # then heavy armour, back to back.  A person answers that by buying into it;
+    # the benchmark cannot, because it follows one fixed build order and never
+    # adapts, so above 0.24 it simply falls over there.  That is the benchmark's
+    # ceiling showing, not the curve's, which is why the slope sits below it.
     n = wave - 15
-    return 1.10 + 0.025 * n, 1.50 + 0.245 * n, 1.15
+    return 1.10 + 0.025 * n, 1.50 + 0.22 * n, 1.15
 
 
 WAVE_START = re.compile(r'\{"name": "(?P<name>[^"]*)", "reward": (?P<reward>\d+)')
