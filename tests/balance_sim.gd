@@ -27,6 +27,7 @@ var result := {}
 var peak_live := 0
 var first_leak_wave := -1
 var run_seed: int = 12345
+var start_wave: int = 1
 var _step_seen: float = -1.0
 var _warned_variable_step: bool = false
 
@@ -74,6 +75,18 @@ func _ready() -> void:
 	# a balance change rather than trusting one.
 	if args.size() > 5:
 		run_seed = int(String(args[5]).to_int())
+	# Optional: start at a later wave, to exercise the finale.
+	#
+	# The benchmark loses at wave 21 when it loses, so waves 22-25 get far less coverage than the
+	# overall win rate suggests. This jumps to `start_wave` and hands the AI the wave rewards it would
+	# have banked getting there, so it can build a board of roughly the right size for that point.
+	#
+	# Read the result narrowly. The board it builds in one go is not the board a real run arrives
+	# with -- no upgrade history, no towers bought in the order the pressure demanded -- so this
+	# answers "is the finale survivable by a board of about the right value" and NOT "is the campaign
+	# balanced". The full run from wave 1 remains the only measurement of that.
+	if args.size() > 6:
+		start_wave = maxi(1, int(String(args[6]).to_int()))
 	seed(run_seed)
 	game = load("res://scripts/core/game_controller.gd").new()
 	add_child(game)
@@ -97,8 +110,37 @@ func _ready() -> void:
 			% [st.get("won"), st.get("waves"), st.get("kills")]))
 	print("[SIM] hero=%s difficulty=%s map=%s seed=%d" % [
 		GameState.selected_hero_id, GameState.difficulty, GameState.selected_map_id, run_seed])
-	print("[SIM] start emeralds=%d lives=%d waves=%d zones=%d" % [
-		GameState.emeralds, GameState.max_lives, game.waves.total_waves(), game.towers.zones.size()])
+	if start_wave > 1:
+		_jump_to_wave(start_wave)
+	print("[SIM] start emeralds=%d lives=%d waves=%d zones=%d%s" % [
+		GameState.emeralds, GameState.max_lives, game.waves.total_waves(), game.towers.zones.size(),
+		"" if start_wave <= 1 else "  (STARTING AT WAVE %d -- finale probe, see _jump_to_wave)" % start_wave])
+
+## Kill income relative to the wave-reward total, measured from full runs: a 25-wave campaign pays
+## 14,762 in wave rewards and the sim reports about 151,580 earned, so bounties are roughly ten times
+## the rewards. Granting only the wave rewards -- which is what the first version of this did --
+## funds the probe at a tenth of a real board and produces a defeat that means nothing.
+const KILL_INCOME_RATIO := 10.3
+
+## Jumps the campaign forward with the money a run would plausibly have by then: the wave rewards it
+## banked, scaled up by the ratio above to stand in for the bounties it never collected.
+##
+## The estimate is the weak part and it is a real one. Money is not the only thing a real wave-20
+## board has -- it also has upgrade DEPTH bought in the order the pressure demanded, and a lump sum
+## spent in one go does not reproduce that. So read a result here narrowly: it answers "can a board
+## of about the right value survive the finale", not "is the campaign balanced". The full run from
+## wave 1 remains the only measurement of that.
+func _jump_to_wave(target: int) -> void:
+	var banked := 0
+	for i in mini(target - 1, game.waves.waves.size()):
+		banked += int(round(float((game.waves.waves[i] as Dictionary).get("reward", 50))
+			* GameState.difficulty_mult("income")))
+	var granted := int(round(float(banked) * KILL_INCOME_RATIO))
+	GameState.add_emeralds(granted)
+	GameState.run_stats["waves_cleared"] = target - 1
+	game.waves.skip_to_wave(target)
+	print("[SIM] jumped to wave %d with %d emeralds (%d banked wave rewards x %.1f for bounties)"
+		% [target, granted, banked, KILL_INCOME_RATIO])
 
 func _on_killed(slot: int, _id: String, _source: String) -> void:
 	if game == null or game.enemies == null or game.enemies.path == null:
