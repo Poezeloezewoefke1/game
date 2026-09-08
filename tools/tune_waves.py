@@ -75,11 +75,18 @@ def curve(wave: int) -> tuple[float, float, float]:
     # a difficulty curve.  Mid now ends at 1.48, so late starts at 1.50 and does
     # its climbing through the slope instead.
     #
-    # Fitting these took three passes and they are a bracket, not a guess: the
-    # slope below (0.20) wins closely, 0.13 won 5 of 5 without losing a life,
-    # and 0.30 lost the run at wave 21.
+    # Fitting the slope below took four sweeps and it is a bracket, not a guess:
+    #
+    #   0.13  won 5 of 5, never losing a life          -- no campaign at all
+    #   0.20  won 5 of 5, mean 83 lives (71-96)        -- still comfortable
+    #   0.245 see the table in TEST_REPORT section 9
+    #   0.30  lost the run at wave 21                  -- a wall, not a curve
+    #
+    # The aim is a benchmark that wins most runs and loses the occasional one at
+    # the very end.  A benchmark that never loses measures nothing, and one that
+    # loses in the middle is measuring a wall.
     n = wave - 15
-    return 1.10 + 0.025 * n, 1.50 + 0.20 * n, 1.15
+    return 1.10 + 0.025 * n, 1.50 + 0.245 * n, 1.15
 
 
 WAVE_START = re.compile(r'\{"name": "(?P<name>[^"]*)", "reward": (?P<reward>\d+)')
