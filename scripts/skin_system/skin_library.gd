@@ -8,6 +8,7 @@ const USER_SKIN_DIR := "user://skins/"
 var _skins: Dictionary = {}
 var _materials: Dictionary = {}
 var _merged_meshes: Dictionary = {}
+var _faces: Dictionary = {}
 var _manifest: Dictionary = {}
 var missing_assets: Array[String] = []
 
@@ -104,8 +105,35 @@ func get_held_item_mesh(weapon_id: String, slim: bool) -> Dictionary:
 	_merged_meshes[key] = out
 	return out
 
+# ================================================================================================
+# Avatars
+# ================================================================================================
+
+## A character's face as a 2D texture, for the UI. This is exactly the avatar Minecraft itself shows:
+## the head's front face out of the skin, with the hat layer composited on top so hoods, hair and
+## masks are not lost. Nearest-neighbour scaled, because a Minecraft face is 8 pixels across and
+## smoothing it turns a recognisable character into a smudge.
+func face_texture(id: String, px: int = 64) -> ImageTexture:
+	var key := "%s|%d" % [id, px]
+	if _faces.has(key):
+		return _faces[key]
+	var skin := get_skin(id)
+	var src := skin.image
+	var tex: ImageTexture = null
+	if src != null:
+		var s := skin.scale                     # 2 for a 128x128 skin, and so on
+		var face := src.get_region(Rect2i(8 * s, 8 * s, 8 * s, 8 * s))
+		# The hat is the second layer at (40,8); many supplied skins carry the whole silhouette there.
+		if src.get_width() >= 64 * s:
+			var hat := src.get_region(Rect2i(40 * s, 8 * s, 8 * s, 8 * s))
+			face.blend_rect(hat, Rect2i(Vector2i.ZERO, hat.get_size()), Vector2i.ZERO)
+		face.resize(px, px, Image.INTERPOLATE_NEAREST)
+		tex = ImageTexture.create_from_image(face)
+	_faces[key] = tex
+	return tex
+
 func clear_cache() -> void:
-	_skins.clear(); _materials.clear(); _merged_meshes.clear()
+	_skins.clear(); _materials.clear(); _merged_meshes.clear(); _faces.clear()
 
 func list_supplied_skins() -> Array[String]:
 	var out: Array[String] = []

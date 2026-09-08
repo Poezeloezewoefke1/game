@@ -169,6 +169,37 @@ func _complete_wave() -> void:
 	else:
 		between_timer = 0.0
 
+## What the next wave is made of: enemy id -> count, for the HUD's preview. Knowing a wave is
+## "Iron Column" tells a player nothing; knowing it is thirty armoured chungies and four archers
+## tells them which towers to buy before they press start.
+func preview_wave(index: int = -1) -> Array:
+	var i := index if index >= 0 else wave_index + 1
+	if i < 0 or i >= waves.size():
+		return []
+	var counts: Dictionary = {}
+	for g in (waves[i] as Dictionary).get("groups", []):
+		var id := String((g as Dictionary).get("enemy", ""))
+		if id == "":
+			continue
+		counts[id] = int(counts.get(id, 0)) + int((g as Dictionary).get("count", 0))
+	var out: Array = []
+	for id in counts.keys():
+		out.append({"enemy": String(id), "count": int(counts[id])})
+	out.sort_custom(func(a, b): return int(a["count"]) > int(b["count"]))
+	return out
+
+## How far through the current wave the spawns are, 0..1. Zero when no wave is running.
+func wave_progress() -> float:
+	if not running:
+		return 0.0
+	var total := 0
+	if wave_index >= 0 and wave_index < waves.size():
+		for g in (waves[wave_index] as Dictionary).get("groups", []):
+			total += int((g as Dictionary).get("count", 0))
+	if total <= 0:
+		return 1.0 if _all_spawned else 0.0
+	return clampf(float(_spawned_this_wave) / float(total), 0.0, 1.0)
+
 func remaining_in_wave() -> int:
 	var n := 0
 	for g in spawn_queue:
