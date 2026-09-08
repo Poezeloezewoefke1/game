@@ -456,6 +456,19 @@ func test_walls_and_leak_mitigation() -> void:
 	GameState.run_active = false
 	mgr.queue_free()
 
+	# And the run's own arithmetic, which is what the pool is handed in a real game. The reduction is
+	# flat and stacks to 17 across the roster while threat runs 1-12, so it is bounded to a fraction
+	# of each leak; the hero ultimate's cap is deliberately allowed under that bound because its
+	# description promises exactly one life per leak while it is up.
+	var gc := load("res://scripts/core/game_controller.gd")
+	check_eq(gc.mitigated_leak(12, 0, 0), 12, "no reduction, no discount")
+	check_eq(gc.mitigated_leak(12, 4, 0), 8, "reduction subtracts while it is under the bound")
+	check_eq(gc.mitigated_leak(12, 17, 0), 5, "and stops at 40% of the threat, not at 1")
+	check_eq(gc.mitigated_leak(3, 17, 0), 2, "a mid-threat leak keeps costing more than the floor")
+	check_eq(gc.mitigated_leak(1, 17, 0), 1, "a threat-1 leak still costs its one life")
+	check_eq(gc.mitigated_leak(12, 0, 1), 1, "the hero ultimate's cap goes under the bound")
+	check_eq(gc.mitigated_leak(12, 17, 1), 1, "and still costs a life, never zero")
+
 ## Free placement. Towers and the hero used to snap into numbered slots; now they stand wherever
 ## they are put, so the rules that replaced the slots are what need pinning: stay on the board, stay
 ## off the road, and do not stand inside somebody else.

@@ -115,25 +115,48 @@ What it does **not** establish, and these are real gaps:
   `--fixed-fps 60` (which `tools/balance_sweep.sh` does, and which the sim now warns about if
   missing). Even then the spread across seeds is wide enough that a single run should never be used
   to judge a change.
-- **The AI loses one run in five** on the current tuning. That is deliberate — a benchmark that always
-  wins tells you nothing — but the loss now lands on wave 21 rather than in the last two waves, and
-  that is a limitation of the benchmark rather than of the curve. Wave 20 is a wither plus ten flying
-  elytra gliders and wave 21 follows it with tier-6 chungies and shield bearers at 50% armour: flyers,
-  then heavy armour, back to back. A person buys into that; the AI cannot, because it follows one
-  fixed build order. Pushing the difficulty past the point where the AI clears wave 21 would be tuning
-  the game down to suit the measuring instrument, so the curve deliberately stops below it.
-- **Outcomes are bimodal across seeds.** A board either holds comfortably into the nineties or breaks
-  outright, with little in between — seed 1 finishes on 65 lives and seed 2 on 98 under the identical
-  curve. That is wave composition talking, not the tuning, and it is one more reason a single run is
-  worthless as evidence about a change.
+- **The AI wins all five seeds on the current tuning, and the target was four.** That is a real miss,
+  not a rounding of the target: the aim is a benchmark that loses occasionally, because one that
+  always wins measures nothing. There is no slope that produces it. The transition is a cliff — 5 of 5
+  at the shipped 0.55, 2 of 5 at 0.60 — and every loss lands on wave 21. Wave 20 is a wither plus ten
+  flying elytra gliders and wave 21 follows it with tier-6 chungies and shield bearers at 50% armour:
+  flyers, then heavy armour, back to back. A person buys into that; the AI cannot, because it follows
+  one fixed build order, so it does not degrade across wave 21, it falls off it. The curve stops on
+  the safe side. What makes the 5 of 5 different from the 5 of 5 that meant "no campaign" is the
+  margin: those wins ended on 100/100 having leaked five times, these end on 32–54 having leaked
+  around fifty.
+- **Outcomes are bimodal across seeds.** A board either finishes the campaign or breaks outright at
+  wave 21, with nothing in between: at 0.60 the two wins end on 15 and 35 lives and the three losses
+  end on zero. The spread among wins is wide too — one seed finishes the shipped curve on 100/100
+  while the rest land in the thirties and fifties. That is wave composition talking, not the tuning,
+  and it is one more reason a single run is worthless as evidence about a change.
+- **The curve has been refitted twice, both times because a bug was masking the board's real power.**
+  First the spatial grid returned only the first enemy in each cell, so splash, auras and targeting
+  were working at a fraction of their configured strength. Then the `wall` ability turned out never
+  to have blocked anything. Each fix made the board stronger and sent the benchmark back to 100/100
+  on every seed. The honest reading is that the numbers in `tools/tune_waves.py` are fitted to
+  whatever the code actually did on the day they were fitted, so a fix to a combat system invalidates
+  them and the sweep has to be re-run — the file keeps both fits side by side for exactly that reason.
 - **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
 - **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
   game *feels* good — only about whether it can be won.
 
-Two balance-relevant systems are also currently inert and should be treated as unbalanced rather than
-absent: the ultimate ability effect `leak_cap` is parsed and stored but never read by anything
-(`Hero.leak_damage_cap()` has no callers), and the `wall` ability spawns a `cobble_wall` unit that
-nothing checks for during movement, so walls do not actually block the path.
+Both of the balance-relevant systems previously listed here as inert now work: `leak_cap` is read
+through `GameController._mitigate_leak`, and walls placed as barricades are consulted during movement
+and detonate when they go down.
+
+Mitigation is now bounded to 60% of a leak (`GameController.LEAK_MITIGATION_MAX`), because
+`leak_reduction` is a flat subtraction that stacks to 17 across the roster while enemy threat runs
+1–12. Without the bound, a player who bought Deputy_Ace's Shield Wall and Fymada's Evacuation to
+depth would reduce nearly every leak to the one-life floor. The bound is not a precaution taken on
+paper: the benchmark buys only 2 points, and because the average leak is worth 3.7 threat those 2
+points were absorbing 55% of everything that reached the base. Bounding them dropped that to 36% and
+cost roughly a life per leak, which was enough on its own to turn a 4-of-5 curve into 0-of-5.
+
+What is still untested is the maximum-reduction build itself. The simulated player's upgrade plan
+skips the Evacuation path entirely and never approaches 17 points, so nothing here measures what a
+board built specifically around leak reduction feels like — only that it can no longer make leaks
+free.
 
 ---
 
@@ -185,7 +208,7 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
 
 Because the list above is long, it is worth being equally precise about the other side:
 
-- 2396 automated assertions pass with 0 failures (2246 with the resource pack removed).
+- 2485 automated assertions pass with 0 failures (2322 with the resource pack removed).
 - A full run builds, places and upgrades towers, spawns and kills enemies, pays out and advances waves
   with no errors logged.
 - All five boss phases fire in order; the mini-boss spawns; the blimp flies, drops 10 paratroopers,

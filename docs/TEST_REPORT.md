@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2396 assertions, 0 failures
+## 1. Automated test suite — 2485 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2396
+PASSED: 2485
 FAILED: 0
 ALL TESTS PASSED
 ```
@@ -353,31 +353,59 @@ ParrotX2 on Fort Feather at normal, on the 2D board:
 
 | seed | outcome | wave  | lives   | leaks | boss killed |
 |------|---------|-------|---------|-------|-------------|
-| 1    | VICTORY | 25/25 | 65/100  | 22    | yes         |
-| 2    | VICTORY | 25/25 | 98/100  | 13    | yes         |
-| 3    | VICTORY | 25/25 | 72/100  | 21    | yes         |
-| 4    | DEFEAT  | 21/25 | 0/100   | 34    | no          |
-| 5    | VICTORY | 25/25 | 51/100  | 28    | yes         |
+| 1    | VICTORY | 25/25 | 54/100  | 46    | yes         |
+| 2    | VICTORY | 25/25 | 100/100 | 29    | yes         |
+| 3    | VICTORY | 25/25 | 32/100  | 52    | yes         |
+| 4    | VICTORY | 25/25 | 41/100  | 55    | yes         |
+| 5    | VICTORY | 25/25 | 39/100  | 48    | yes         |
 
-Four wins from five, Saparata killed in every win, wins ending on 51–98 lives. Wave 25 *is* the boss
-wave, so a VICTORY is by definition a boss kill.
+Five wins from five, Saparata killed in every one, four of them ending on 32–54 lives. Wave 25 *is*
+the boss wave, so a VICTORY is by definition a boss kill.
 
-**These numbers are a refit, and the reason is worth reading.** The spatial-grid bug (section 13) meant
-splash and tower targeting only ever saw the first unit in each 4×4 cell. The entire previous curve had
-therefore been fitted against a board doing a fraction of the damage it was configured for. With the
-bug fixed the benchmark won 5 of 5 without losing a life, and the sim said exactly why: mean kill depth
-0.42, enemies dying less than halfway down the path, with damage spread evenly across six towers rather
-than any one being overtuned.
+**Five of five was the target for four of five, and that miss is the interesting part** — see the
+cliff below. Where the life bar goes, on seed 1: 157 threat reached the base across 46 leaks, 101
+lives were lost, 56 were mitigated (36%), 55 were healed back.
 
-Refitting took five sweeps, bracketing the late-game HP slope:
+**These numbers have now been refitted three times, each time because a bug was hiding how strong the
+board really was.** That is the honest summary of this section: a wave curve is fitted to whatever the
+code actually did on the day it was fitted, so fixing a combat system invalidates it.
 
-| slope | result |
-|---|---|
-| 0.13 | 5 of 5, never lost a life — no campaign at all |
-| 0.20 | 5 of 5, 71–96 lives — still comfortable |
-| **0.22** | **4 of 5, wins on 51–98 lives** |
-| 0.245 | 3 of 5, wins on 72–84, **both** losses at wave 21 |
-| 0.30 | lost at wave 21 |
+1. The spatial-grid bug (section 13) meant splash and tower targeting only ever saw the first unit in
+   each 4×4 cell, so the curve before it had been fitted against a board doing a fraction of its
+   configured damage. Fixed → 5 of 5 without losing a life, mean kill depth 0.42.
+2. The `wall` ability had never blocked anything — nothing read `blocks_path` during movement — and
+   Fort Feather's detonation had never fired. Fixed → the same 0.22 curve went from 79/96/71/77/93
+   lives to **100/100 on all five seeds**.
+3. Leak mitigation, newly wired up, was bounded to 60% of a leak. That one change took the 0.65 curve
+   from 4 of 5 to **0 of 5, every seed dead at wave 20–21**.
+
+The third one is worth dwelling on, because the first diagnosis was wrong. The suspicion was that
+`leak_reduction` stacking to 17 across the roster was flooring every leak at one life. Measurement
+said otherwise: this build order buys **2**, and the one-life floor never bound. But 2 points turned
+out to matter enormously, because the average leak is worth only 3.7 threat — a flat −2 was halving
+the median leak and absorbing 55% of all threat that reached the base. At ~50 leaks a run, bounding it
+costs about a life per leak, which is the entire margin of the fit.
+
+Bracketing the late-game HP slope, by column. Read down a column: each is the same curve against a
+different set of working systems, and the gaps between them are what those systems are worth.
+
+| slope | walls inert | walls working | + bounded mitigation |
+|---|---|---|---|
+| 0.13 | 5 of 5, never lost a life | | |
+| 0.20 | 5 of 5, 71–96 | | |
+| 0.22 | 4 of 5, 51–98 | 5 of 5, all 100/100 | |
+| 0.245 | 3 of 5, 72–84 | | |
+| 0.30 | lost at wave 21 | | |
+| 0.45 | | | 3 of 3, 51–68 |
+| **0.55** | | 3 of 3, 66–79 | **5 of 5, 32–54 (one seed 100)** |
+| 0.60 | | | 2 of 5, wins on 15–35 |
+| 0.65 | | 4 of 5, 37–58 | 0 of 5, all dead at 20–21 |
+| 0.75 | | 2 of 3, 26–35 | |
+
+**There is no slope that wins four of five.** The transition is a cliff — 5 of 5 at 0.55, 2 of 5 at
+0.60 — and every loss lands on wave 21. The curve stops on the safe side of it, and the 5 of 5 it
+produces is not the 5 of 5 that meant "no campaign": those wins ended on 100/100 having leaked five
+times, these end on 32–54 having leaked around fifty.
 
 Two things that only showed up by doing it this way rather than by picking a number:
 
@@ -388,16 +416,18 @@ Two things that only showed up by doing it this way rather than by picking a num
    plus ten flying elytra gliders; wave 21 follows immediately with ten tier-6 chungies and five shield
    bearers at 50% armour who also block a third of all projectiles. Flyers, then heavy armour, back to
    back. A person answers that by buying into it. The benchmark cannot — it follows one fixed build
-   order and never adapts — so above about 0.24 it falls over there every time. That is the benchmark's
-   ceiling showing rather than the curve's, which is why the shipped slope sits below it, and why the
-   one loss lands on wave 21 rather than in the last two waves as it used to.
+   order and never adapts — so past a certain point it falls over there every time. That is the
+   benchmark's ceiling showing rather than the curve's, and it is why the shipped slope sits below it.
+   The exact point has moved with each refit (0.24 with the walls inert, 0.60 now), but the wave has
+   not.
 
 **A probe confirms this is the build order, not the economy.** `balance_sim.gd` takes an optional
 start-wave argument that jumps to a wave and grants the money a run would plausibly have by then.
-Dropped into wave 20 on seed 4 — the seed that loses there in the full campaign — with 74,469
-emeralds, the AI built 17 towers and 87 upgrades and *still* lost on wave 21, finishing with 8,122
-unspent that it could not usefully deploy. Money is not the answer to wave 21; adapting the build is,
-and the benchmark cannot.
+Dropped into wave 20 with 74,469 emeralds, the AI built 17 towers and 87 upgrades and *still* lost on
+wave 21, finishing with 8,122 unspent that it could not usefully deploy. Money is not the answer to
+wave 21; adapting the build is, and the benchmark cannot. (That probe was run on seed 4 under the
+0.22 curve, when seed 4 was the seed that lost there. Seed 4 wins under the shipped curve; the probe
+has not been re-run, so read it as a result about wave 21 rather than about that seed.)
 
 That probe was wrong on its first run and the mistake is worth recording, because the result looked
 plausible. It granted only the banked wave rewards — 7,230 by wave 20 — on the reasoning that
@@ -411,9 +441,11 @@ What the probe still cannot do is reproduce a real board's *upgrade history* —
 order the pressure demanded, rather than a lump sum spent at once — so read it as "can a board of
 about the right value survive the finale", never as "is the campaign balanced".
 
-The seeds are also markedly bimodal: a board either holds comfortably into the nineties or breaks
-outright, with little in between. Seed 1 finishing on 65 and seed 2 on 98 under the identical curve is
-seed composition talking, not the slope, which is another reason a single run is worthless as evidence.
+The seeds are also markedly bimodal: a board either finishes the campaign or breaks outright at wave
+21, with nothing in between — at 0.60 the two wins end on 15 and 35 lives and the three losses end on
+zero. The spread among wins is wide as well: seed 2 finishes the shipped curve on 100/100 while the
+other four land between 32 and 54. That is seed composition talking, not the slope, which is another
+reason a single run is worthless as evidence.
 
 Reproduce with:
 
@@ -500,7 +532,7 @@ Only the *shape* of the crown is now non-vanilla. Across every enemy, tower and 
 data, `slots_without_layers` returns empty — nothing is left on the coloured shell boxes
 (`tests/enemy_item_check.gd` prints this per enemy; `tests/visual_armor_test.gd` renders all twelve
 combinations front and back). The boxes are still the no-pack fallback, and are still exercised: with
-`assets/resourcepack/` moved aside the suite runs 2246 assertions with 0 failures.
+`assets/resourcepack/` moved aside the suite runs 2322 assertions with 0 failures.
 
 **Held items.** Weapons were coloured boxes; they are now built from the pack's own art, and
 Minecraft turns out to build three different kinds of thing:

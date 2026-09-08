@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **File** | `build/windows/UNSTABLE_LAST_STAND.exe` |
-| **Size** | 81,074,592 bytes (77.3 MB) |
+| **Size** | 89,943,728 bytes (85.8 MB) |
 | **Format** | PE32+ executable (GUI), x86-64, 13 sections |
 | **Machine** | `0x8664` |
 | **PCK** | Embedded (`GDPC` marker present) — single-file distribution, no external data |

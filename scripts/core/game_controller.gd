@@ -579,6 +579,16 @@ func _on_wave_cleared(_index: int) -> void:
 	if hero != null:
 		hero.on_wave_cleared()
 
+## The most of a single leak that tower `leak_reduction` may erase.
+##
+## `leak_reduction` is a flat subtraction and the roster carries 17 points of it, while enemy threat
+## runs 1-12 -- so an unbounded board that bought into it would take one life from almost anything
+## that reached the base. That is not hypothetical: the benchmark buys only 2 points, and those 2
+## alone already absorb 55% of the threat it leaks, because the average leak is worth 3.7. Bounding
+## the fraction rather than the accumulated total means each upgrade keeps doing exactly what the
+## codex says it does ("-N leak damage") right up to the point where it would start making leaks free.
+const LEAK_MITIGATION_MAX := 0.6
+
 ## What a leak actually costs, after the two mitigations that exist in the data.
 ##
 ## Both were dead: tower upgrades accumulated `leak_reduction` and the codex told the player it was
@@ -590,11 +600,20 @@ func _on_wave_cleared(_index: int) -> void:
 ## resource. Reduction that can zero a leak outright is the same failure by another route, so it
 ## blunts the expensive leaks rather than making the cheap ones free.
 func _mitigate_leak(threat: int) -> int:
-	var taken := threat - towers.leak_reduction
-	if hero != null and is_instance_valid(hero):
-		var cap: int = hero.leak_damage_cap()
-		if cap > 0:
-			taken = mini(taken, cap)
+	return mitigated_leak(threat, towers.leak_reduction,
+		hero.leak_damage_cap() if hero != null and is_instance_valid(hero) else 0)
+
+## The arithmetic on its own, so it can be tested without standing up a whole run.
+##
+## `cap` is the hero ultimate's leak cap, 0 when it is not active. It is deliberately applied after
+## the bound and allowed to go under it: it is a fifteen-second window on a seventy-five second
+## ultimate whose description promises the base "cannot lose more than 1 life per leak", and clamping
+## it to LEAK_MITIGATION_MAX would make the ability's own text false.
+static func mitigated_leak(threat: int, reduction: int, cap: int) -> int:
+	var kept := int(ceil(float(threat) * (1.0 - LEAK_MITIGATION_MAX)))
+	var taken := maxi(threat - reduction, kept)
+	if cap > 0:
+		taken = mini(taken, cap)
 	return maxi(1, taken)
 
 func _on_all_waves_cleared() -> void:

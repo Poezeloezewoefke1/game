@@ -75,28 +75,67 @@ def curve(wave: int) -> tuple[float, float, float]:
     # a difficulty curve.  Mid now ends at 1.48, so late starts at 1.50 and does
     # its climbing through the slope instead.
     #
-    # Fitting the slope below took four sweeps and it is a bracket, not a guess:
+    # The slope was then refitted a second time, because the board got stronger
+    # again: the hero ability that raises a wall on the path had never actually
+    # blocked anything (nothing read `blocks_path` during movement) and Fort
+    # Feather's detonation had never gone off.  With both working, ParrotX2
+    # holds the lane for up to twelve seconds at a time and then drops a
+    # 300-damage blast into whatever piled up behind it.  At the old 0.22 the
+    # benchmark went from 79/96/71/77/93 lives to 100/100 on all five seeds --
+    # not a close campaign, no campaign.
     #
-    #   0.13   5 of 5, never losing a life       no campaign at all
-    #   0.20   5 of 5, 71-96 lives                still comfortable
-    #   0.22   4 of 5, wins on 51-98 lives      <- this one
-    #   0.245  3 of 5, wins on 72-84 lives, both losses at wave 21
-    #   0.30   lost at wave 21
+    # All three fits are kept below.  The earlier ones are not superseded
+    # history: each column is the same curve measured against a different set of
+    # working game systems, and the gaps between them are what those systems are
+    # worth.  Read down a column, not across a row.
+    #
+    #          walls      walls       + bounded
+    #          inert      working     mitigation
+    #   0.13   5/5, no life lost
+    #   0.20   5/5, 71-96
+    #   0.22   4/5, 51-98  5/5, all 100/100
+    #   0.245  3/5, 72-84
+    #   0.30   lost at 21
+    #   0.45                          3/3, 51-68
+    #   0.55              3/3, 66-79  5/5, 32-54 (one seed 100)  <- this one
+    #   0.60                          2/5, wins on 15-35
+    #   0.65              4/5, 37-58  0/5, every seed dead at 20-21
+    #   0.75              2/3, 26-35
+    #
+    # The third column is why the shipped slope came back down.  Leak mitigation
+    # WAS the second thing that mattered, though not in the way it first looked.
+    # Suspecting it because the roster carries 17 points of `leak_reduction` was
+    # wrong -- measuring it (the sim's "life economy" line) showed this build
+    # order buys 2 and the one-life floor never binding.  But 2 points turn out
+    # to be worth a great deal, because the average leak is worth 3.7 threat: a
+    # flat -2 was halving the median leak and absorbing 55% of everything that
+    # reached the base.  Bounding mitigation to 60% of a leak (see
+    # GameController.LEAK_MITIGATION_MAX) therefore costs about a life per leak,
+    # which at ~50 leaks a run is the entire margin -- 0.65 went from 4 of 5 to
+    # 0 of 5 on that change alone.
     #
     # The aim is a benchmark that wins most runs and loses the occasional one
     # near the end.  One that never loses measures nothing; one that loses at
     # the same mid-late wave every time is measuring a wall rather than a curve.
     #
-    # Wave 21 is where it breaks when it breaks, and that is authored content
-    # rather than an artifact: wave 20 is a wither plus ten flying elytra
-    # gliders, and 21 follows it with ten tier-6 chungies and five shield
-    # bearers at 50% armour who also block a third of all projectiles.  Flyers
-    # then heavy armour, back to back.  A person answers that by buying into it;
-    # the benchmark cannot, because it follows one fixed build order and never
-    # adapts, so above 0.24 it simply falls over there.  That is the benchmark's
-    # ceiling showing, not the curve's, which is why the slope sits below it.
+    # This fit does not hit that aim exactly, and it is worth being straight
+    # about why rather than pretending 0.55 is a bullseye.  There is no slope
+    # here that wins four of five: the transition is a cliff, 5 of 5 at 0.55 and
+    # 2 of 5 at 0.60, with the losses landing on wave 21 every time.  Wave 21 is
+    # authored content rather than an artifact -- wave 20 is a wither plus ten
+    # flying elytra gliders, and 21 follows it with ten tier-6 chungies and five
+    # shield bearers at 50% armour who also block a third of all projectiles.
+    # Flyers then heavy armour, back to back.  A person answers that by buying
+    # into it; the benchmark cannot, because it follows one fixed build order and
+    # never adapts, so it does not degrade across that wave, it falls off it.
+    #
+    # So 0.55 is chosen as the last slope on the safe side of that cliff, and the
+    # 5 of 5 it produces is not the 5 of 5 that meant "no campaign": those wins
+    # ended on 100/100 lives having leaked five times, these end on 32-54 having
+    # leaked around fifty.  Lives are a resource again, and 0.60 shows the loss
+    # condition is one notch away rather than unreachable.
     n = wave - 15
-    return 1.10 + 0.025 * n, 1.50 + 0.22 * n, 1.15
+    return 1.10 + 0.025 * n, 1.50 + 0.55 * n, 1.15
 
 
 WAVE_START = re.compile(r'\{"name": "(?P<name>[^"]*)", "reward": (?P<reward>\d+)')
