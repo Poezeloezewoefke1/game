@@ -621,6 +621,12 @@ func _finish_run(won: bool) -> void:
 	else:
 		AudioMgr.play_music("defeat", 0.4)
 		_say("defeat")
+	# run_defeat is emitted by GameState when the last life goes; its counterpart was declared on
+	# EventBus and never emitted by anything, so a listener waiting on a win -- tests/headless_run.gd
+	# has one -- could not fire however the run ended. Emit it here, where the run actually finishes,
+	# with the same stats the results screen gets.
+	if won:
+		EventBus.run_victory.emit(stats)
 	var outro: Dictionary = map_def.get("outro_victory" if won else "outro_defeat", {})
 	hud.show_results(stats, outro)
 

@@ -89,6 +89,12 @@ func _ready() -> void:
 	game.enemies.debug_damage_by_source = true
 	EventBus.run_defeat.connect(_on_defeat)
 	EventBus.all_waves_cleared.connect(_on_victory)
+	# Also watch the run_victory signal itself. It was declared on EventBus and emitted by nothing for
+	# the whole project's life, so anything waiting on a win could not fire; this is what proves the
+	# emit is real rather than just present in the source.
+	EventBus.run_victory.connect(func(st: Dictionary) -> void:
+		print("[SIM] run_victory fired: won=%s waves=%s kills=%s"
+			% [st.get("won"), st.get("waves"), st.get("kills")]))
 	print("[SIM] hero=%s difficulty=%s map=%s seed=%d" % [
 		GameState.selected_hero_id, GameState.difficulty, GameState.selected_map_id, run_seed])
 	print("[SIM] start emeralds=%d lives=%d waves=%d zones=%d" % [
