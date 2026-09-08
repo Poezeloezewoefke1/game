@@ -53,6 +53,15 @@ var flags: PackedInt32Array = PackedInt32Array()
 var slow_until: PackedFloat32Array = PackedFloat32Array()
 var slow_mult: PackedFloat32Array = PackedFloat32Array()
 var stun_until: PackedFloat32Array = PackedFloat32Array()
+# Timed per-unit vulnerability: extra damage this unit takes from every source while it lasts, as a
+# fraction (0.35 => it takes 135%). This is separate from the tower vulnerability AURAS, which are
+# positional and resolved on the tower's side by TowerManager.vulnerability_at(); this one travels
+# with the unit. Two of SpokeIsHere's abilities are built on it -- Purgatory's "+35% damage taken for
+# 8 seconds" and Totem of NULL's "+25% for 4" -- and neither had anything to call: the pool had no
+# such concept, so both handlers quietly applied a slow that appears nowhere in their data or their
+# descriptions, and the mechanic the whole hero is written around did nothing.
+var vuln_until: PackedFloat32Array = PackedFloat32Array()
+var vuln_extra: PackedFloat32Array = PackedFloat32Array()
 # Crowd-control diminishing returns. Without these, stun and knockback are independent of enemy HP:
 # apply_stun() only extended stun_until and push_back() subtracted distance on every hit, so a couple
 # of stunning or knocking towers near the exit could pin any non-boss unit in place indefinitely no
@@ -170,6 +179,7 @@ func _resize(n: int) -> void:
 	alive.resize(n); type_idx.resize(n); hp.resize(n); max_hp.resize(n); dist.resize(n)
 	base_speed.resize(n); lateral.resize(n); armor.resize(n); flags.resize(n)
 	slow_until.resize(n); slow_mult.resize(n); stun_until.resize(n); flash_until.resize(n)
+	vuln_until.resize(n); vuln_extra.resize(n)
 	stun_dr_stage.resize(n); stun_dr_until.resize(n); knock_ready.resize(n); knock_budget.resize(n)
 	hp_mult_of.resize(n)
 	phase.resize(n); y_offset.resize(n); cd_a.resize(n); cd_b.resize(n); group_idx.resize(n)
@@ -212,6 +222,8 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	flags[slot] = mask
 	slow_until[slot] = 0.0
 	slow_mult[slot] = 1.0
+	vuln_until[slot] = 0.0
+	vuln_extra[slot] = 0.0
 	stun_until[slot] = 0.0
 	stun_dr_stage[slot] = 0
 	stun_dr_until[slot] = 0.0
@@ -573,6 +585,12 @@ func _damage_one(slot: int, amount: float, damage_type: String, armor_pen: float
 		"is_structure": (flags[slot] & F_STRUCTURE) != 0,
 		"blocks_projectiles": _blocks_projectiles(d),
 	}
+	# Vulnerability is applied to the incoming amount, before armour, so it reads the way the ability
+	# text does: "takes 35% more damage" is 35% more of what would otherwise have landed, whatever
+	# the source. Applying it after armour instead would make it worth much more against armoured
+	# targets than against bare ones, which is not what any of the descriptions promise.
+	if vuln_until[slot] > time_now:
+		amount *= 1.0 + vuln_extra[slot]
 	var res := DamageCalc.resolve(amount, damage_type, armor_pen, target, crit_chance, crit_mult, rng.randf())
 	var dealt: float = minf(float(res["damage"]), hp[slot])
 	hp[slot] -= float(res["damage"])
@@ -706,6 +724,21 @@ func apply_slow(slot: int, mult: float, duration: float) -> void:
 	if mult < slow_mult[slot] or slow_until[slot] <= time_now:
 		slow_mult[slot] = mult
 	slow_until[slot] = maxf(slow_until[slot], time_now + duration)
+
+## Marks a unit as taking extra damage from every source for a while.
+##
+## Like slows, these do not stack -- the strongest wins and the longest duration wins -- so two
+## sources of vulnerability on one target cannot multiply into an execute. Bosses take a reduced
+## share for the same reason they resist slows: a debuff that lands in full on a boss makes the whole
+## encounter a race to apply it rather than a fight.
+func apply_vulnerability(slot: int, extra: float, duration: float) -> void:
+	if slot < 0 or slot >= capacity or alive[slot] == 0 or extra <= 0.0:
+		return
+	if (flags[slot] & F_BOSS) != 0:
+		extra *= 0.5
+	if vuln_until[slot] <= time_now or extra > vuln_extra[slot]:
+		vuln_extra[slot] = extra
+	vuln_until[slot] = maxf(vuln_until[slot], time_now + duration)
 
 ## Stuns a unit, with diminishing returns: within a DR window each successive stun on the same unit
 ## lands for a smaller fraction of its duration, and past the last stage it does not land at all

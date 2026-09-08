@@ -17,7 +17,7 @@ Minecraft gear visibly escalates from a wooden sword to enchanted netherite.
 |---|---|
 | **Playable Windows build** | `build/windows/UNSTABLE_LAST_STAND.exe` (86 MB, PE32+ x86-64, embedded PCK) |
 | **Engine** | Godot 4.4.1-stable, GDScript, Forward+ (falls back to OpenGL 3) |
-| **Automated tests** | 2485 assertions, 0 failures |
+| **Automated tests** | 2495 assertions, 0 failures |
 | **Performance** | 1000 concurrent enemies at a flat frame cost; enemy count adds ~0 draw calls |
 
 Run the exe directly — everything is packed inside it. There is no installer and no external data.
@@ -58,7 +58,7 @@ Godot 4.4.x is required. The project has no plugins and no external dependencies
 ## Tests
 
 ```bash
-# unit + data integrity suite (2485 assertions)
+# unit + data integrity suite (2495 assertions)
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 
 # full-run smoke test: builds a map, places and upgrades towers, runs waves

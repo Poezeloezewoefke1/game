@@ -58,6 +58,8 @@ func _ready() -> void:
 	_section("Held items")
 	test_held_items()
 	test_held_pose()
+	test_vulnerability()
+	test_hero_income()
 	test_cc_limits()
 	test_downgrade_scaling()
 	_section("Lore database integrity")
@@ -1252,6 +1254,90 @@ func _unique_count(values: Array) -> int:
 ## Crowd control must not be able to hold a unit still forever. Before diminishing returns existed,
 ## a pair of stunning/knocking towers near the exit pinned any non-boss unit indefinitely no matter
 ## how much health it had, which made late-wave difficulty impossible to tune.
+## Timed per-unit vulnerability. SpokeIsHere is built on it -- Purgatory's "+35% damage taken for 8
+## seconds" and Totem of NULL's "+25% for 4" -- and the pool had no such concept, so both handlers
+## applied an undocumented slow instead and the hero's whole mechanic did nothing.
+func test_vulnerability() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(200, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 32)
+	mgr.time_now = 100.0
+
+	# A marked unit takes the advertised fraction more, from any source. Measured against an
+	# unmarked twin rather than against an expected number, so the armour maths stays out of it.
+	# A tier-7 chungie on purpose: it has 700 HP, so a 100-damage test hit is nowhere near lethal.
+	# With a 30 HP tier-1 both hits would be clamped to the unit's remaining health and the ratio
+	# below would read 1.0 whether vulnerability worked or not.
+	var plain := mgr.spawn("chungie_t7", 0.0, 0.0)
+	var marked := mgr.spawn("chungie_t7", 0.0, 0.0)
+	mgr.apply_vulnerability(marked, 0.35, 8.0)
+	var base_dealt := mgr.damage(plain, 100.0, "melee", 0.0, "test")
+	var vuln_dealt := mgr.damage(marked, 100.0, "melee", 0.0, "test")
+	check(base_dealt > 0.0, "the control unit took damage (%.1f)" % base_dealt)
+	check_near(vuln_dealt / maxf(0.001, base_dealt), 1.35, 0.02,
+		"a vulnerable unit takes 35%% more (%.1f vs %.1f)" % [vuln_dealt, base_dealt])
+
+	# It does not stack multiplicatively: strongest wins, so two marks cannot compound into an execute.
+	mgr.apply_vulnerability(marked, 0.25, 8.0)
+	check_near(mgr.vuln_extra[marked], 0.35, 0.001, "a weaker mark does not replace a stronger one")
+	mgr.apply_vulnerability(marked, 0.5, 8.0)
+	check_near(mgr.vuln_extra[marked], 0.5, 0.001, "a stronger mark does replace it")
+
+	# And it expires.
+	mgr.time_now = 200.0
+	var expired := mgr.damage(marked, 100.0, "melee", 0.0, "test")
+	check_near(expired / maxf(0.001, base_dealt), 1.0, 0.02,
+		"the mark expires (%.1f back to %.1f)" % [expired, base_dealt])
+
+	# Bosses take a reduced share, for the same reason they resist slows: a debuff that lands in full
+	# on a boss turns the encounter into a race to apply it.
+	var boss := mgr.spawn("saparata", 0.0, 0.0)
+	if boss >= 0:
+		check((mgr.flags[boss] & mgr.F_BOSS) != 0, "spawned an actual boss to check against")
+		mgr.apply_vulnerability(boss, 0.4, 8.0)
+		check_near(mgr.vuln_extra[boss], 0.2, 0.001, "a boss takes half the marked vulnerability")
+	mgr.queue_free()
+
+## The hero income passive. It shipped with one shared accumulator that was reset on a hardcoded 8.0
+## while the payout fired on the passive's own interval -- correct only for the single 8.0 in the
+## data. This runs it at intervals either side of that, which is what the old code got wrong.
+func test_hero_income() -> void:
+	var hero_script := load("res://scripts/heroes/hero.gd")
+	var h = hero_script.new()
+	add_child(h)
+	h.level = 1
+	h.def = {"passives": [{"name": "test income", "unlock": 1,
+		"effect": {"type": "income", "amount": 10, "interval": 5.0, "per_level": 0}}]}
+	GameState.emeralds = 0
+	# Twenty-one seconds of 0.1s steps at a 5s interval: four payouts, no more. The extra second is
+	# deliberate. Stopping at exactly 20.0 puts the fourth payout on the boundary, where whether it
+	# has happened yet comes down to float32 accumulation error on 210 additions of 0.1 -- so the
+	# assertion would be measuring rounding rather than the payout rule.
+	for i in 210:
+		h._tick_passives(0.1)
+	check_eq(GameState.emeralds, 40, "a 5s interval pays four times in 21s, not once a frame")
+
+	# Longer than the old hardcoded reset, which used to swallow the payout entirely.
+	h.def = {"passives": [{"name": "test income", "unlock": 1,
+		"effect": {"type": "income", "amount": 7, "interval": 12.0, "per_level": 0}}]}
+	h._income_timers = PackedFloat32Array()
+	GameState.emeralds = 0
+	for i in 250:
+		h._tick_passives(0.1)
+	check_eq(GameState.emeralds, 14, "a 12s interval still pays, twice in 25s")
+
+	# Locked passives pay nothing.
+	h.def = {"passives": [{"name": "test income", "unlock": 9, "effect":
+		{"type": "income", "amount": 10, "interval": 1.0, "per_level": 0}}]}
+	h._income_timers = PackedFloat32Array()
+	GameState.emeralds = 0
+	for i in 100:
+		h._tick_passives(0.1)
+	check_eq(GameState.emeralds, 0, "a passive above the hero's level pays nothing")
+	h.queue_free()
+
 func test_cc_limits() -> void:
 	var mgr := EnemyManager.new()
 	add_child(mgr)

@@ -87,7 +87,12 @@ func setup(id: String, definition: Dictionary, enemy_mgr: EnemyManager, proj: Pr
 
 func _recompute() -> void:
 	var lv := float(level - 1)
-	var ls: Dictionary = def.get("level_stats", {})
+	# The data spells this `level_scaling`; this used to read `level_stats`, which no hero has. Both
+	# resolved to nothing, so every hero fell back to the same hardcoded defaults below regardless of
+	# what its own entry said, and anything written into `level_scaling` would have been ignored.
+	# Every hero's block is empty today, so accepting both keys changes no current number -- it just
+	# means the field works when someone fills it in.
+	var ls: Dictionary = def.get("level_scaling", def.get("level_stats", {}))
 	damage = float(def.get("damage", 20)) + float(ls.get("damage_per_level", 4.0)) * lv
 	range_r = float(def.get("range", 7.0)) + float(ls.get("range_per_level", 0.1)) * lv
 	attack_time = float(def.get("attack_time", 0.8)) * (1.0 - minf(0.55, float(ls.get("rate_per_level", 0.01)) * lv))
@@ -197,30 +202,36 @@ func _process(delta: float) -> void:
 		elif visual.anim_state != "idle":
 			visual.play("idle")
 
-func _tick_passives(delta: float) -> void:
-	for p in def.get("passives", []):
-		if int(p.get("unlock", 1)) > level:
-			continue
-		var e: Dictionary = p.get("effect", {})
-		if String(e.get("type", "")) == "income":
-			var interval := float(e.get("interval", 8.0))
-			focus_time += 0.0   # (income uses its own accumulator below)
-	# income passive accumulator
-	_income_timer += delta
-	for p in def.get("passives", []):
-		if int(p.get("unlock", 1)) > level:
-			continue
-		var e: Dictionary = p.get("effect", {})
-		if String(e.get("type", "")) == "income":
-			var interval := float(e.get("interval", 8.0))
-			if _income_timer >= interval:
-				var amount := int(e.get("amount", 0)) + int(e.get("per_level", 0)) * (level - 1)
-				GameState.add_emeralds(amount)
-				EventBus.float_text.emit(global_position + Vector3(0, 2.4, 0), "+%d" % amount, Color(0.4, 0.95, 0.5))
-	if _income_timer >= 8.0:
-		_income_timer = 0.0
+## One accumulator per income passive, keyed by its index in the hero's passive list.
+##
+## There used to be a single shared `_income_timer` that was reset on a hardcoded 8.0 while each
+## payout fired on the passive's own `interval`. That only behaves for a passive whose interval is
+## exactly 8.0 -- which is the one value in the data, so it looked correct. At any shorter interval
+## the timer sat above the threshold for the remainder of the eight seconds and paid out EVERY FRAME
+## in between; at any longer one the reset came first and it never paid at all. A data-driven effect
+## that works for exactly one hardcoded number is not working, it is coinciding.
+var _income_timers: PackedFloat32Array = PackedFloat32Array()
 
-var _income_timer: float = 0.0
+func _tick_passives(delta: float) -> void:
+	var passives: Array = def.get("passives", [])
+	if _income_timers.size() != passives.size():
+		_income_timers.resize(passives.size())
+	for i in passives.size():
+		var p: Dictionary = passives[i]
+		if int(p.get("unlock", 1)) > level:
+			continue
+		var e: Dictionary = p.get("effect", {})
+		if String(e.get("type", "")) != "income":
+			continue
+		var interval := maxf(0.1, float(e.get("interval", 8.0)))
+		_income_timers[i] += delta
+		# A `while` rather than an `if`: at high game speed a single step can span more than one
+		# interval, and paying once per frame regardless would quietly scale income with frame rate.
+		while _income_timers[i] >= interval:
+			_income_timers[i] -= interval
+			var amount := int(e.get("amount", 0)) + int(e.get("per_level", 0)) * (level - 1)
+			GameState.add_emeralds(amount)
+			EventBus.float_text.emit(global_position + Vector3(0, 2.4, 0), "+%d" % amount, Color(0.4, 0.95, 0.5))
 
 func _acquire_target() -> int:
 	var opts := {"detect_invisible": detect_invisible, "hit_air": hit_air, "hit_ground": true, "ignore_structures": false}
@@ -294,7 +305,9 @@ func on_enemy_killed(slot: int, killer: String) -> void:
 	if killer != hero_id and killer != hero_id + SUMMON_SUFFIX:
 		return
 	kills += 1
-	add_xp(int(enemies.def_of(slot).get("xp", 2)) if enemies.is_alive(slot) else 3)
+	# XP is awarded by GameController for every kill, from the dead unit's type id. It used to be
+	# awarded here as well, as `def_of(slot).xp if is_alive(slot) else 3` -- and the slot is always
+	# dead by the time this fires, so a hero's own kills were worth a flat 3 whatever it killed.
 	for p in def.get("passives", []):
 		if int(p.get("unlock", 1)) > level:
 			continue
@@ -308,7 +321,11 @@ func on_enemy_killed(slot: int, killer: String) -> void:
 				if enemies.rng.randf() < float(e.get("chance", 0.2)):
 					var at2 := enemies.unit_position(slot)
 					for other in enemies.query_range(at2, float(e.get("radius", 3.5))):
-						enemies.apply_slow(other, 0.8, float(e.get("duration", 4.0)))
+						# Totem of NULL leaves a mark that "makes nearby enemies take +25% damage for
+						# 4 seconds". Same substitution as Purgatory: it applied an undocumented 20%
+						# slow, because the pool had no vulnerability to apply.
+						enemies.apply_vulnerability(other, float(e.get("vulnerability", 0.25)),
+							float(e.get("duration", 4.0)))
 
 # ================================================================================================
 # Abilities
@@ -422,7 +439,12 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 			var centre2 := global_position
 			for slot in enemies.query_range(centre2, float(e.get("radius", 6.0))):
 				enemies.apply_stun(slot, float(e.get("stun", 4.0)))
-				enemies.apply_slow(slot, 0.5, float(e.get("vuln_duration", 8.0)))
+				# Purgatory's own words: "stunned for 4 seconds and takes 35% more damage for 8".
+				# This used to apply a hardcoded 50% slow instead -- a number that appears nowhere in
+				# the ability's data and nowhere in its description, standing in for a mechanic the
+				# pool did not have.
+				enemies.apply_vulnerability(slot, float(e.get("vulnerability", 0.35)),
+					float(e.get("vuln_duration", 8.0)))
 			EventBus.boss_event.emit("purgatory", {"position": centre2, "radius": float(e.get("radius", 6.0))})
 		"null_army":
 			_summon(int(e.get("count", 6)), float(e.get("duration", 20.0)), e)

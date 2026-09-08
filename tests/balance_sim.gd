@@ -170,6 +170,7 @@ func on_frame(_f: int) -> void:
 	if decision_timer >= 1.0:
 		decision_timer = 0.0
 		_spend()
+		_reposition_hero()
 	if ability_timer >= 0.5:
 		ability_timer = 0.0
 		_use_abilities()
@@ -210,6 +211,42 @@ func _spend() -> void:
 				best_cost = cost
 	if best != null:
 		best.apply_upgrade(best_path)
+
+## Stands the hero where its own kit is worth the most, the way a person would.
+##
+## The AI used to leave the hero wherever the map put it for the whole campaign, which is not a
+## neutral simplification. ParrotX2's Royal Decree and ultimate buff every tower on the board no
+## matter where he stands, but his aura only reaches 9 units, and Wemmbu and FlameFrags attack at 7.0
+## and 6.5. So a stationary benchmark measured the global-effect hero at full strength and the
+## short-range ones at close to none -- which is exactly the shape of the result it produced.
+##
+## The rule is deliberately crude, because a crude rule is still enormously better than not moving:
+## stand on the build zone that puts the most towers inside the aura and the most path inside weapon
+## range. It does not dodge, kite, or follow a wave.
+func _reposition_hero() -> void:
+	if game.hero == null or not is_instance_valid(game.hero):
+		return
+	if game.hero_move_cooldown > 0.0:
+		return
+	var aura: float = float(game.hero.aura_effects().get("radius", 0.0))
+	var reach: float = maxf(aura, game.hero.range_r)
+	var best_pos := Vector3.ZERO
+	var best_score := -INF
+	for i in game.towers.zones.size():
+		var pos: Vector3 = game.towers.zones[i]["pos"]
+		var covered := 0
+		for t in game.towers.towers:
+			if is_instance_valid(t) and pos.distance_to(t.global_position) <= maxf(aura, 0.001):
+				covered += 1
+		# Towers covered by the aura dominate; proximity to the lane breaks ties, so a hero with no
+		# aura at all still walks towards the fighting instead of standing anywhere.
+		var to_path: float = game.enemies.path.min_distance_to(pos) if game.enemies.path != null else 99.0
+		var score: float = float(covered) * 10.0 - maxf(0.0, to_path - reach)
+		if score > best_score:
+			best_score = score
+			best_pos = pos
+	if best_score > -INF:
+		game.place_hero_at(best_pos)
 
 ## Fails loudly if the run is not on a fixed timestep. A variable step silently makes the whole
 ## result meaningless for comparison, and it is invisible in the output otherwise.

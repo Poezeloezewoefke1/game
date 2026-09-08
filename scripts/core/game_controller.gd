@@ -325,21 +325,36 @@ func cancel_hero_move() -> void:
 	map_builder.hide_placement_ring()
 
 func _try_move_hero(screen_pos: Vector2) -> void:
-	var p := _ground_point(screen_pos)
-	# The hero shares ground with towers rather than consuming a slot, so only the board edge and the
-	# road stop it. Passing the hero's own footprint keeps it out of the lane by the same margin.
-	if not _hero_spot_ok(p):
+	if not place_hero_at(_ground_point(screen_pos)):
 		EventBus.announce.emit("CANNOT MOVE", "Off the road, inside the battlefield.", 1.4)
 		AudioMgr.play_sfx("denied", -6.0)
 		return
-	hero.position = Vector3(p.x, towers.elevation_at(p), p.z)
-	hero_move_cooldown = HERO_MOVE_COOLDOWN
 	moving_hero = false
 	map_builder.show_no_build_overlay(false)
 	map_builder.hide_placement_ring()
-	towers.refresh_auras()          # the hero's aura moved with it
 	AudioMgr.play_sfx("place", -4.0)
+
+## Moves the hero to a board position, or returns false if that spot is not legal.
+##
+## Split out of _try_move_hero, which only ever existed as a mouse handler taking a screen position.
+## That made repositioning unreachable without a cursor -- so the balance simulation, which is the
+## only thing that ever measures this game, could not do it and never did. That is not a neutral
+## omission: ParrotX2's whole kit works at any range (Royal Decree buffs every tower on the board)
+## while Wemmbu and FlameFrags have 7.0 and 6.5 attack range and an aura radius of 9, so a benchmark
+## that leaves the hero standing where it spawned quietly measures the global-effect hero at full
+## strength and the short-range ones at nearly none.
+func place_hero_at(p: Vector3) -> bool:
+	if hero == null or not is_instance_valid(hero):
+		return false
+	# The hero shares ground with towers rather than consuming a slot, so only the board edge and the
+	# road stop it. Passing the hero's own footprint keeps it out of the lane by the same margin.
+	if not _hero_spot_ok(p):
+		return false
+	hero.position = Vector3(p.x, towers.elevation_at(p), p.z)
+	hero_move_cooldown = HERO_MOVE_COOLDOWN
+	towers.refresh_auras()          # the hero's aura moved with it
 	EventBus.hero_placed.emit(hero)
+	return true
 
 ## The hero ignores tower footprints, so its rule is the board edge and the road only.
 func _hero_spot_ok(p: Vector3) -> bool:
@@ -568,11 +583,22 @@ func _update_float_texts(delta: float) -> void:
 		w += 1
 	_float_texts.resize(w)
 
-func _on_enemy_killed(slot: int, _type_id: String, killer_id: String) -> void:
+## Hero XP for a kill, worth what the dead unit is worth.
+##
+## This used to award a flat 1 for anything a tower killed and a flat 3 for anything the hero killed
+## (see Hero.on_enemy_killed for why the latter), discarding the `xp` value every enemy carries in
+## the data -- values that run from 1 for a scout to 400 for Saparata and are plainly authored: they
+## sum to 5,805 across a Fort Feather campaign, against the 5,565 needed to reach level 15, which is
+## the highest unlock in the game. Towers make almost every kill, so a hero actually banked about 700
+## XP a run and finished at level 5. Everything gated above that never happened: all four heroes'
+## ultimates unlock at 10, and no ultimate had ever been cast in a real campaign.
+##
+## Read from the type id in the signal rather than from the pool, because by the time this fires the
+## slot is dead and may already have been handed to a new spawn.
+func _on_enemy_killed(slot: int, type_id: String, killer_id: String) -> void:
 	if hero != null and is_instance_valid(hero):
 		hero.on_enemy_killed(slot, killer_id)
-		if killer_id != hero.hero_id:
-			hero.add_xp(1)
+		hero.add_xp(int(DataDB.enemies.get(type_id, {}).get("xp", 2)))
 
 func _on_wave_cleared(_index: int) -> void:
 	towers.on_wave_cleared()

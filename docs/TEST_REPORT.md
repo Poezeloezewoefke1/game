@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2485 assertions, 0 failures
+## 1. Automated test suite — 2495 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2485
+PASSED: 2495
 FAILED: 0
 ALL TESTS PASSED
 ```
@@ -455,6 +455,47 @@ tools/balance_sweep.sh parrotx2 normal fort_feather 1 2 3 4 5
 
 Read this as a claim about the *simulated* player, not a human one — see KNOWN_LIMITATIONS §5 for
 what that does and does not establish.
+
+### Hero parity: three of four heroes lose every seed
+
+The sweep above is ParrotX2. Running the other three on the same curve, three seeds each:
+
+| hero | result |
+|---|---|
+| ParrotX2 | 3 of 3 wins, 95/45/71 lives |
+| Wemmbu | 0 of 3, dead at waves 20/21/21 |
+| FlameFrags | 0 of 3, dead at waves 19/19/19 |
+| SpokeIsHere | 0 of 3, dead at waves 19/21/20 |
+
+Two controls make the result interpretable rather than just bad news.
+
+**Strip ParrotX2's kit entirely** — every ability, every passive — and he dies on wave 19 with 49
+leaks, which is where the other three finish carrying their full kits. So those kits are worth about
+what no kit is worth. The cause is structural: towers do 85–99% of the damage, ParrotX2 is the only
+hero who multiplies them (Royal Decree on every tower's fire rate, his ultimate on every tower's
+damage), and personal damage does not scale with a 17-tower board. Wemmbu was measured doing 63% of
+all damage in his run and still lost.
+
+**Remove only ParrotX2's aura passive** and the run is unchanged to the byte — 584 kills, 16 leaks,
+95/100. Its radius is 9 units and the hero is never near the towers, so his signature passive
+contributes nothing. Only his global effects do work. The same run with the kit stripped collapsing
+completely is what proves the null result is real rather than an edit that failed to take.
+
+### What the hero XP bug was hiding
+
+Heroes finished a full 25-wave campaign at **level 5**. Every ultimate in the game unlocks at level
+10. No ultimate had ever been cast in a real campaign, and neither had any of the level-8 abilities.
+
+Every enemy carries an authored `xp` value — 1 for a scout, 400 for Saparata — and they sum to 5,805
+across a campaign, against the 5,565 needed for level 15, the highest unlock in the game. That is the
+authored progression. The code awarded a flat 1 for anything a tower killed, and a flat 3 for anything
+the hero killed (its `is_alive(slot)` guard is always false by the time the kill signal fires), so a
+hero banked about 700 XP a run. Awarding the type's own value takes ParrotX2 to level 11, and
+`parrotx2:summon` appears in the damage share for the first time — Royal Army had never been cast.
+
+This is why the curve is not refitted here: the fix made the one hero who can win the campaign
+markedly stronger (54 → 95 lives on seed 1, leaks 46 → 16), and refitting upward would tune the map
+to him and put it further out of reach for the three who already lose. See KNOWN_LIMITATIONS §5.
 
 Hero repositioning is covered by `tests/headless_run.gd`, which relocates the hero to a build zone
 mid-run and asserts the cooldown starts and the bond multiplier stays fixed across 21 aura refreshes

@@ -102,13 +102,43 @@ difficulty curve responds to tuning, and the boss is reachable and beatable by a
 What it does **not** establish, and these are real gaps:
 
 - **A human is not this AI.** The simulated player follows one fixed build order and one upgrade plan,
-  places each tower in the free zone furthest from its existing ones, and never sells, re-targets, or
-  repositions the hero. A person will play better in some ways (reacting to a wave's composition) and
-  worse in others (missing ability windows). The AI is a competent-but-unimaginative benchmark, so the
-  game is probably somewhat easier for an engaged human than these numbers suggest.
-- **Only one hero and one map are tuned.** The sweep above is ParrotX2 on Fort Feather at normal.
-  Wemmbu, FlameFrags and SpokeIsHere have had no campaign-level tuning at all, and neither has
-  Merchant City or the easy/hard difficulty multipliers.
+  places each tower in the free zone furthest from its existing ones, and never sells or re-targets.
+  It does now reposition the hero, but by a crude rule — stand on the build zone covering the most
+  towers — with no dodging, kiting or following a wave. A person will play better in some ways
+  (reacting to a wave's composition) and worse in others (missing ability windows). The AI is a
+  competent-but-unimaginative benchmark, so the game is probably somewhat easier for an engaged human
+  than these numbers suggest.
+- **Three of the four heroes cannot win the campaign.** This is the most serious balance problem in
+  the game and it is measured, not suspected. On the shipped curve, three seeds each:
+
+  | hero | result |
+  |---|---|
+  | ParrotX2 | 3 of 3 wins, 95/45/71 lives |
+  | Wemmbu | 0 of 3, dead at waves 20/21/21 |
+  | FlameFrags | 0 of 3, dead at waves 19/19/19 |
+  | SpokeIsHere | 0 of 3, dead at waves 19/21/20 |
+
+  A control run pins down what that means. ParrotX2 stripped of **every ability and passive** dies on
+  wave 19 with 49 leaks — which is where the other three finish *with their full kits*. Their
+  complete kits are worth about what having no kit at all is worth.
+
+  The cause is structural rather than numeric. Towers do 85–99% of a board's damage, and ParrotX2 is
+  the only hero whose kit multiplies them: Royal Decree buffs every tower's fire rate, and his
+  ultimate doubles every tower's damage. The other three are personal-damage heroes, and personal
+  damage does not scale with a 17-tower board. Wemmbu was measured contributing 63% of all damage
+  done in his run and still losing. Raising their numbers is not obviously the fix — closing the gap
+  by damage alone needs something like a fivefold increase — so this needs a design decision about
+  their kits, not a tuning pass, and it is not one to make silently on the owner's characters.
+
+  Note also that ParrotX2's own aura passive contributes nothing measurable: it has a 9-unit radius,
+  and removing it entirely changes the result by zero. Only his *global* effects are doing work.
+- **Only one map and one difficulty are tuned.** The sweeps are Fort Feather at normal. Merchant City
+  and the easy/hard multipliers have had no campaign-level tuning at all.
+- **The curve is currently below its own target and is deliberately not being refitted.** Fixing hero
+  XP (below) made ParrotX2 markedly stronger — he now finishes on 45–95 lives against the 32–54 band
+  the curve was fitted to. Refitting upward would mean tuning the map to the one hero who can already
+  win it, making it harder still for the three who cannot. That refit is blocked on the parity
+  question above.
 - **Run-to-run variance is wide, and reproducibility took two fixes.** Seeding the RNG was not
   enough: the game advances on wall-clock delta, so the same build at the same seed produced "won
   with 59 lives" and "lost on wave 19" depending on machine load. The simulation must be run with
@@ -130,20 +160,53 @@ What it does **not** establish, and these are real gaps:
   end on zero. The spread among wins is wide too — one seed finishes the shipped curve on 100/100
   while the rest land in the thirties and fifties. That is wave composition talking, not the tuning,
   and it is one more reason a single run is worthless as evidence about a change.
-- **The curve has been refitted twice, both times because a bug was masking the board's real power.**
-  First the spatial grid returned only the first enemy in each cell, so splash, auras and targeting
-  were working at a fraction of their configured strength. Then the `wall` ability turned out never
-  to have blocked anything. Each fix made the board stronger and sent the benchmark back to 100/100
-  on every seed. The honest reading is that the numbers in `tools/tune_waves.py` are fitted to
-  whatever the code actually did on the day they were fitted, so a fix to a combat system invalidates
-  them and the sweep has to be re-run — the file keeps both fits side by side for exactly that reason.
+- **The curve has been refitted twice, both times because a bug was masking the board's real power,**
+  and a third refit is now owed. First the spatial grid returned only the first enemy in each cell, so
+  splash, auras and targeting were working at a fraction of their configured strength. Then the `wall`
+  ability turned out never to have blocked anything. Now hero XP turns out never to have been awarded
+  properly. Each fix made the board stronger and put the benchmark back above its target. The honest
+  reading is that the numbers in `tools/tune_waves.py` are fitted to whatever the code actually did on
+  the day they were fitted, so a fix to a combat system invalidates them and the sweep has to be
+  re-run — the file keeps its fits side by side for exactly that reason.
 - **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
 - **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
   game *feels* good — only about whether it can be won.
 
-Both of the balance-relevant systems previously listed here as inert now work: `leak_cap` is read
-through `GameController._mitigate_leak`, and walls placed as barricades are consulted during movement
-and detonate when they go down.
+### Systems that shipped inert, and are now live
+
+A recurring failure in this codebase is data that is authored, populated and displayed to the player
+while nothing reads it. Each of these was found by checking data fields against the code that
+consumes them, not by anything failing:
+
+- **`leak_cap` and `wall`** — the hero ultimate's leak cap had no callers, and walls were spawned but
+  never consulted during movement. Both now work.
+- **Hero XP.** Every enemy carries an authored `xp` value, running from 1 for a scout to 400 for
+  Saparata, and they sum to 5,805 across a Fort Feather campaign against the 5,565 needed to reach
+  level 15 — the highest unlock in the game. The code awarded a flat **1** for anything a tower killed
+  and a flat **3** for anything the hero killed, so a hero banked roughly 700 XP a run and finished at
+  level 5. Everything gated above that never happened. All four ultimates unlock at level 10, which
+  means **no ultimate had ever been cast in a real campaign**, and neither had ParrotX2's Royal Army
+  (level 8), Wemmbu's Clutch (8), FlameFrags' Prison Break (8) or SpokeIsHere's Purgatory (8). Heroes
+  now reach level 11.
+- **Per-unit vulnerability.** SpokeIsHere is built around it — Purgatory's "+35% damage taken for 8
+  seconds", Totem of NULL's "+25% for 4" — and the enemy pool had no such concept, so both handlers
+  applied a slow instead, at strengths that appear nowhere in their data or their descriptions. The
+  mechanic now exists (`EnemyManager.apply_vulnerability`) and both abilities use it.
+- **The income passive's timer** was a single accumulator reset on a hardcoded 8.0 while payouts fired
+  on the passive's own interval — correct only for the one 8.0 in the data, paying every frame below
+  it and never above it.
+- **`level_scaling`** is the key every hero's data uses; the code read `level_stats`. Both resolved to
+  nothing, so all four heroes shared one hardcoded scaling curve and anything written into the field
+  would have been ignored.
+
+### Something the benchmark could not do
+
+Hero repositioning existed only as a mouse handler taking a screen position, so the balance simulation
+— the only thing that ever measures this game — could not move the hero and never did. That is not a
+neutral omission: ParrotX2's kit works board-wide at any range, while Wemmbu and FlameFrags attack at
+7.0 and 6.5 and auras reach 9. A stationary benchmark measures the global-effect hero at full strength
+and the short-range ones at almost none. `GameController.place_hero_at()` is now callable headlessly
+and the simulation stands the hero where its kit is worth the most.
 
 Mitigation is now bounded to 60% of a leak (`GameController.LEAK_MITIGATION_MAX`), because
 `leak_reduction` is a flat subtraction that stacks to 17 across the roster while enemy threat runs
@@ -208,7 +271,7 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
 
 Because the list above is long, it is worth being equally precise about the other side:
 
-- 2485 automated assertions pass with 0 failures (2322 with the resource pack removed).
+- 2495 automated assertions pass with 0 failures (2322 with the resource pack removed).
 - A full run builds, places and upgrades towers, spawns and kills enemies, pays out and advances waves
   with no errors logged.
 - All five boss phases fire in order; the mini-boss spawns; the blimp flies, drops 10 paratroopers,
