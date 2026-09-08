@@ -1,0 +1,149 @@
+{
+  "_schema": {
+    "groups": "Each group: {enemy, count, interval (s between spawns), delay (s after wave start), lateral (optional fixed lane), hp_mult (optional)}",
+    "events": "Optional scripted events: {type, at (seconds), ...}. Types: dialogue, blimp, boss, announce, minibossintro.",
+    "reward": "Emeralds paid when the wave is fully cleared."
+  },
+  "map": "fort_feather",
+  "faction": "cindercrest",
+  "waves": [
+    {"name": "Scouts", "reward": 90, "groups": [
+      {"enemy": "chungie_t1", "count": 8, "interval": 0.8, "delay": 0.0}
+    ], "events": [{"type": "dialogue", "at": 0.5, "speaker": "theobaldthebird", "text": "Scouts on the road. Nothing we can't handle."}]},
+
+    {"name": "First Push", "reward": 100, "groups": [
+      {"enemy": "chungie_t1", "count": 14, "interval": 0.55, "delay": 0.0}
+    ]},
+
+    {"name": "Iron Column", "reward": 115, "groups": [
+      {"enemy": "chungie_t1", "count": 10, "interval": 0.5, "delay": 0.0},
+      {"enemy": "chungie_t2", "count": 5, "interval": 1.0, "delay": 5.0}
+    ], "events": [{"type": "dialogue", "at": 5.0, "speaker": "parrotx2", "text": "Iron armour. Break the gear and they're just Chungies again."}]},
+
+    {"name": "Runners", "reward": 125, "groups": [
+      {"enemy": "speedster", "count": 8, "interval": 0.45, "delay": 0.0},
+      {"enemy": "chungie_t2", "count": 8, "interval": 0.7, "delay": 3.0}
+    ]},
+
+    {"name": "Archers on the Ridge", "reward": 140, "groups": [
+      {"enemy": "chungie_t2", "count": 12, "interval": 0.5, "delay": 0.0},
+      {"enemy": "archer", "count": 4, "interval": 1.6, "delay": 4.0}
+    ], "events": [{"type": "dialogue", "at": 4.0, "speaker": "theobaldthebird", "text": "Archers! They'll pin the towers down — drop them first."}]},
+
+    {"name": "First Elytra", "reward": 155, "groups": [
+      {"enemy": "chungie_t2", "count": 10, "interval": 0.5, "delay": 0.0},
+      {"enemy": "elytra_glider", "count": 5, "interval": 1.2, "delay": 2.0}
+    ], "events": [{"type": "announce", "at": 2.0, "text": "AIRBORNE", "subtitle": "Elytra gliders — ground towers cannot reach them."}]},
+
+    {"name": "Diamond Line", "reward": 175, "groups": [
+      {"enemy": "chungie_t3", "count": 10, "interval": 0.8, "delay": 0.0},
+      {"enemy": "chungie_t2", "count": 10, "interval": 0.4, "delay": 4.0}
+    ]},
+
+    {"name": "TNT Runners", "reward": 190, "groups": [
+      {"enemy": "tnt_runner", "count": 8, "interval": 0.7, "delay": 0.0},
+      {"enemy": "chungie_t2", "count": 12, "interval": 0.4, "delay": 3.0}
+    ], "events": [{"type": "dialogue", "at": 0.5, "speaker": "parrotx2", "text": "Primed TNT. Kill them early — not at the gate."}]},
+
+    {"name": "Potion Support", "reward": 205, "groups": [
+      {"enemy": "chungie_t3", "count": 12, "interval": 0.6, "delay": 0.0},
+      {"enemy": "potion_brewer", "count": 4, "interval": 2.0, "delay": 5.0}
+    ]},
+
+    {"name": "The Invisible Ones", "reward": 230, "groups": [
+      {"enemy": "chungie_t3", "count": 10, "interval": 0.5, "delay": 0.0},
+      {"enemy": "invisible_player", "count": 6, "interval": 1.1, "delay": 3.0}
+    ], "events": [{"type": "announce", "at": 3.0, "text": "INVISIBLE", "subtitle": "You need detection: Spepticle, Leo, MinuteTech — or a hero who can see."}]},
+
+    {"name": "Shield Wall", "reward": 250, "groups": [
+      {"enemy": "shield_bearer", "count": 4, "interval": 2.2, "delay": 0.0},
+      {"enemy": "chungie_t3", "count": 14, "interval": 0.45, "delay": 2.0}
+    ]},
+
+    {"name": "Enchanted Gear", "reward": 275, "groups": [
+      {"enemy": "chungie_t4", "count": 10, "interval": 0.9, "delay": 0.0},
+      {"enemy": "archer", "count": 5, "interval": 1.4, "delay": 4.0}
+    ], "events": [{"type": "dialogue", "at": 1.0, "speaker": "saparata", "text": "Enchanted diamond. Mending. They repair as they march."}]},
+
+    {"name": "Cavalry", "reward": 300, "groups": [
+      {"enemy": "horse_rider", "count": 8, "interval": 0.9, "delay": 0.0},
+      {"enemy": "chungie_t3", "count": 12, "interval": 0.4, "delay": 4.0}
+    ]},
+
+    {"name": "Builders and Walls", "reward": 320, "groups": [
+      {"enemy": "builder", "count": 4, "interval": 2.5, "delay": 0.0},
+      {"enemy": "chungie_t4", "count": 12, "interval": 0.6, "delay": 2.0}
+    ]},
+
+    {"name": "The Assassins", "reward": 350, "groups": [
+      {"enemy": "assassin", "count": 6, "interval": 1.3, "delay": 0.0},
+      {"enemy": "chungie_t4", "count": 12, "interval": 0.5, "delay": 3.0},
+      {"enemy": "invisible_player", "count": 4, "interval": 1.5, "delay": 8.0}
+    ], "events": [{"type": "dialogue", "at": 0.5, "speaker": "theobaldthebird", "text": "Assassins. They'll stun our towers as they pass."}]},
+
+    {"name": "Netherite", "reward": 400, "groups": [
+      {"enemy": "chungie_t5", "count": 10, "interval": 1.1, "delay": 0.0},
+      {"enemy": "chungie_t4", "count": 10, "interval": 0.5, "delay": 5.0}
+    ], "events": [{"type": "announce", "at": 0.5, "text": "NETHERITE", "subtitle": "Cindercrest can equip thousands like this."}]},
+
+    {"name": "Minecart Assault", "reward": 430, "groups": [
+      {"enemy": "minecart_rider", "count": 8, "interval": 0.7, "delay": 0.0},
+      {"enemy": "tnt_minecart", "count": 4, "interval": 2.0, "delay": 3.0},
+      {"enemy": "chungie_t5", "count": 8, "interval": 0.9, "delay": 6.0}
+    ]},
+
+    {"name": "Totems", "reward": 460, "groups": [
+      {"enemy": "totem_carrier", "count": 8, "interval": 1.0, "delay": 0.0},
+      {"enemy": "chungie_t5", "count": 10, "interval": 0.8, "delay": 4.0},
+      {"enemy": "potion_brewer", "count": 3, "interval": 2.0, "delay": 8.0}
+    ]},
+
+    {"name": "ShoeBilly_", "reward": 600, "groups": [
+      {"enemy": "chungie_t5", "count": 12, "interval": 0.6, "delay": 0.0},
+      {"enemy": "shoebilly", "count": 1, "interval": 1.0, "delay": 6.0, "lateral": 0.0},
+      {"enemy": "assassin", "count": 6, "interval": 1.2, "delay": 8.0}
+    ], "events": [
+      {"type": "minibossintro", "at": 6.0, "enemy": "shoebilly", "name": "ShoeBilly_", "title": "The Assassin of Skymore"},
+      {"type": "dialogue", "at": 6.5, "speaker": "parrotx2", "text": "That's the one who emptied Skymore. Nine hundred and ninety-nine people."}
+    ]},
+
+    {"name": "The Wither", "reward": 650, "groups": [
+      {"enemy": "wither", "count": 1, "interval": 1.0, "delay": 2.0},
+      {"enemy": "chungie_t5", "count": 14, "interval": 0.5, "delay": 0.0},
+      {"enemy": "elytra_glider", "count": 8, "interval": 0.8, "delay": 6.0}
+    ], "events": [{"type": "announce", "at": 2.0, "text": "WITHER", "subtitle": "It stuns everything it looks at. Bring it down fast."}]},
+
+    {"name": "Cindercrest Warriors", "reward": 700, "groups": [
+      {"enemy": "chungie_t6", "count": 8, "interval": 1.4, "delay": 0.0},
+      {"enemy": "chungie_t5", "count": 12, "interval": 0.5, "delay": 4.0},
+      {"enemy": "shield_bearer", "count": 4, "interval": 2.0, "delay": 8.0}
+    ], "events": [{"type": "dialogue", "at": 0.5, "speaker": "saparata", "text": "These ones fought through the Mafia. They don't break."}]},
+
+    {"name": "The Blimp", "reward": 800, "groups": [
+      {"enemy": "chungie_t5", "count": 16, "interval": 0.45, "delay": 0.0},
+      {"enemy": "chungie_t6", "count": 4, "interval": 1.8, "delay": 8.0}
+    ], "events": [
+      {"type": "blimp", "at": 3.0, "paratroopers": 10, "interval": 1.1},
+      {"type": "announce", "at": 3.0, "text": "REDSTONE BLIMP", "subtitle": "Slow-falling paratroopers behind the walls. Shoot it down."},
+      {"type": "dialogue", "at": 3.5, "speaker": "theobaldthebird", "text": "That's how they took the fort the first time. Not today."}
+    ]},
+
+    {"name": "Commanders", "reward": 900, "groups": [
+      {"enemy": "chungie_t7", "count": 3, "interval": 3.0, "delay": 0.0},
+      {"enemy": "chungie_t6", "count": 10, "interval": 1.0, "delay": 3.0},
+      {"enemy": "assassin", "count": 8, "interval": 1.0, "delay": 8.0}
+    ]},
+
+    {"name": "Everything They Have", "reward": 1000, "groups": [
+      {"enemy": "chungie_t6", "count": 14, "interval": 0.7, "delay": 0.0},
+      {"enemy": "chungie_t7", "count": 4, "interval": 2.5, "delay": 4.0},
+      {"enemy": "wither", "count": 2, "interval": 6.0, "delay": 10.0},
+      {"enemy": "elytra_glider", "count": 10, "interval": 0.7, "delay": 14.0},
+      {"enemy": "totem_carrier", "count": 8, "interval": 1.0, "delay": 18.0}
+    ], "events": [{"type": "dialogue", "at": 1.0, "speaker": "parrotx2", "text": "Everything they have. Hold the line."}]},
+
+    {"name": "SAPARATA", "reward": 2500, "boss": true, "groups": [], "events": [
+      {"type": "boss", "at": 1.5, "boss_id": "saparata"}
+    ]}
+  ]
+}

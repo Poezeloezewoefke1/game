@@ -30,8 +30,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WAVES = ROOT / "data" / "waves" / "fort_feather_waves.json"
-## The hand-authored table this curve is applied to. Never edited by this script.
-BASELINE = ROOT / "data" / "waves" / "fort_feather_waves.baseline.json"
+## The hand-authored table this curve is applied to. Never edited by this script, and kept out of
+## data/ on purpose: it is an input to the build, not something the game should ship or load.
+BASELINE = ROOT / "tools" / "tuning" / "fort_feather_waves.baseline.json"
 
 
 def curve(wave: int) -> tuple[float, float, float]:
@@ -50,14 +51,35 @@ def curve(wave: int) -> tuple[float, float, float]:
         # Mid game: the board is filling in, so pressure starts climbing while
         # the income bonus tapers off.
         n = wave - 8
-        return 0.95 + 0.02 * n, 1.0 + 0.06 * n, 1.55
+        return 0.95 + 0.02 * n, 1.02 + 0.065 * n, 1.5
     # Late game the board is at or near its 18-tower cap with deep upgrades, so
-    # the curve climbs faster here than anywhere else.  It climbs mostly in HP
-    # rather than in count, because kill rewards scale with count: a bigger wave
-    # largely pays for the towers that answer it, which makes quantity a weak
-    # difficulty lever and a strong economy one.
+    # the curve climbs faster here than anywhere else.
+    #
+    # These numbers were refitted after the spatial-grid fix.  Splash and tower
+    # targeting used to see only the first unit in each 4x4 cell, so the whole
+    # previous curve had been fitted against a board doing a fraction of the
+    # damage it was configured for.  With that fixed the benchmark won 5 of 5
+    # without losing a life, and the sim said why: mean kill depth 0.42, i.e.
+    # enemies were dying less than halfway down the path, with damage spread
+    # evenly across six towers rather than one being overtuned.  Roughly
+    # doubling survival time is what moves that back toward the far end.
+    #
+    # Count climbs here too, not just HP.  Bigger crowds are what make splash
+    # and crowd control worth buying, and after the grid fix those towers
+    # finally work as designed -- a curve made only of fatter individuals would
+    # quietly push the roster back towards single-target damage.
+    #
+    # The constant term has to MEET the mid-game curve where it ends, not start
+    # above it.  A first attempt jumped from 1.73 at wave 15 to 2.90 at wave 16
+    # and the benchmark simply died there: a 68% step in one wave is a wall, not
+    # a difficulty curve.  Mid now ends at 1.48, so late starts at 1.50 and does
+    # its climbing through the slope instead.
+    #
+    # Fitting these took three passes and they are a bracket, not a guess: the
+    # slope below (0.20) wins closely, 0.13 won 5 of 5 without losing a life,
+    # and 0.30 lost the run at wave 21.
     n = wave - 15
-    return 1.05 + 0.02 * n, 1.45 + 0.13 * n, 1.2
+    return 1.10 + 0.025 * n, 1.50 + 0.20 * n, 1.15
 
 
 WAVE_START = re.compile(r'\{"name": "(?P<name>[^"]*)", "reward": (?P<reward>\d+)')

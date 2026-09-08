@@ -2,8 +2,10 @@
 .godot/
 *.translation
 
-# Intermediate test renders (the kept screenshots live in docs/screenshots/)
+# Intermediate test renders (the kept screenshots live in docs/screenshots/).
+# The .import sidecars are Godot's, generated because the screenshots land inside the project.
 build/*.png
+build/*.png.import
 build/linux/
 
 # OS
