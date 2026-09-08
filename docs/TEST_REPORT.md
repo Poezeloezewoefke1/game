@@ -392,6 +392,25 @@ Two things that only showed up by doing it this way rather than by picking a num
    ceiling showing rather than the curve's, which is why the shipped slope sits below it, and why the
    one loss lands on wave 21 rather than in the last two waves as it used to.
 
+**A probe confirms this is the build order, not the economy.** `balance_sim.gd` takes an optional
+start-wave argument that jumps to a wave and grants the money a run would plausibly have by then.
+Dropped into wave 20 on seed 4 — the seed that loses there in the full campaign — with 74,469
+emeralds, the AI built 17 towers and 87 upgrades and *still* lost on wave 21, finishing with 8,122
+unspent that it could not usefully deploy. Money is not the answer to wave 21; adapting the build is,
+and the benchmark cannot.
+
+That probe was wrong on its first run and the mistake is worth recording, because the result looked
+plausible. It granted only the banked wave rewards — 7,230 by wave 20 — on the reasoning that
+estimating kill income would make the board size a guess. But a campaign pays 14,762 in wave rewards
+against roughly 151,580 actually earned: **bounties are about ten times the rewards.** The probe was
+funding a wave-20 board at a tenth of its true value and returned a defeat that said nothing about
+wave 21 at all. A conclusion drawn from that first run would have been an artifact of a tenfold
+funding error. The grant now scales by the measured ratio.
+
+What the probe still cannot do is reproduce a real board's *upgrade history* — depth bought in the
+order the pressure demanded, rather than a lump sum spent at once — so read it as "can a board of
+about the right value survive the finale", never as "is the campaign balanced".
+
 The seeds are also markedly bimodal: a board either holds comfortably into the nineties or breaks
 outright, with little in between. Seed 1 finishing on 65 and seed 2 on 98 under the identical curve is
 seed composition talking, not the slope, which is another reason a single run is worthless as evidence.
