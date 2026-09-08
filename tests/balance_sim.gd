@@ -304,6 +304,17 @@ func on_finish() -> void:
 	print("[SIM] upgrades       : %d" % int(GameState.run_stats.get("upgrades", 0)))
 	print("[SIM] kills / leaks  : %d / %d" % [
 		int(GameState.run_stats.get("kills", 0)), int(GameState.run_stats.get("leaks", 0))])
+	# Where the life bar actually went. `lives 100/100` is ambiguous on its own -- it reads the same
+	# for a board nothing got past and for one that leaked thirty times and healed it all back -- so
+	# report the raw threat that reached the base, what it cost after mitigation, and what was healed.
+	var raw_threat := int(GameState.run_stats.get("leak_threat", 0))
+	var lost := int(GameState.run_stats.get("lives_lost", 0))
+	var healed := int(GameState.run_stats.get("lives_healed", 0))
+	print("[SIM] life economy   : threat leaked %d -> lives lost %d (mitigated %d, %.0f%%) | healed %d" % [
+		raw_threat, lost, raw_threat - lost,
+		100.0 * float(raw_threat - lost) / maxf(1.0, float(raw_threat)), healed])
+	print("[SIM] leak reduction : %d (from the upgrades this build order actually bought)"
+		% game.towers.leak_reduction)
 	print("[SIM] emeralds left  : %d (earned %d, spent %d)" % [
 		GameState.emeralds, int(GameState.run_stats.get("emeralds_earned", 0)),
 		int(GameState.run_stats.get("emeralds_spent", 0))])

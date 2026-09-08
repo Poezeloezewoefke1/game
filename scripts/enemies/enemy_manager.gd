@@ -671,6 +671,10 @@ func _leak(slot: int, d: Dictionary) -> void:
 	var taken := threat
 	if leak_mitigator.is_valid():
 		taken = int(leak_mitigator.call(threat))
+	# The unmitigated total, banked so the balance report can show how much of the threat that
+	# reached the base was actually paid for. Without it a run reads the same whether mitigation is
+	# shaving a point off each leak or erasing all of it.
+	GameState.run_stats["leak_threat"] = int(GameState.run_stats.get("leak_threat", 0)) + threat
 	GameState.damage_base(taken)
 	EventBus.enemy_leaked.emit(slot, String(d.get("id", "")), threat)
 	leaked.emit(slot, threat)

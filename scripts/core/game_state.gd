@@ -74,18 +74,28 @@ func spend(cost: int) -> bool:
 	EventBus.emeralds_changed.emit(emeralds)
 	return true
 
+## Lives lost and lives healed are tallied separately from the leak count, because the leak count on
+## its own says nothing about whether lives are still a resource. A run can take thirty leaks and
+## finish untouched if mitigation shaves each one down and a repair tower heals the remainder back;
+## the totals below are what make that visible in the balance report instead of it hiding behind a
+## full life bar. Both count what actually happened, so the clamp at 0 and the cap at max_lives are
+## applied before the tally rather than after.
 func damage_base(amount: int) -> void:
 	if not run_active:
 		return
+	var before := lives
 	lives = max(0, lives - amount)
 	run_stats["leaks"] = run_stats.get("leaks", 0) + 1
+	run_stats["lives_lost"] = run_stats.get("lives_lost", 0) + (before - lives)
 	EventBus.lives_changed.emit(lives, max_lives)
 	if lives <= 0:
 		run_active = false
 		EventBus.run_defeat.emit(run_stats)
 
 func heal_base(amount: int) -> void:
+	var before := lives
 	lives = min(max_lives, lives + amount)
+	run_stats["lives_healed"] = run_stats.get("lives_healed", 0) + (lives - before)
 	EventBus.lives_changed.emit(lives, max_lives)
 
 func set_speed(speed: float) -> void:
