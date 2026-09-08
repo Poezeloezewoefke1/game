@@ -113,10 +113,10 @@ What it does **not** establish, and these are real gaps:
 
   | hero | result |
   |---|---|
-  | ParrotX2 | 3 of 3 wins, 95/45/71 lives |
-  | Wemmbu | 0 of 3, dead at waves 20/21/21 |
-  | FlameFrags | 0 of 3, dead at waves 19/19/19 |
-  | SpokeIsHere | 0 of 3, dead at waves 19/21/20 |
+  | ParrotX2 | 3 of 3 wins, on 100/100, 100/100 and 96/100 lives |
+  | Wemmbu | 0 of 3, dead at waves 19/19/19 |
+  | FlameFrags | 1 of 3, dead at waves 18/18 |
+  | SpokeIsHere | 0 of 3, dead at waves 19/21/17 |
 
   A control run pins down what that means. ParrotX2 stripped of **every ability and passive** dies on
   wave 19 with 49 leaks — which is where the other three finish *with their full kits*. Their
@@ -130,8 +130,12 @@ What it does **not** establish, and these are real gaps:
   by damage alone needs something like a fivefold increase — so this needs a design decision about
   their kits, not a tuning pass, and it is not one to make silently on the owner's characters.
 
-  Note also that ParrotX2's own aura passive contributes nothing measurable: it has a 9-unit radius,
-  and removing it entirely changes the result by zero. Only his *global* effects are doing work.
+  ParrotX2's aura passive was measured contributing nothing — removing it changed the result by
+  zero — but that measurement is superseded and the reason matters. Its radius is 9 units, and at the
+  time the benchmark could not move the hero, so it never covered a tower. Now that the simulation
+  repositions him the aura lands, and it is worth a great deal: he went from 95 lives and 16 leaks to
+  100 lives and 4. Repositioning helped the one hero who was already winning more than the three who
+  were losing, which widened the gap rather than closing it.
 - **Only one map and one difficulty are tuned.** The sweeps are Fort Feather at normal. Merchant City
   and the easy/hard multipliers have had no campaign-level tuning at all.
 - **The curve is currently below its own target and is deliberately not being refitted.** Fixing hero
@@ -198,6 +202,18 @@ consumes them, not by anything failing:
 - **`level_scaling`** is the key every hero's data uses; the code read `level_stats`. Both resolved to
   nothing, so all four heroes shared one hardcoded scaling curve and anything written into the field
   would have been ignored.
+- **`aura: true` on FlameFrags' ultimate** and **`prefer_boss` on his Duel Challenge** were both
+  authored and both unread. The buff is now shared with towers within his attack range (his own stat,
+  not a new constant), and the duel picks a boss or mini-boss ahead of a merely high-HP target, which
+  is what its description promises. Its ability text has been updated to say the buff is shared.
+- **Wemmbu's Gambit does nothing, and is not fixed.** `mace_height_bonus` multiplies damage by
+  `1 + max(0, attacker.y − target.y) × 0.35`. The board was converted to a flat painted plane, and
+  measurement confirms every build zone, the hero, the whole path and every enemy sit at exactly
+  `y = 0.0` — so the multiplier is 1.0, always, for Wemmbu's level-1 signature passive and for the
+  tower that shares the formula. There is no height on this board to key off, so making it work means
+  either giving the board real elevation or re-authoring the passive around something else. Both are
+  design decisions about the owner's character rather than repairs, so it is reported, not guessed at.
+  It is very likely part of why Wemmbu is the weakest hero of the four.
 
 ### Something the benchmark could not do
 

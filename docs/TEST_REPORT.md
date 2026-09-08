@@ -462,10 +462,10 @@ The sweep above is ParrotX2. Running the other three on the same curve, three se
 
 | hero | result |
 |---|---|
-| ParrotX2 | 3 of 3 wins, 95/45/71 lives |
-| Wemmbu | 0 of 3, dead at waves 20/21/21 |
-| FlameFrags | 0 of 3, dead at waves 19/19/19 |
-| SpokeIsHere | 0 of 3, dead at waves 19/21/20 |
+| ParrotX2 | 3 of 3 wins, on 100/100, 100/100 and 96/100 lives |
+| Wemmbu | 0 of 3, dead at waves 19/19/19 |
+| FlameFrags | 1 of 3, dead at waves 18/18 |
+| SpokeIsHere | 0 of 3, dead at waves 19/21/17 |
 
 Two controls make the result interpretable rather than just bad news.
 
@@ -476,10 +476,16 @@ hero who multiplies them (Royal Decree on every tower's fire rate, his ultimate 
 damage), and personal damage does not scale with a 17-tower board. Wemmbu was measured doing 63% of
 all damage in his run and still lost.
 
-**Remove only ParrotX2's aura passive** and the run is unchanged to the byte — 584 kills, 16 leaks,
-95/100. Its radius is 9 units and the hero is never near the towers, so his signature passive
-contributes nothing. Only his global effects do work. The same run with the kit stripped collapsing
-completely is what proves the null result is real rather than an edit that failed to take.
+**Remove only ParrotX2's aura passive** and the run was unchanged to the byte — 584 kills, 16 leaks,
+95/100. That null result was real (the same edit mechanism, used to strip the whole kit, collapses the
+run completely, so it was not an edit that failed to take) but it is **superseded**, and by a change
+made in the same sitting. The aura's radius is 9 units, and at that point the benchmark could not move
+the hero, so it never covered a tower. With repositioning in place the aura lands and is worth a great
+deal: seed 1 goes from 95 lives and 16 leaks to 100 lives and 4.
+
+The lesson is the one this report keeps relearning: a measurement is only valid for the configuration
+it was taken in. Repositioning helped the hero who was already winning far more than the three who
+were losing.
 
 ### What the hero XP bug was hiding
 

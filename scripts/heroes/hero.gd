@@ -46,6 +46,9 @@ var stun_immune_until: float = 0.0
 var lifesteal_lives: int = 0
 var lifesteal_cap: int = 0
 var lifesteal_used: int = 0
+## Radius over which an active self buff is shared with nearby towers, 0 when it is not shared.
+## Set from the effect's `aura` flag; see the self_buff branch of _execute_effect.
+var buff_aura_radius: float = 0.0
 
 # global buffs granted to every tower
 var global_until: float = 0.0
@@ -178,6 +181,10 @@ func _process(delta: float) -> void:
 		buff_armor_pen = 0.0
 		lifesteal_lives = 0
 		lifesteal_used = 0
+		if buff_aura_radius > 0.0:
+			buff_aura_radius = 0.0
+			if manager != null:
+				manager.refresh_auras()      # the shared half of the buff ends with it
 	if global_until > 0.0 and time_now > global_until:
 		global_until = 0.0
 		global_rate_mult = 1.0
@@ -383,6 +390,13 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 			lifesteal_lives = int(e.get("lifesteal_lives", 0))
 			lifesteal_cap = int(e.get("lifesteal_cap", 0))
 			lifesteal_used = 0
+			# `aura: true` shares the buff with towers standing near the hero. FlameFrags' ultimate is
+			# the only thing in the data that sets it, and nothing read it, so the field did nothing.
+			# The radius is his own attack range unless the data names one -- an existing stat rather
+			# than a new constant invented for the occasion.
+			buff_aura_radius = float(e.get("radius", range_r)) if bool(e.get("aura", false)) else 0.0
+			if manager != null:
+				manager.refresh_auras()
 			visual.set_emission(Color(1.0, 0.6, 0.2), 0.8)
 			var tw := create_tween()
 			tw.tween_method(func(v: float) -> void:
@@ -397,7 +411,7 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 			if manager != null:
 				manager.refresh_auras()
 		"duel":
-			var best := _find_elite()
+			var best := _find_elite(99, bool(e.get("prefer_boss", false)))
 			if best >= 0:
 				enemies.apply_stun(best, float(e.get("stun", 3.0)))
 				enemies.damage(best, float(e.get("damage", 200.0)), "true", 1.0, hero_id)
@@ -487,7 +501,7 @@ func _pick_strike_position(mode: String, radius: float) -> Vector3:
 			strongest = slot
 	return enemies.unit_position(strongest) if strongest >= 0 else global_position
 
-func _find_elite(max_tier: int = 99) -> int:
+func _find_elite(max_tier: int = 99, prefer_boss: bool = false) -> int:
 	var best := -1
 	var best_hp := -1.0
 	for slot in enemies.active:
@@ -500,8 +514,15 @@ func _find_elite(max_tier: int = 99) -> int:
 			continue
 		if global_position.distance_to(enemies.unit_position(slot)) > range_r * 2.5:
 			continue
-		if enemies.max_hp[slot] > best_hp:
-			best_hp = enemies.max_hp[slot]
+		# `prefer_boss` is set on FlameFrags' Duel Challenge, whose description promises it locks
+		# "the nearest elite, mini-boss or boss". Nothing read the field. Highest max HP usually
+		# picks the boss anyway, which is why it was never noticed -- but "usually" is not the same
+		# as the guarantee the text makes, and a wave-20 tier-7 chungie can out-HP a mini-boss.
+		var score: float = enemies.max_hp[slot]
+		if prefer_boss and (enemies.flags[slot] & (EnemyManager.F_BOSS | EnemyManager.F_MINI_BOSS)) != 0:
+			score += 1e9
+		if score > best_hp:
+			best_hp = score
 			best = slot
 	return best
 
@@ -549,6 +570,14 @@ func _tick_summons(_delta: float) -> void:
 
 func aura_effects() -> Dictionary:
 	var out := {"radius": 0.0, "damage": 0.0, "rate": 0.0, "range_add": 0.0, "detect": false}
+	# A self buff flagged `aura` is lent to towers in range for as long as it lasts. It is expressed
+	# in the same terms the passive auras use: `damage` as the fraction ADDED to tower damage, `rate`
+	# as the fraction taken OFF the attack interval, which is why the multipliers are converted here
+	# rather than stored that way.
+	if buff_aura_radius > 0.0 and buff_until > time_now:
+		out["radius"] = maxf(float(out["radius"]), buff_aura_radius)
+		out["damage"] = float(out["damage"]) + maxf(0.0, buff_damage_mult - 1.0)
+		out["rate"] = float(out["rate"]) + clampf(1.0 - buff_rate_mult, 0.0, 0.9)
 	for p in def.get("passives", []):
 		if int(p.get("unlock", 1)) > level:
 			continue
