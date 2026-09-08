@@ -161,8 +161,11 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
   prop meshes) outlive the scene tree teardown. Harmless at shutdown; it does not leak during play.
 - **Enemies do not path around obstacles.** They follow a fixed polyline with a lateral offset. Walls
   block by stunning rather than by rerouting; there is no navmesh.
-- **The hero cannot be repositioned mid-run.** It is placed on the keep zone at the start and stays
-  there. Repositioning is the obvious next feature.
+- **The AI benchmark still builds by zone.** Placement is free-form now — a tower stands wherever it
+  is put, checked against the board edge, the road and other towers' footprints — but
+  `tests/balance_sim.gd` still places at the map's suggested build zones. That makes it a *weaker*
+  player than a person, who can cluster towers on a corner the zones do not cover, so the tuning it
+  produces is, if anything, on the hard side.
 - **No save-slot management.** One save file, at `user://save.json`.
 - **Settings are not remapped in game.** Key bindings are fixed and documented in Settings.
 - **`potion_brewer`'s heal aura is per-frame-throttled** to twice a second; with many brewers stacked

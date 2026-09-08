@@ -31,6 +31,7 @@ func _ready() -> void:
 	test_enemy_rendering()
 	test_spatial_grid()
 	test_xbow_cart()
+	test_free_placement()
 	_section("Enemy data")
 	test_enemy_data()
 	_section("Gear progression")
@@ -338,6 +339,59 @@ func test_path() -> void:
 	var ranges := p.ranges_within(Vector3(5, 0, 0), 2.0)
 	check(ranges.size() >= 1, "range query finds the covered stretch")
 	check_near(p.nearest_distance_to(Vector3(5, 0, 3)), 5.0, 0.6, "nearest distance projects onto the path")
+
+## Free placement. Towers and the hero used to snap into numbered slots; now they stand wherever
+## they are put, so the rules that replaced the slots are what need pinning: stay on the board, stay
+## off the road, and do not stand inside somebody else.
+func test_free_placement() -> void:
+	var mgr := TowerManager.new()
+	add_child(mgr)
+	var enemies := EnemyManager.new()
+	add_child(enemies)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(-20, 0, 0), Vector3(20, 0, 0)]))
+	enemies.setup(p, DataDB.factions.get("cindercrest", {}), 50)
+	mgr.setup(enemies, null, [])
+	mgr.path = p
+	mgr.play_bounds = Rect2(-30, -30, 60, 60)
+	mgr.path_half_width = 1.5
+	GameState.emeralds = 100000
+
+	# On the road: refused, and the reason says so rather than being a silent no.
+	check_eq(mgr.placement_error(Vector3(0, 0, 0)), "Too close to the road",
+		"a point on the lane is rejected")
+	check_eq(mgr.placement_error(Vector3(0, 0, 0.5)), "Too close to the road",
+		"and so is one just beside it")
+	# Off the board.
+	check_eq(mgr.placement_error(Vector3(500, 0, 500)), "Outside the battlefield",
+		"a point off the board is rejected")
+	# Clear ground: allowed, and it is genuinely free-form -- not snapped to any zone, of which this
+	# map has none at all.
+	var spot := Vector3(0, 0, 8)
+	check_eq(mgr.placement_error(spot), "", "clear ground away from the road is buildable")
+	check_eq(mgr.zones.size(), 0, "with no build zones defined anywhere")
+	var t := mgr.place_free("royal_guard", spot)
+	check(t != null, "a tower places on open ground")
+	check_near(t.global_position.x, spot.x, 0.001, "and stands exactly where it was put (x)")
+	check_near(t.global_position.z, spot.z, 0.001, "and exactly where it was put (z)")
+	check_eq(t.zone_index, -1, "with no zone backing it")
+
+	# The hitbox: another tower cannot stand inside it, but can stand just outside.
+	check(mgr.placement_error(spot + Vector3(0.3, 0, 0)).begins_with("Blocked by"),
+		"a second tower cannot overlap the first")
+	check_eq(mgr.placement_error(spot + Vector3(TowerManager.FOOTPRINT * 2.0 + 0.1, 0, 0)), "",
+		"but may stand just clear of it")
+	check(mgr.place_free("royal_guard", spot + Vector3(0.3, 0, 0)) == null,
+		"and placing into an occupied footprint fails")
+
+	# Selling frees the ground again.
+	var before := mgr.towers.size()
+	mgr.sell(t)
+	check_eq(mgr.towers.size(), before - 1, "selling removes the tower")
+	check_eq(mgr.placement_error(spot), "", "and hands its ground back")
+
+	mgr.queue_free()
+	enemies.queue_free()
 
 ## The crossbow cart: Minecraft's strongest single attack, and a technique rather than an item, so
 ## what is checked is that it behaves like the technique. A cart that lands and explodes on arrival

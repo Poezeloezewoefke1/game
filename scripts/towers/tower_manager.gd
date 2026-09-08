@@ -19,6 +19,95 @@ var leak_reduction: int = 0
 var global_bounty: int = 0
 var _vulnerability_sources: Array = []   # towers granting a vulnerability aura
 
+# ================================================================================================
+# Free placement
+# ================================================================================================
+#
+# Towers and the hero stand wherever they are put, not in numbered slots. What used to be a build
+# zone is now only a suggestion the map ships and the AI benchmark still uses; a placement is checked
+# against the board itself:
+#
+#   * it has to be inside the playable rectangle,
+#   * it has to keep clear of the road, because a tower standing in the lane makes no sense and the
+#     enemies would walk through it, and
+#   * it must not overlap anything already standing there -- every placed character carries a
+#     footprint radius, and two of them cannot share ground.
+#
+# The hero is deliberately exempt from the last rule against towers, the way it always was: it shares
+# the ground rather than consuming a slot.
+
+## Radius of a placed character's footprint, in world units. A Minecraft body is half a block across;
+## at the board's display scale that is about 1.4 units wide, so this leaves a little breathing room.
+const FOOTPRINT := 0.85
+## How far a build has to stay from the centre line of the path, on top of the path's own half-width.
+const PATH_CLEARANCE := 0.9
+
+var path: MapPath = null                 ## set by GameController, for the road-clearance rule
+var play_bounds: Rect2 = Rect2()         ## the buildable rectangle, in world x/z
+var path_half_width: float = 1.5
+
+## Everything standing on the board that a new placement has to avoid.
+func _occupied_points() -> Array:
+	var out: Array = []
+	for t in towers:
+		if is_instance_valid(t):
+			out.append(t.global_position)
+	return out
+
+## Why `point` cannot be built on, as a short reason for the UI, or "" when it can.
+## `ignore` is a tower to leave out of the overlap test (for moving something that is already placed).
+func placement_error(point: Vector3, ignore = null, radius: float = FOOTPRINT) -> String:
+	if play_bounds.size.x > 0.0 and not play_bounds.has_point(Vector2(point.x, point.z)):
+		return "Outside the battlefield"
+	if path != null:
+		var d := path.min_distance_to(point)
+		if d < path_half_width + PATH_CLEARANCE + radius * 0.5:
+			return "Too close to the road"
+	for t in towers:
+		if not is_instance_valid(t) or t == ignore:
+			continue
+		if Vector2(point.x - t.global_position.x, point.z - t.global_position.z).length() < radius * 2.0:
+			return "Blocked by %s" % t.def.get("name", t.tower_id)
+	return ""
+
+func can_place_free(point: Vector3, ignore = null) -> bool:
+	return placement_error(point, ignore) == ""
+
+## Places a tower at an arbitrary point. Returns null if the ground is not free or it is unaffordable.
+func place_free(tower_id: String, point: Vector3, free: bool = false) -> Tower:
+	if not can_place_free(point):
+		return null
+	var def: Dictionary = DataDB.towers.get(tower_id, {})
+	if def.is_empty():
+		push_warning("[TowerManager] unknown tower: %s" % tower_id)
+		return null
+	if not free and not GameState.spend(int(def.get("cost", 0))):
+		return null
+	var t := Tower.new()
+	add_child(t)
+	t.setup(tower_id, def, enemies, projectiles, self)
+	t.elevation = elevation_at(point)
+	t.position = Vector3(point.x, t.elevation, point.z)
+	t.zone_index = -1
+	t.placed_position = t.position
+	t.total_spent = 0
+	towers.append(t)
+	GameState.run_stats["towers_built"] = int(GameState.run_stats.get("towers_built", 0)) + 1
+	refresh_auras()
+	AudioMgr.play_sfx("place", -4.0)
+	EventBus.tower_placed.emit(t)
+	return t
+
+## The ground height at a point. Flat everywhere except inside a map's raised zones, which still
+## grant the mace height bonus if a player chooses to build up there.
+func elevation_at(point: Vector3) -> float:
+	var best := 0.0
+	for z in zones:
+		var zp: Vector3 = z["pos"]
+		if Vector2(point.x - zp.x, point.z - zp.z).length() <= float(z["radius"]):
+			best = maxf(best, float(z["elevation"]))
+	return best
+
 func setup(enemy_mgr: EnemyManager, proj: ProjectileManager, zone_data: Array) -> void:
 	enemies = enemy_mgr
 	projectiles = proj
@@ -53,33 +142,21 @@ func zone_at(point: Vector3) -> int:
 func can_place_at(zone_index: int) -> bool:
 	if zone_index < 0 or zone_index >= zones.size():
 		return false
-	return zones[zone_index]["occupied_by"] == null
+	if zones[zone_index]["occupied_by"] != null:
+		return false
+	# A zone can also be blocked by something placed freely next to it.
+	return can_place_free(zones[zone_index]["pos"] as Vector3)
 
+## Places at a map-supplied build zone. Placement is free-form now, so this is a convenience for the
+## map's own suggested spots and for the AI benchmark, which still builds by zone.
 func place(tower_id: String, zone_index: int, free: bool = false) -> Tower:
 	if not can_place_at(zone_index):
 		return null
-	var def: Dictionary = DataDB.towers.get(tower_id, {})
-	if def.is_empty():
-		push_warning("[TowerManager] unknown tower: %s" % tower_id)
-		return null
-	var cost := int(def.get("cost", 0))
-	if not free and not GameState.spend(cost):
-		return null
 	var z: Dictionary = zones[zone_index]
-	var t := Tower.new()
-	add_child(t)
-	t.setup(tower_id, def, enemies, projectiles, self)
-	t.position = (z["pos"] as Vector3) + Vector3(0, float(z["elevation"]), 0)
-	t.elevation = float(z["elevation"])
-	t.zone_index = zone_index
-	t.placed_position = t.position
-	t.total_spent = 0 if free else 0
-	z["occupied_by"] = t
-	towers.append(t)
-	GameState.run_stats["towers_built"] = int(GameState.run_stats.get("towers_built", 0)) + 1
-	refresh_auras()
-	AudioMgr.play_sfx("place", -4.0)
-	EventBus.tower_placed.emit(t)
+	var t := place_free(tower_id, z["pos"] as Vector3, free)
+	if t != null:
+		t.zone_index = zone_index
+		z["occupied_by"] = t
 	return t
 
 func sell(t: Tower) -> void:

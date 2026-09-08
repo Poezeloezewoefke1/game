@@ -27,7 +27,7 @@ const BOARD_PITCH := 0.663      ## 38 degrees
 
 var placing_tower_id: String = ""
 var placement_preview: Node3D
-var placement_zone: int = -1
+var placement_blocked_reason: String = ""
 var moving_hero: bool = false
 var hero_move_cooldown: float = 0.0
 var _shake_time: float = 0.0
@@ -134,6 +134,10 @@ func _build_managers() -> void:
 	add_child(towers)
 	# zone_data(), not map_def: on a flat board the zones are flattened to ground level.
 	towers.setup(enemies, projectiles, map_builder.zone_data())
+	# Free placement needs to know the shape of the board: where the edges are and where the road is.
+	towers.path = path
+	towers.play_bounds = map_builder.buildable_bounds()
+	towers.path_half_width = float(map_builder.map_def.get("path_width", 3.0)) * 0.5
 
 	blimp = BlimpController.new()
 	add_child(blimp)
@@ -273,6 +277,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			towers.select(null)
 	if event is InputEventMouseMotion and placing_tower_id != "":
 		_update_placement_preview(event.position)
+	elif moving_hero and event is InputEventMouseMotion:
+		var hp := _ground_point(event.position)
+		map_builder.show_placement_ring(Vector3(hp.x, towers.elevation_at(hp), hp.z),
+			1.8, _hero_spot_ok(hp))
 
 func _handle_click(screen_pos: Vector2) -> void:
 	if moving_hero:
@@ -297,38 +305,48 @@ func _handle_click(screen_pos: Vector2) -> void:
 # Hero repositioning
 # ================================================================================================
 
-## Starts hero relocation. The hero may stand on any build zone, occupied or not — it shares the
-## ground with a tower rather than consuming the slot.
+## Starts hero relocation. The hero goes anywhere off the road, and unlike a tower it may share
+## ground with one -- it stands beside the tower rather than taking its place.
 func begin_hero_move() -> void:
 	if hero == null or not is_instance_valid(hero) or hero_move_cooldown > 0.0:
 		return
 	moving_hero = true
 	cancel_placement()
-	map_builder.show_zone_markers(true)
-	for i in towers.zones.size():
-		map_builder.set_zone_marker_state(i, true)
-	EventBus.announce.emit("REPOSITION", "Click a build zone to move %s there." % hero.def.get("name", ""), 2.0)
+	map_builder.show_no_build_overlay(true)
+	EventBus.announce.emit("REPOSITION", "Click anywhere off the road to move %s there."
+		% hero.def.get("name", ""), 2.0)
 
 func cancel_hero_move() -> void:
 	if not moving_hero:
 		return
 	moving_hero = false
-	map_builder.show_zone_markers(false)
+	map_builder.show_no_build_overlay(false)
+	map_builder.hide_placement_ring()
 
 func _try_move_hero(screen_pos: Vector2) -> void:
 	var p := _ground_point(screen_pos)
-	var zone := towers.zone_at(p)
-	if zone < 0:
+	# The hero shares ground with towers rather than consuming a slot, so only the board edge and the
+	# road stop it. Passing the hero's own footprint keeps it out of the lane by the same margin.
+	if not _hero_spot_ok(p):
+		EventBus.announce.emit("CANNOT MOVE", "Off the road, inside the battlefield.", 1.4)
 		AudioMgr.play_sfx("denied", -6.0)
 		return
-	var z: Dictionary = towers.zones[zone]
-	hero.position = (z["pos"] as Vector3) + Vector3(0, float(z["elevation"]), 0)
+	hero.position = Vector3(p.x, towers.elevation_at(p), p.z)
 	hero_move_cooldown = HERO_MOVE_COOLDOWN
 	moving_hero = false
-	map_builder.show_zone_markers(false)
+	map_builder.show_no_build_overlay(false)
+	map_builder.hide_placement_ring()
 	towers.refresh_auras()          # the hero's aura moved with it
 	AudioMgr.play_sfx("place", -4.0)
 	EventBus.hero_placed.emit(hero)
+
+## The hero ignores tower footprints, so its rule is the board edge and the road only.
+func _hero_spot_ok(p: Vector3) -> bool:
+	if towers.play_bounds.size.x > 0.0 and not towers.play_bounds.has_point(Vector2(p.x, p.z)):
+		return false
+	if path != null and path.min_distance_to(p) < towers.path_half_width + TowerManager.PATH_CLEARANCE:
+		return false
+	return true
 
 func _ground_point(screen_pos: Vector2) -> Vector3:
 	var from := camera.project_ray_origin(screen_pos)
@@ -370,44 +388,46 @@ func begin_placement(tower_id: String) -> void:
 		SkinLibrary.get_skin(String(def.get("character", tower_id))),
 		def.get("armor", {}), String(def.get("weapon", "")), true)
 	(placement_preview as MinecraftCharacter).set_ghost(0.55)
-	map_builder.show_zone_markers(true)
-	for i in towers.zones.size():
-		map_builder.set_zone_marker_state(i, towers.can_place_at(i))
+	map_builder.show_no_build_overlay(true)
 	EventBus.placement_started.emit(tower_id)
 
 func cancel_placement() -> void:
 	placing_tower_id = ""
+	placement_blocked_reason = ""
 	if is_instance_valid(placement_preview):
 		placement_preview.queue_free()
-	map_builder.show_zone_markers(false)
+	map_builder.show_no_build_overlay(false)
+	map_builder.hide_placement_ring()
 	EventBus.placement_cancelled.emit()
 
+## The ghost follows the cursor anywhere on the board and colours itself by whether the ground under
+## it is actually free, so the rule is visible before you commit rather than after a refusal.
 func _update_placement_preview(screen_pos: Vector2) -> void:
 	if not is_instance_valid(placement_preview):
 		return
 	var p := _ground_point(screen_pos)
-	placement_zone = towers.zone_at(p)
-	if placement_zone >= 0:
-		var z: Dictionary = towers.zones[placement_zone]
-		placement_preview.position = (z["pos"] as Vector3) + Vector3(0, float(z["elevation"]), 0)
-		var ok := towers.can_place_at(placement_zone) and GameState.can_afford(int(DataDB.towers[placing_tower_id].get("cost", 0)))
-		(placement_preview as MinecraftCharacter).set_tint(Color(0.6, 1.0, 0.6) if ok else Color(1.0, 0.5, 0.5))
-	else:
-		placement_preview.position = p
-		(placement_preview as MinecraftCharacter).set_tint(Color(1.0, 0.5, 0.5))
+	p.y = towers.elevation_at(p)
+	placement_preview.position = p
+	var reason := towers.placement_error(p)
+	var cost := int(DataDB.towers.get(placing_tower_id, {}).get("cost", 0))
+	if reason == "" and not GameState.can_afford(cost):
+		reason = "Not enough emeralds"
+	placement_blocked_reason = reason
+	(placement_preview as MinecraftCharacter).set_tint(
+		Color(0.6, 1.0, 0.6) if reason == "" else Color(1.0, 0.5, 0.5))
+	map_builder.show_placement_ring(p, float(DataDB.towers.get(placing_tower_id, {}).get("range", 6.0)),
+		reason == "")
 
 func _try_place(screen_pos: Vector2) -> void:
 	var p := _ground_point(screen_pos)
-	var zone := towers.zone_at(p)
-	if zone < 0 or not towers.can_place_at(zone):
-		AudioMgr.play_sfx("denied", -6.0)
-		return
-	var t := towers.place(placing_tower_id, zone)
+	p.y = towers.elevation_at(p)
+	var t := towers.place_free(placing_tower_id, p)
 	if t != null:
-		map_builder.set_zone_marker_state(zone, false)
 		cancel_placement()
 		towers.select(t)
 	else:
+		if placement_blocked_reason != "":
+			EventBus.announce.emit("CANNOT BUILD", placement_blocked_reason, 1.4)
 		AudioMgr.play_sfx("denied", -6.0)
 
 # ================================================================================================

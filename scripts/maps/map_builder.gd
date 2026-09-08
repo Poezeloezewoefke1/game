@@ -22,6 +22,8 @@ var _buffers: Dictionary = {}      # block name -> SurfaceTool-like arrays
 var _textures: Dictionary = {}
 var height_map: Dictionary = {}    # Vector2i -> top height
 var build_zone_markers: Array = []
+var _no_build_overlay: MeshInstance3D = null
+var _placement_ring: MeshInstance3D = null
 var block_face_counts: Dictionary = {}   # block texture -> faces emitted (diagnostics/tests)
 
 func build(definition: Dictionary) -> MapPath:
@@ -580,6 +582,87 @@ func _build_zone_markers() -> void:
 		marker.visible = false
 		add_child(marker)
 		build_zone_markers.append(marker)
+
+# ================================================================================================
+# Free-placement helpers
+# ================================================================================================
+
+## The rectangle a tower may stand in, in world x/z. The board is painted with a margin around the
+## action; building is allowed on the painted ground, minus a little so nothing hangs off the edge.
+func buildable_bounds() -> Rect2:
+	const EDGE := 1.5
+	var b := board_bounds
+	if b.size.x <= 0:
+		return Rect2()
+	return Rect2(float(b.position.x) + EDGE, float(b.position.y) + EDGE,
+		float(b.size.x) - EDGE * 2.0, float(b.size.y) - EDGE * 2.0)
+
+## A translucent strip over the road, shown while placing so the one hard rule -- keep off the lane --
+## is visible rather than something you discover by being refused.
+func show_no_build_overlay(v: bool) -> void:
+	if v and not is_instance_valid(_no_build_overlay):
+		_build_no_build_overlay()
+	if is_instance_valid(_no_build_overlay):
+		_no_build_overlay.visible = v
+
+func _build_no_build_overlay() -> void:
+	if path == null or path.total_length <= 0.0:
+		return
+	var half := float(map_def.get("path_width", 3.0)) * 0.5 + 0.9
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var steps := maxi(2, int(path.total_length / 1.5))
+	var prev_l := Vector3.ZERO
+	var prev_r := Vector3.ZERO
+	for i in steps + 1:
+		var d := path.total_length * float(i) / float(steps)
+		var c := path.position_at(d)
+		var n := path.normal_at(d)
+		var l := Vector3(c.x, 0.09, c.z) - n * half
+		var r := Vector3(c.x, 0.09, c.z) + n * half
+		l.y = 0.09
+		r.y = 0.09
+		if i > 0:
+			st.add_vertex(prev_l); st.add_vertex(prev_r); st.add_vertex(r)
+			st.add_vertex(prev_l); st.add_vertex(r); st.add_vertex(l)
+		prev_l = l
+		prev_r = r
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.9, 0.25, 0.25, 0.22)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	mi.visible = false
+	add_child(mi)
+	_no_build_overlay = mi
+
+## A ring under the cursor while placing: the tower's reach, green when the spot is legal and red
+## when it is not. This is the hitbox made visible.
+func show_placement_ring(at: Vector3, radius: float, ok: bool) -> void:
+	if not is_instance_valid(_placement_ring):
+		_placement_ring = MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.94
+		torus.outer_radius = 1.0
+		torus.rings = 48
+		_placement_ring.mesh = torus
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_placement_ring.material_override = mat
+		add_child(_placement_ring)
+	_placement_ring.visible = true
+	_placement_ring.position = Vector3(at.x, at.y + 0.12, at.z)
+	_placement_ring.scale = Vector3(maxf(radius, 0.5), 1.0, maxf(radius, 0.5))
+	var mat: StandardMaterial3D = _placement_ring.material_override
+	mat.albedo_color = Color(0.4, 1.0, 0.5, 0.55) if ok else Color(1.0, 0.35, 0.3, 0.55)
+
+func hide_placement_ring() -> void:
+	if is_instance_valid(_placement_ring):
+		_placement_ring.visible = false
 
 func show_zone_markers(v: bool) -> void:
 	for m in build_zone_markers:
