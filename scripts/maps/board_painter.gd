@@ -18,13 +18,16 @@ var rng := RandomNumberGenerator.new()
 # Painted result and the world rect it covers.
 var image: Image
 var rect: Rect2i                    # in world units: position = (min_x, min_z), size = (w, h)
+var _ground: Dictionary = {}        # Vector2i -> the terrain block painted there
 
 ## Paints the board for `map_def`. `bounds` is the world-space rect to cover, in whole units.
 func paint(map_def: Dictionary, path: MapPath, bounds: Rect2i) -> Image:
 	rect = bounds
+	_ground.clear()
 	rng.seed = hash(String(map_def.get("id", "map")))
 	image = Image.create_empty(bounds.size.x * PX, bounds.size.y * PX, false, Image.FORMAT_RGBA8)
 	_paint_terrain(map_def)
+	_paint_ground_detail(map_def, path)
 	_paint_structures(map_def, path)
 	_paint_path(map_def, path)
 	image.generate_mipmaps()
@@ -45,7 +48,75 @@ func _paint_terrain(map_def: Dictionary) -> void:
 				var r: Array = p.get("rect", [0, 0, 0, 0])
 				if x >= int(r[0]) and x < int(r[0]) + int(r[2]) and z >= int(r[1]) and z < int(r[1]) + int(r[3]):
 					block = String(p.get("block", block))
+			# Remember what each cell actually is, so the detail pass can put plants on soil and
+			# leave the stone alone rather than sprinkling daisies across a courtyard.
+			_ground[Vector2i(x, z)] = block
 			_cell(x, z, "grass_top" if block == "grass" else block)
+
+## Breaks up the flat fields. A board painted from one grass tile per cell reads as a green table;
+## real ground has patches of a different soil and things growing on it. Everything scattered here is
+## a real Minecraft block, and it is all cosmetic -- placement rules never consult it.
+##
+## Two passes, because they do different jobs. Patches are large, low-contrast blotches of a
+## neighbouring ground type, which give the field shape at a distance. Sprinkles are single cells of
+## grass, ferns and flowers, which give it texture up close. Both are driven by the map's own seeded
+## RNG, so a map paints the same way every time it is loaded.
+const DETAIL_GROUND := {
+	# Weighted by repetition: moss and coarse dirt read as ground, rooted dirt is pink enough that a
+	# field full of it stops looking like a field.
+	"grass": ["moss", "moss", "coarse_dirt", "coarse_dirt", "rooted_dirt"],
+	"sand": ["gravel", "coarse_dirt"],
+	"stone": ["andesite", "mossy_cobble"],
+	"cobble": ["mossy_cobble", "andesite"],
+}
+const DETAIL_PLANTS := ["short_grass", "short_grass", "short_grass", "fern",
+	"dandelion", "poppy", "cornflower", "azure_bluet", "oxeye_daisy"]
+## How far from the middle of the road detail stops, so the lane stays clean and readable.
+const DETAIL_PATH_CLEARANCE := 2.6
+
+func _paint_ground_detail(map_def: Dictionary, path: MapPath) -> void:
+	if not ResourcePack.available():
+		return                                    # the generated stand-ins have no detail blocks
+	var terrain: Dictionary = map_def.get("terrain", {})
+	var base := String(terrain.get("base", "grass"))
+
+	# Pass one: soft blotches of a ground type related to whatever is already there.
+	var blotches := int(rect.size.x * rect.size.y / 220)
+	for _i in blotches:
+		var cx := rng.randi_range(rect.position.x, rect.end.x - 1)
+		var cz := rng.randi_range(rect.position.y, rect.end.y - 1)
+		var under := String(_ground.get(Vector2i(cx, cz), base))
+		var options: Array = DETAIL_GROUND.get(under, [])
+		if options.is_empty():
+			continue
+		var r := rng.randi_range(2, 5)
+		var block := String(options[rng.randi() % options.size()])
+		for dz in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if dx * dx + dz * dz > r * r:
+					continue
+				# Ragged edge: skip some rim cells so blotches are not discs.
+				if dx * dx + dz * dz > (r - 1) * (r - 1) and rng.randf() < 0.55:
+					continue
+				_detail_cell(cx + dx, cz + dz, block, path, under)
+
+	# Pass two: single cells of growth, on soil only.
+	var sprinkles := int(rect.size.x * rect.size.y / 14)
+	for _i in sprinkles:
+		var x := rng.randi_range(rect.position.x, rect.end.x - 1)
+		var z := rng.randi_range(rect.position.y, rect.end.y - 1)
+		_detail_cell(x, z, String(DETAIL_PLANTS[rng.randi() % DETAIL_PLANTS.size()]), path, "grass")
+
+## Paints a decorative cell, subject to two rules: never on or beside the road, because the lane has
+## to stay obvious, and only where the ground underneath is the kind this detail belongs on.
+func _detail_cell(x: int, z: int, block: String, path: MapPath, requires: String = "") -> void:
+	if _origin(x, z).x < 0:
+		return
+	if requires != "" and String(_ground.get(Vector2i(x, z), "")) != requires:
+		return
+	if path != null and path.min_distance_to(Vector3(x, 0, z)) < DETAIL_PATH_CLEARANCE:
+		return
+	_cell(x, z, block)
 
 # ================================================================================================
 # Path

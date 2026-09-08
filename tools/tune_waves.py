@@ -26,11 +26,12 @@ import argparse
 import json
 import pathlib
 import re
-import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WAVES = ROOT / "data" / "waves" / "fort_feather_waves.json"
+## The hand-authored table this curve is applied to. Never edited by this script.
+BASELINE = ROOT / "data" / "waves" / "fort_feather_waves.baseline.json"
 
 
 def curve(wave: int) -> tuple[float, float, float]:
@@ -44,19 +45,19 @@ def curve(wave: int) -> tuple[float, float, float]:
         # board met the TNT runners on wave 8 and lost 17 lives in one wave.
         # Thin it out and keep income up so the player is not priced out of
         # answering it.
-        return 0.8, 1.0, 2.0
+        return 0.9, 1.0, 1.9
     if wave <= 15:
         # Mid game: the board is filling in, so pressure starts climbing while
         # the income bonus tapers off.
         n = wave - 8
-        return 0.9 + 0.02 * n, 1.0 + 0.03 * n, 1.8
+        return 0.95 + 0.02 * n, 1.0 + 0.06 * n, 1.55
     # Late game the board is at or near its 18-tower cap with deep upgrades, so
     # the curve climbs faster here than anywhere else.  It climbs mostly in HP
     # rather than in count, because kill rewards scale with count: a bigger wave
     # largely pays for the towers that answer it, which makes quantity a weak
     # difficulty lever and a strong economy one.
     n = wave - 15
-    return 1.0 + 0.02 * n, 1.20 + 0.07 * n, 1.6
+    return 1.05 + 0.02 * n, 1.45 + 0.13 * n, 1.2
 
 
 WAVE_START = re.compile(r'\{"name": "(?P<name>[^"]*)", "reward": (?P<reward>\d+)')
@@ -104,12 +105,15 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    # Always regenerate from the committed baseline so repeated runs are
-    # idempotent instead of compounding multipliers.
-    baseline = subprocess.run(
-        ["git", "show", "HEAD:data/waves/fort_feather_waves.json"],
-        cwd=ROOT, capture_output=True, text=True, check=True,
-    ).stdout
+    # Always regenerate from the untuned baseline so repeated runs are idempotent
+    # instead of compounding multipliers.
+    #
+    # This used to read HEAD:data/waves/fort_feather_waves.json, which was only
+    # idempotent while the tuned output had never been committed.  Once it was,
+    # HEAD *became* the tuned file and a second run would have squared the whole
+    # curve.  The baseline is now a file of its own, extracted from the commit
+    # before the first tuning pass, so it cannot drift into the output.
+    baseline = BASELINE.read_text()
     tuned = tune_text(baseline)
 
     data = json.loads(tuned)          # also validates that the edit kept it parseable

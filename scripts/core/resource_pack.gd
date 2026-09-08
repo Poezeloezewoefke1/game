@@ -65,6 +65,19 @@ const BLOCKS := {
 	"wool_gold": {"path": "block/yellow_wool"},
 	"wool_white": {"path": "block/white_wool"},
 	"wool_black": {"path": "block/black_wool"},
+	# Ground detail, scattered over the board so a field of grass is not one flat colour.
+	"short_grass": {"path": "block/short_grass", "tint": "foliage"},
+	"fern": {"path": "block/fern", "tint": "foliage"},
+	"moss": {"path": "block/moss_block"},
+	"coarse_dirt": {"path": "block/coarse_dirt"},
+	"rooted_dirt": {"path": "block/rooted_dirt"},
+	"mossy_cobble": {"path": "block/mossy_cobblestone"},
+	"andesite": {"path": "block/andesite"},
+	"dandelion": {"path": "block/dandelion"},
+	"poppy": {"path": "block/poppy"},
+	"cornflower": {"path": "block/cornflower"},
+	"azure_bluet": {"path": "block/azure_bluet"},
+	"oxeye_daisy": {"path": "block/oxeye_daisy"},
 }
 
 ## This project's armour material names -> the pack's equipment texture name.

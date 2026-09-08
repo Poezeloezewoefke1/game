@@ -305,6 +305,22 @@
         "https://minecraft.wiki/w/Minecart_with_TNT",
         "https://www.curseforge.com/minecraft/mc-mods/auto-x-bow-cart"
       ]
+    },
+    {
+      "id": "totem_glitch",
+      "name": "The totem glitch (\"immortality machine\")",
+      "type": "technology",
+      "owner": "parrotx2",
+      "description": "A totem teleportation mechanism used defensively: attackers land what should be killing blows and the defender survives. ParrotX2 nicknamed it the immortality machine.",
+      "history": "Credited with breaking Cindercrest's siege of Parrot's civilization -- thousands of attackers, almost no kills, and heavy Cindercrest losses.",
+      "game_item": "",
+      "gameplay_note": "NOT implemented as a mechanic, and deliberately so: a defender who cannot die is the opposite of a tower defense. It is recorded here because it explains the fiction behind the life pool and the totem_carrier enemy's revive, which is the same idea handed to the other side.",
+      "confidence": "supported",
+      "confidence_note": "From search summaries of the wiki, not a read of the page or the episode. How the glitch actually worked in-game is not claimed.",
+      "sources": [
+        "https://unstable-universe-mc.fandom.com/wiki/Saparata",
+        "https://unstable-universe-mc.fandom.com/wiki/How_I_Destroyed_an_Entire_Minecraft_Civilization"
+      ]
     }
   ]
 }
