@@ -32,6 +32,7 @@ func _ready() -> void:
 	test_spatial_grid()
 	test_xbow_cart()
 	test_free_placement()
+	test_walls_and_leak_mitigation()
 	_section("Enemy data")
 	test_enemy_data()
 	_section("Gear progression")
@@ -339,6 +340,82 @@ func test_path() -> void:
 	var ranges := p.ranges_within(Vector3(5, 0, 0), 2.0)
 	check(ranges.size() >= 1, "range query finds the covered stretch")
 	check_near(p.nearest_distance_to(Vector3(5, 0, 3)), 5.0, 0.6, "nearest distance projects onto the path")
+
+## Walls, and leak mitigation. Both shipped inert: cobble_wall spawned and nothing consulted it
+## during movement, so the builder enemy and the hero ability that place walls did nothing; and the
+## leak path went straight to damage_base with the raw threat, so tower leak_reduction and the hero's
+## leak cap were both dead while the codex advertised the former to the player as "-N leak damage".
+func test_walls_and_leak_mitigation() -> void:
+	var mgr := EnemyManager.new()
+	add_child(mgr)
+	var p := MapPath.new()
+	p.build(PackedVector3Array([Vector3(0, 0, 0), Vector3(100, 0, 0)]))
+	mgr.setup(p, DataDB.factions.get("cindercrest", {}), 100)
+	mgr.rng.seed = 7
+
+	# A walker approaching a wall must be stopped by it, not walk through.
+	var walker := mgr.spawn("chungie_t1", 10.0)
+	var wall := mgr.spawn("cobble_wall", 16.0)
+	check(walker >= 0 and wall >= 0, "spawned a walker and a wall")
+	check_eq(int(mgr.blocks_path[wall]), 1, "a structure blocks the lane by default")
+	check_eq(int(mgr.blocks_path[walker]), 0, "a walking enemy does not")
+	var wall_hp_before := mgr.hp[wall]
+	for i in 240:
+		mgr._process(0.05)
+		if mgr.alive[wall] == 0:
+			break
+	check(mgr.dist[walker] < 16.0, "the walker is held at the wall (%.1f < 16)" % mgr.dist[walker])
+	check(mgr.hp[wall] < wall_hp_before,
+		"and breaks it down while held (%.0f -> %.0f)" % [wall_hp_before, mgr.hp[wall]])
+
+	# Flyers go over.
+	var flyer := mgr.spawn("elytra_glider", 10.0)
+	var wall2 := mgr.spawn("cobble_wall", 16.0)
+	check(flyer >= 0 and wall2 >= 0, "spawned a flyer and a second wall")
+	mgr.y_offset[flyer] = 0.0                     # already at cruising height, not dropping in
+	for i in 200:
+		mgr._process(0.05)
+		if mgr.dist[flyer] > 20.0:
+			break
+	check(mgr.dist[flyer] > 16.0, "a flyer passes over a wall (%.1f)" % mgr.dist[flyer])
+	mgr.clear_all()
+
+	# Leak mitigation. The pool applies whatever the run supplies and nothing more.
+	var lives_start := 100
+	GameState.max_lives = lives_start
+	GameState.lives = lives_start
+	GameState.run_active = true      # damage_base is a no-op outside a live run
+	var seen: Array = []
+	mgr.leak_mitigator = func(threat: int) -> int:
+		seen.append(threat)
+		return maxi(1, threat - 3)
+	# A high-threat enemy on purpose: with a threat-1 chungie, max(1, threat - 3) equals the raw
+	# threat and the assertion below would pass without mitigation happening at all.
+	var leaker := mgr.spawn("tnt_runner", p.total_length - 0.2)
+	for i in 40:
+		mgr._process(0.1)
+		if mgr.alive[leaker] == 0:
+			break
+	check(not seen.is_empty(), "the leak went through the mitigator")
+	if not seen.is_empty():
+		var threat: int = seen[0]
+		var expected: int = maxi(1, threat - 3)
+		check(threat > expected, "the test enemy's threat is worth mitigating (%d)" % threat)
+		check_eq(lives_start - GameState.lives, expected,
+			"and cost the mitigated amount, not the raw threat (%d not %d)" % [expected, threat])
+	# The floor matters: reduction must never make a leak free, or lives stop being a resource --
+	# the same failure the medic's uncapped repair caused.
+	mgr.leak_mitigator = func(threat: int) -> int: return maxi(1, threat - 999)
+	var before := GameState.lives
+	var leaker2 := mgr.spawn("tnt_runner", p.total_length - 0.2)
+	for i in 40:
+		mgr._process(0.1)
+		if mgr.alive[leaker2] == 0:
+			break
+	check_eq(before - GameState.lives, 1, "a leak always costs at least one life")
+	GameState.lives = lives_start
+	GameState.run_active = false
+	mgr.queue_free()
 
 ## Free placement. Towers and the hero used to snap into numbered slots; now they stand wherever
 ## they are put, so the rules that replaced the slots are what need pinning: stay on the board, stay

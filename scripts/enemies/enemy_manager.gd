@@ -17,6 +17,8 @@ const STUN_DR_WINDOW := 8.0                             ## seconds of no stuns n
 const KNOCKBACK_COOLDOWN := 2.5                         ## per-unit, seconds
 const KNOCKBACK_BUDGET := 24.0                          ## total path distance a unit can be shoved back
 const SLOW_FLOOR := 0.2                                 ## nothing moves slower than 20% base speed
+## Half the width of a wall's footprint along the path, in world units. Units stop this far short.
+const WALL_HALF_WIDTH := 0.6
 
 # --- flags -------------------------------------------------------------------------------------
 const F_FLYING := 1
@@ -80,6 +82,12 @@ var pos_x: PackedFloat32Array = PackedFloat32Array()
 var pos_y: PackedFloat32Array = PackedFloat32Array()
 var pos_z: PackedFloat32Array = PackedFloat32Array()
 var scripted: PackedByteArray = PackedByteArray()       # 1 = external controller drives movement
+## 1 for a structure that physically stops units walking the lane (see _wall_ahead).
+var blocks_path: PackedByteArray = PackedByteArray()
+var _walls: PackedInt32Array = PackedInt32Array()
+## Set by whoever owns the run. Takes a leak's threat and returns the lives it actually costs, so
+## tower leak_reduction and the hero's leak cap can apply. Unset means the threat lands in full.
+var leak_mitigator: Callable = Callable()
 
 var free_slots: PackedInt32Array = PackedInt32Array()
 var active: PackedInt32Array = PackedInt32Array()
@@ -163,7 +171,7 @@ func _resize(n: int) -> void:
 	hp_mult_of.resize(n)
 	phase.resize(n); y_offset.resize(n); cd_a.resize(n); cd_b.resize(n); group_idx.resize(n)
 	used_once.resize(n); spawn_time.resize(n); pos_x.resize(n); pos_y.resize(n); pos_z.resize(n)
-	scripted.resize(n); active_pos.resize(n)
+	scripted.resize(n); active_pos.resize(n); blocks_path.resize(n)
 	free_slots.resize(n)
 	for i in n:
 		alive[i] = 0
@@ -212,6 +220,9 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	used_once[slot] = 0
 	spawn_time[slot] = time_now
 	scripted[slot] = 0
+	# A structure blocks the lane unless its definition opts out. Walls are the whole reason the
+	# category exists; anything else that wants to be scenery can set "blocks_path": false.
+	blocks_path[slot] = 1 if ((mask & F_STRUCTURE) != 0 and bool(d.get("blocks_path", true))) else 0
 	var spread := float(d.get("lane_spread", 0.7))
 	lateral[slot] = rng.randf_range(-spread, spread) if is_nan(lateral_override) else lateral_override
 	y_offset[slot] = float(d.get("fly_height", 0.0)) if (mask & F_FLYING) != 0 else 0.0
@@ -345,6 +356,7 @@ func _process(delta: float) -> void:
 	if not enabled or path == null:
 		return
 	time_now += delta
+	_rebuild_walls()
 	_update_units(delta)
 	_rebuild_grid()
 	_upload_visuals()
@@ -371,7 +383,15 @@ func _update_units(delta: float) -> void:
 			var spd: float = base_speed[slot] * slow_mult[slot]
 			if (mask & F_AIRDROP) != 0 and y_offset[slot] > 0.1:
 				spd = 0.0
-			dist[slot] += spd * delta
+			var next_d: float = dist[slot] + spd * delta
+			# A wall in the lane stops what walks into it. Flyers pass over; everything else has to
+			# break it, and does so by hitting it while held up -- so a wall buys time proportional to
+			# its health rather than being a hard stop for its whole lifetime.
+			var blocker := _wall_ahead(dist[slot], next_d, mask)
+			if blocker >= 0:
+				next_d = minf(next_d, dist[blocker] - WALL_HALF_WIDTH)
+				damage(blocker, float(d.get("damage", 8.0)) * delta, "melee", 0.0, "wall_break")
+			dist[slot] = maxf(dist[slot], next_d)
 			phase[slot] += spd * delta * 0.55
 		_update_position(slot)
 		# --- abilities
@@ -613,7 +633,13 @@ func _leak(slot: int, d: Dictionary) -> void:
 	live_count -= 1
 	_grid_dirty = true
 	free_slots.push_back(slot)
-	GameState.damage_base(threat)
+	# The pool knows nothing about towers or the hero, so whoever owns the run supplies the
+	# mitigation. Without this the tower upgrades that promise "-N leak damage" and the hero
+	# ultimate's leak cap both did nothing at all, while the codex advertised them to the player.
+	var taken := threat
+	if leak_mitigator.is_valid():
+		taken = int(leak_mitigator.call(threat))
+	GameState.damage_base(taken)
 	EventBus.enemy_leaked.emit(slot, String(d.get("id", "")), threat)
 	leaked.emit(slot, threat)
 	AudioMgr.play_sfx("leak", -4.0)
@@ -857,6 +883,37 @@ func _upload_visuals() -> void:
 				extra_mm.set_instance_transform(k, xform)
 				extra_mm.set_instance_custom_data(k, Color(phase[slot], flash, 0.0, 0.0))
 				extra_mm.set_instance_color(k, Color.WHITE)
+
+## The nearest wall a unit would walk into moving from `from_d` to `to_d`, or -1.
+##
+## Walls were spawned and then ignored: nothing consulted them during movement, so the builder enemy
+## and the hero ability that place them did nothing at all. They are few (one or two at a time, on a
+## twelve second timer) so a linear scan of the active list is cheaper than indexing them.
+func _wall_ahead(from_d: float, to_d: float, mask: int) -> int:
+	if _walls.is_empty() or (mask & F_FLYING) != 0:
+		return -1
+	var best := -1
+	var best_d := INF
+	for i in _walls.size():
+		var w: int = _walls[i]
+		if alive[w] == 0:
+			continue
+		var wd: float = dist[w] - WALL_HALF_WIDTH
+		# Only a wall we are about to cross, and only one in front of us.
+		if wd < from_d - 0.01 or wd > to_d:
+			continue
+		if wd < best_d:
+			best_d = wd
+			best = w
+	return best
+
+## Refreshes the list of walls standing in the lane. Called once per frame alongside the grid.
+func _rebuild_walls() -> void:
+	_walls.clear()
+	for i in active.size():
+		var slot: int = active[i]
+		if alive[slot] != 0 and (flags[slot] & F_STRUCTURE) != 0 and blocks_path[slot] == 1:
+			_walls.push_back(slot)
 
 func _yaw_of(slot: int) -> float:
 	var t := path.tangent_at(clampf(dist[slot], 0.0, path.total_length))

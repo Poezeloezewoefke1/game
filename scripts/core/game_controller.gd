@@ -136,6 +136,7 @@ func _build_managers() -> void:
 	towers.setup(enemies, projectiles, map_builder.zone_data())
 	# Free placement needs to know the shape of the board: where the edges are and where the road is.
 	towers.path = path
+	enemies.leak_mitigator = _mitigate_leak
 	towers.play_bounds = map_builder.buildable_bounds()
 	towers.path_half_width = float(map_builder.map_def.get("path_width", 3.0)) * 0.5
 
@@ -577,6 +578,24 @@ func _on_wave_cleared(_index: int) -> void:
 	towers.on_wave_cleared()
 	if hero != null:
 		hero.on_wave_cleared()
+
+## What a leak actually costs, after the two mitigations that exist in the data.
+##
+## Both were dead: tower upgrades accumulated `leak_reduction` and the codex told the player it was
+## worth "-N leak damage", while nothing ever read it; and the hero ultimate's `leak_cap` had a
+## getter with no callers. The leak path went straight to GameState.damage_base with the raw threat.
+##
+## The floor is one life, not zero. A prior version of the medic's repair could out-heal leaks
+## entirely and a campaign taking 53 leaks still finished on 100/100 -- lives stopped being a
+## resource. Reduction that can zero a leak outright is the same failure by another route, so it
+## blunts the expensive leaks rather than making the cheap ones free.
+func _mitigate_leak(threat: int) -> int:
+	var taken := threat - towers.leak_reduction
+	if hero != null and is_instance_valid(hero):
+		var cap: int = hero.leak_damage_cap()
+		if cap > 0:
+			taken = mini(taken, cap)
+	return maxi(1, taken)
 
 func _on_all_waves_cleared() -> void:
 	if _ended:
