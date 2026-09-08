@@ -490,6 +490,7 @@ Villains, tiered into enemies, elites, mini-bosses and bosses in [BOSS_DATABASE.
 
 - Leads Cindercrest, a faction of veteran warriors that kills new players or forces them to work for it, arguing the old players are 'starving' because of them.
 - Blames Parrot for the deaths of his friends and the disorder of the server; seeks revenge.
+- His stated grievance: he lived in Capital City until Parrot became king and opened spawn to more players, which he says overcrowded it; he and his friends left, were ambushed by bandits, and his friends were killed. He holds Parrot responsible.
 - Allied with Arachn1d's Kingdom of the Caves for the Civil War against Parrot's Kingdom.
 - Cindercrest destroyed Skymore (ShoeBilly killed 999 of 1,000 settlers).
 - Assault on Fort Feather using a Redstone Blimp with slow-falling paratroopers.

@@ -6,7 +6,7 @@ A tower defense built on a specific premise from the source material: **Cindercr
 and the four protagonists are the only reason anyone survives.** Every system is an attempt to make
 that premise playable rather than a generic TD reskinned with names.
 
-It takes its structural cues from the genre — a path, build zones, waves, three upgrade paths, a hero
+It takes its structural cues from the genre — a path, waves, three upgrade paths, a hero
 who levels during the run — while the content, the mechanics that matter, and the presentation are its
 own. It is not a Bloons TD 6 clone: enemies are not colour-coded balloons but geared players whose
 armour visibly breaks off in tiers; the hero system is one-protagonist-per-run rather than a roster; and
@@ -17,8 +17,13 @@ the relationship bonds have no genre equivalent.
 1. Choose one of the four protagonists. This is the run's biggest decision — the heroes are not
    interchangeable damage sources but four different answers to the same map.
 2. Choose a map and difficulty.
-3. Place towers on build zones. Some zones are elevated: melee towers there gain a mace-style height
-   bonus, which is a real trade-off against the better firing angles of ground zones.
+3. Place towers anywhere on the board. Placement is free-form rather than slotted: the rules are that
+   a tower stays inside the battlefield, keeps clear of the road, and does not stand inside another
+   tower's footprint. All three are shown before you commit — the ghost turns red, a ring shows the
+   tower's reach, and the road wears a no-build strip. The hero moves the same way and is the one
+   exception to the footprint rule: it stands beside a tower rather than taking its place. Maps still
+   ship suggested spots, and where one of those is raised a melee tower on it gains a mace-style
+   height bonus.
 4. Start a wave, or let the auto-timer start it. Enemies walk the path; towers acquire and fire.
 5. Kills pay emeralds. Emeralds buy towers and upgrades.
 6. Enemy gear escalates tier by tier. What killed wave 8 will not kill wave 18.

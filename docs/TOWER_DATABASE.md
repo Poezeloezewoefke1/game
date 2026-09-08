@@ -80,7 +80,7 @@ Parrot's best friend and bodyguard, and the server's master of TNT minecart comb
 | 1 | **Double Cart** | 400 ⬧ | Sends two carts per attack. |
 | 2 | **Rolling Stock** | 900 ⬧ | +20 damage, attacks 20% faster. |
 | 3 | **Supply Line** | 2400 ⬧ | Three carts per volley, +40 damage. |
-| 4 | **Carting Master** | 7200 ⬧ | Signature: a five-cart barrage with a 3.6 blast radius and heavy armor shred. |
+| 4 | **Crossbow Cart** | 7200 ⬧ | Signature: the real thing. Lays a cart on a rail, then shoots it with a crossbow through fire — a flaming arrow detonates a TNT minecart instantly, and the blast rolls between power 4 and 9.5. Faster bolts hit harder. |
 
 ### Rail Network
 
