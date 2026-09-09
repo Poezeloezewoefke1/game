@@ -8,14 +8,14 @@ rasteriser). Godot 4.4.1-stable.
 
 ---
 
-## 1. Automated test suite — 2501 assertions, 0 failures
+## 1. Automated test suite — 2508 assertions, 0 failures
 
 ```
 godot --headless --path . -s tests/run_headless.gd -- res://tests/test_suite.gd 4
 ```
 
 ```
-PASSED: 2501
+PASSED: 2508
 FAILED: 0
 ALL TESTS PASSED
 ```
@@ -493,10 +493,26 @@ per-hero meta bonuses of +30% to +57% damage. On a clean benchmark, three seeds 
 
 | hero | result |
 |---|---|
-| ParrotX2 | 3 of 3, wins on 82/100/100 lives |
+| ParrotX2 | 3 of 3, all three on 100/100 lives |
 | SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
-| Wemmbu | 0 of 3, dead at waves 20/21/21 |
+| Wemmbu | 0 of 3, dead at waves 22/21/20 |
 | FlameFrags | 0 of 3, dead at waves 21/19/19 |
+
+Two abilities were found not to be doing what their own text says, both of them the persistent half of
+a hero's kit. Wemmbu's Cobweb Trap "throws cobwebs over a stretch of path" but only swept whoever
+stood there at the instant of the cast; the webs now linger (`EnemyManager.add_hazard`) and it is his
+best result to date. FlameFrags' Trained by Theo "drops a TNT minecart that explodes" but detonated
+instantly and dropped nothing; it now leaves a real cart on a fuse, which is faithful and
+**balance-neutral** — 120 damage in a 2.4-unit radius is trivial at wave 19, so persistence by itself
+buys nothing unless the persistent thing hits hard enough to matter.
+
+And the board was shooting its own property: both `Tower` and `Hero` request targets with
+`ignore_structures: false` so that the builder enemy's walls can be shot, but ParrotX2's 2000 HP Fort
+Feather wall and FlameFrags' carts use the same entity, so a friendly wall absorbed the player's own
+tower fire for as long as it stood. Structures now carry per-slot ownership and targeting skips the
+player's own. It moved ParrotX2 from 82 to 100 lives on the one seed that had been costing him any,
+and left the three heroes who place no structures byte-identical — the check that the fix is scoped
+correctly.
 
 Two of ParrotX2's abilities were also found to be far stronger than their own descriptions. `rate_mult`
 multiplies the attack *interval*, so Royal Decree's `0.55` was **+82% fire rate on every tower** against

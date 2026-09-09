@@ -93,6 +93,16 @@ var pos_z: PackedFloat32Array = PackedFloat32Array()
 var scripted: PackedByteArray = PackedByteArray()       # 1 = external controller drives movement
 ## 1 for a structure that physically stops units walking the lane (see _wall_ahead).
 var blocks_path: PackedByteArray = PackedByteArray()
+## 1 for something the PLAYER put on the board -- a hero's wall, a dropped cart. Targeting skips these.
+##
+## Both Tower and Hero ask for targets with `ignore_structures: false`, because the builder enemy's
+## cobblestone walls are structures that genuinely should be shot. But the hero's Fort Feather wall
+## and FlameFrags' dropped minecarts use that same entity and that same flag, so the board was
+## spending its fire destroying the player's own property: a 2000 HP wall standing in the lane
+## absorbed tower damage for as long as it stood, which is the exact opposite of what placing it is
+## for. Ownership is per slot rather than per type because the builder enemy and the hero place the
+## same `cobble_wall`.
+var friendly: PackedByteArray = PackedByteArray()
 ## Per-slot blast left behind when a unit dies, set by whoever placed it. Zero damage means none.
 var detonate_damage: PackedFloat32Array = PackedFloat32Array()
 var detonate_radius: PackedFloat32Array = PackedFloat32Array()
@@ -184,7 +194,7 @@ func _resize(n: int) -> void:
 	hp_mult_of.resize(n)
 	phase.resize(n); y_offset.resize(n); cd_a.resize(n); cd_b.resize(n); group_idx.resize(n)
 	used_once.resize(n); spawn_time.resize(n); pos_x.resize(n); pos_y.resize(n); pos_z.resize(n)
-	scripted.resize(n); active_pos.resize(n); blocks_path.resize(n)
+	scripted.resize(n); active_pos.resize(n); blocks_path.resize(n); friendly.resize(n)
 	detonate_damage.resize(n); detonate_radius.resize(n)
 	free_slots.resize(n)
 	for i in n:
@@ -244,6 +254,7 @@ func spawn(type_id: String, at_distance: float = 0.0, lateral_override := NAN, h
 	# the entity block by definition turned the builder into a saboteur that walled in its own side,
 	# which cost the benchmark 14 leaks in a run and handed it a flawless campaign.
 	blocks_path[slot] = 1 if ((mask & F_STRUCTURE) != 0 and bool(d.get("blocks_path", false))) else 0
+	friendly[slot] = 0                 # set by whoever places a player-owned structure
 	detonate_damage[slot] = 0.0
 	detonate_radius[slot] = 0.0
 	var spread := float(d.get("lane_spread", 0.7))
@@ -380,6 +391,7 @@ func _process(delta: float) -> void:
 		return
 	time_now += delta
 	_rebuild_walls()
+	_tick_hazards()
 	_update_units(delta)
 	# Blasts are queued rather than applied inline (see _drain_deaths), and until now the only thing
 	# that drained the queue was damage(). A death that goes through kill() instead -- an expiry, a
@@ -699,6 +711,7 @@ func _leak(slot: int, d: Dictionary) -> void:
 	AudioMgr.play_sfx("leak", -4.0)
 
 func clear_all() -> void:
+	hazards.clear()
 	for i in active.size():
 		var slot: int = active[i]
 		if alive[slot] == 1:
@@ -731,6 +744,47 @@ func apply_slow(slot: int, mult: float, duration: float) -> void:
 ## sources of vulnerability on one target cannot multiply into an execute. Bosses take a reduced
 ## share for the same reason they resist slows: a debuff that lands in full on a boss makes the whole
 ## encounter a race to apply it rather than a fight.
+## Lingering ground hazards: a patch of the board that keeps affecting whatever walks into it, rather
+## than only what happened to be standing there when it was created.
+##
+## Wemmbu's Cobweb Trap is described as throwing "cobwebs over a stretch of path", and was implemented
+## as a single sweep applying a slow to whoever was in range at the instant of the cast. Webs that
+## stop existing the moment they land are not webs, and the difference is not cosmetic: a hero whose
+## abilities leave nothing on the board was measured as contributing +3 waves against +9 for one whose
+## abilities persist.
+##
+## Each entry is {pos, radius, until, slow_mult, slow_duration, vulnerability, vuln_duration}. Effects
+## are re-applied every frame to whatever is inside; apply_slow and apply_vulnerability both take the
+## strongest value and the longest expiry, so re-application refreshes rather than stacks, and a unit
+## that walks out keeps the effect for its own duration.
+var hazards: Array = []
+
+func add_hazard(at: Vector3, radius: float, seconds: float, effects: Dictionary) -> void:
+	var h := effects.duplicate()
+	h["pos"] = at
+	h["radius"] = radius
+	h["until"] = time_now + seconds
+	hazards.append(h)
+
+func _tick_hazards() -> void:
+	if hazards.is_empty():
+		return
+	var live: Array = []
+	for h: Dictionary in hazards:
+		if float(h["until"]) <= time_now:
+			continue
+		live.append(h)
+		var slow := float(h.get("slow_mult", 0.0))
+		var vuln := float(h.get("vulnerability", 0.0))
+		if slow <= 0.0 and vuln <= 0.0:
+			continue
+		for slot in query_range(h["pos"], float(h["radius"])):
+			if slow > 0.0:
+				apply_slow(slot, slow, float(h.get("slow_duration", 1.0)))
+			if vuln > 0.0:
+				apply_vulnerability(slot, vuln, float(h.get("vuln_duration", 1.0)))
+	hazards = live
+
 func apply_vulnerability(slot: int, extra: float, duration: float) -> void:
 	if slot < 0 or slot >= capacity or alive[slot] == 0 or extra <= 0.0:
 		return
@@ -849,6 +903,9 @@ func query_targets(centre: Vector3, radius: float, opts: Dictionary) -> PackedIn
 	var skip_structures: bool = opts.get("ignore_structures", true)
 	var out := PackedInt32Array()
 	for slot in query_range(centre, radius):
+		# Never shoot the player's own structures, whatever the caller asked for. See `friendly`.
+		if friendly[slot] != 0:
+			continue
 		var f: int = flags[slot]
 		if (f & F_INVISIBLE) != 0 and not detect:
 			continue

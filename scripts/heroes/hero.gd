@@ -356,9 +356,25 @@ func on_enemy_killed(slot: int, killer: String) -> void:
 		var e: Dictionary = p.get("effect", {})
 		match String(e.get("type", "")):
 			"kill_explosion":
+				# "Flame's kills drop a TNT minecart that explodes" -- so a cart is left on the ground
+				# and goes off on its fuse, rather than the kill itself detonating on the spot. It is a
+				# structure, so it never leaks and never blocks the lane (blocks_path stays 0), and it
+				# carries its blast on the per-slot detonation fields, going off through exactly the
+				# path a timed wall uses. Deliberately NOT the tnt_minecart entity, which is a hostile
+				# wave enemy that moves at speed 3 and carries threat 10 -- dropping those on your own
+				# kills would spawn attackers.
 				var at := enemies.unit_position(slot)
-				for other in enemies.query_range(at, float(e.get("radius", 2.4))):
-					enemies.damage(other, float(e.get("damage", 100.0)), "explosive", 0.4, hero_id)
+				var cart := -1
+				if enemies.path != null:
+					cart = enemies.spawn("dropped_tnt_cart", enemies.path.nearest_distance_to(at), 0.0)
+				if cart >= 0:
+					enemies.detonate_damage[cart] = float(e.get("damage", 100.0))
+					enemies.detonate_radius[cart] = float(e.get("radius", 2.4))
+					enemies.friendly[cart] = 1
+				else:
+					# Pool full or no path: detonate on the spot rather than losing the effect.
+					for other in enemies.query_range(at, float(e.get("radius", 2.4))):
+						enemies.damage(other, float(e.get("damage", 100.0)), "explosive", 0.4, hero_id)
 			"kill_mark":
 				if enemies.rng.randf() < float(e.get("chance", 0.2)):
 					var at2 := enemies.unit_position(slot)
@@ -412,6 +428,16 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 				_do_strike(e, _pick_strike_position(String(e.get("target", "strongest")), float(e.get("radius", 4.0))))
 		"area_slow":
 			var centre := global_position
+			# The webs stay on the ground. Cobweb Trap is described as throwing "cobwebs over a stretch
+			# of path", and this used to be a single sweep over whoever happened to be standing there
+			# at the instant of the cast -- so the stretch of path was never actually webbed, and
+			# anything arriving a second later walked through clean.
+			enemies.add_hazard(centre, float(e.get("radius", 5.0)), float(e.get("duration", 4.0)), {
+				"slow_mult": float(e.get("slow_mult", 0.4)),
+				"slow_duration": float(e.get("linger", 1.5)),
+				"vulnerability": float(e.get("vulnerability", 0.0)),
+				"vuln_duration": float(e.get("linger", 1.5)),
+			})
 			for slot in enemies.query_range(centre, float(e.get("radius", 5.0))):
 				enemies.apply_slow(slot, float(e.get("slow_mult", 0.4)), float(e.get("duration", 4.0)))
 				# Optional, and the reason it exists is measured. A hero matters in proportion to how
@@ -480,6 +506,7 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 					# The hero's wall is a barricade, not a sponge: this one stops the lane. The
 					# builder enemy's walls use the same entity and deliberately do not.
 					enemies.blocks_path[slot] = 1
+					enemies.friendly[slot] = 1        # the board must not shoot its own wall
 					# ...and it goes off when it goes down. Both halves of Fort Feather were dead:
 					# nothing read detonate_damage or detonate_radius either.
 					enemies.detonate_damage[slot] = float(e.get("detonate_damage", 0.0))

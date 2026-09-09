@@ -365,6 +365,18 @@ func test_walls_and_leak_mitigation() -> void:
 	check_eq(int(mgr.blocks_path[wall]), 0, "a wall does not block the lane just for existing")
 	check_eq(int(mgr.blocks_path[walker]), 0, "and neither does a walking enemy")
 	mgr.blocks_path[wall] = 1                     # placed as a barricade
+	# ...and owned by the player, so the board does not shoot it. Both Tower and Hero ask for
+	# targets with ignore_structures false (the builder enemy's walls SHOULD be shot), so without
+	# an ownership marker a 2000 HP Fort Feather wall soaked the player's own tower fire.
+	mgr.friendly[wall] = 1
+	var shootable := mgr.query_targets(mgr.unit_position(wall), 4.0,
+		{"hit_air": true, "hit_ground": true, "ignore_structures": false})
+	check(not shootable.has(wall), "a player-owned wall is never targeted")
+	var hostile_wall := mgr.spawn("cobble_wall", 16.5)
+	var shootable2 := mgr.query_targets(mgr.unit_position(hostile_wall), 4.0,
+		{"hit_air": true, "hit_ground": true, "ignore_structures": false})
+	check(shootable2.has(hostile_wall), "but the builder enemy's wall still is")
+	mgr.kill(hostile_wall, "test")
 	var wall_hp_before := mgr.hp[wall]
 	for i in 240:
 		mgr._process(0.05)

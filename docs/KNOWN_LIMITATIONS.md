@@ -110,14 +110,15 @@ What it does **not** establish, and these are real gaps:
   than these numbers suggest.
 - **Three of the four heroes cannot win the campaign.** This is the most serious balance problem in
   the game and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta
-  level 1, nothing written back), three seeds each. These are the first hero numbers in this repository not contaminated by persisted
-  progression, and they supersede every hero table published before them:
+  level 1, nothing written back), three seeds each. These are the first hero numbers in this
+  repository not contaminated by persisted progression, and they supersede every hero table
+  published before them:
 
   | hero | result |
   |---|---|
-  | ParrotX2 | 3 of 3, wins on 82/100/100 lives — above the band the curve targets |
+  | ParrotX2 | 3 of 3, all three on 100/100 lives — above the band the curve targets |
   | SpokeIsHere | 2 of 3, wins on 27 and 55 lives — in the band |
-  | Wemmbu | 0 of 3, dead at waves 20/21/21 |
+  | Wemmbu | 0 of 3, dead at waves 22/21/20 |
   | FlameFrags | 0 of 3, dead at waves 21/19/19 |
 
   The curve itself is not the problem: it fits SpokeIsHere well. ParrotX2 sits above it and Wemmbu
@@ -148,8 +149,22 @@ What it does **not** establish, and these are real gaps:
   their buff measured as noise; so did attaching their multiplier to enemies instead of to nearby
   towers, which the superseded theory predicted would work. Every change is documented and truthful,
   but none of them moved the outcome, because none of them gave those heroes anything that persists.
-  Acting on this means adding a summon, a trap, or a lane-blocker to two of the owner's characters,
-  which is a design decision rather than a repair.
+  Acting on it turned out not to need an invention, because both heroes' descriptions already promise
+  something persistent and neither was implementing it:
+
+  - **Wemmbu's Cobweb Trap** "throws cobwebs over a stretch of path", but applied a slow only to
+    whoever stood there at the instant of the cast — webs that stopped existing the moment they
+    landed. The pool now supports lingering ground hazards (`EnemyManager.add_hazard`) and the webs
+    stay for their full duration, catching whatever walks in. It is his best result to date, waves
+    22/21/20 against 20/21/21, and still 0 of 3.
+  - **FlameFrags' Trained by Theo** "drops a TNT minecart that explodes", but detonated instantly at
+    the kill site and dropped nothing. It now leaves a real cart on its fuse. Faithful, and
+    **balance-neutral**: 120 damage in a 2.4-unit radius is trivial against wave-19 enemies, so his
+    result is unchanged. Persistence alone is not worth anything — the persistent thing has to hit
+    hard enough to matter, and his does not.
+
+  So the gap is still open, and the honest reading is that these two need their numbers *and* their
+  persistence raised together, which remains a design decision about the owner's characters.
 
   Treat even these as weak evidence. Removing ParrotX2's +57% meta damage bonus moved him from
   48/100/77 lives to 100/100/100 — impossible as a power effect, since his personal damage is 1–3% of
@@ -250,6 +265,16 @@ What it does **not** establish, and these are real gaps:
 - **Signature (tier 4) upgrade costs were still set by feel**, not fitted.
 - **No human has played it at normal speed** with the actual UI, so nothing is known about whether the
   game *feels* good — only about whether it can be won.
+
+**The board was shooting its own property.** Both `Tower` and `Hero` ask for targets with
+`ignore_structures: false`, because the builder enemy's cobblestone walls are structures that should
+be shot — but ParrotX2's Fort Feather wall and FlameFrags' dropped carts use that same entity and
+flag. A 2000 HP friendly wall standing in the lane therefore absorbed the player's own tower fire for
+as long as it stood, which is the exact opposite of what placing it is for. Structures now carry
+per-slot ownership (`EnemyManager.friendly`, per slot rather than per type, because the builder enemy
+and the hero place the same `cobble_wall`) and targeting always skips the player's own. It moved
+ParrotX2 from 82 to 100 lives on the seed that had been costing him any, and left the three heroes
+who place no structures byte-identical — which is the check that the fix is scoped correctly.
 
 ### Systems that shipped inert, and are now live
 
@@ -368,7 +393,7 @@ Adding a map is a JSON edit plus a wave file; adding a faction to an existing ma
 
 Because the list above is long, it is worth being equally precise about the other side:
 
-- 2501 automated assertions pass with 0 failures (2322 with the resource pack removed).
+- 2508 automated assertions pass with 0 failures (2322 with the resource pack removed).
 - A full run builds, places and upgrades towers, spawns and kills enemies, pays out and advances waves
   with no errors logged.
 - All five boss phases fire in order; the mini-boss spawns; the blimp flies, drops 10 paratroopers,
