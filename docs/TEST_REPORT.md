@@ -493,10 +493,18 @@ per-hero meta bonuses of +30% to +57% damage. On a clean benchmark, three seeds 
 
 | hero | result |
 |---|---|
-| ParrotX2 | 3 of 3, all three on 100/100 lives |
+| ParrotX2 | 3 of 3, wins on 82/100/100 lives |
 | SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
 | Wemmbu | 0 of 3, dead at waves 20/21/21 |
-| FlameFrags | 0 of 3, dead at waves 19/19/19 |
+| FlameFrags | 0 of 3, dead at waves 21/19/19 |
+
+Two of ParrotX2's abilities were also found to be far stronger than their own descriptions. `rate_mult`
+multiplies the attack *interval*, so Royal Decree's `0.55` was **+82% fire rate on every tower** against
+a stated 45%, and his ultimate's `0.4` was **+150%** against a stated +60%. Every other hero's numbers
+match their text exactly (FlameFrags' "three times as fast" is `0.34`, Wemmbu's "twice as fast" is
+`0.5`), so this was a bug rather than a design choice, and only the two board-wide buffs had it. Both
+now match what the player is told — which is also, by itself, the balance correction the clean data
+called for. He is still 3 of 3.
 
 Two controls make the result interpretable rather than just bad news.
 

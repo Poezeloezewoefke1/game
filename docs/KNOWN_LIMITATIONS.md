@@ -115,10 +115,29 @@ What it does **not** establish, and these are real gaps:
 
   | hero | result |
   |---|---|
-  | ParrotX2 | 3 of 3, **all three on 100/100 lives** — the curve is too easy for him |
-  | SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
+  | ParrotX2 | 3 of 3, wins on 82/100/100 lives — above the band the curve targets |
+  | SpokeIsHere | 2 of 3, wins on 27 and 55 lives — in the band |
   | Wemmbu | 0 of 3, dead at waves 20/21/21 |
-  | FlameFrags | 0 of 3, dead at waves 19/19/19 |
+  | FlameFrags | 0 of 3, dead at waves 21/19/19 |
+
+  The curve itself is not the problem: it fits SpokeIsHere well. ParrotX2 sits above it and Wemmbu
+  and FlameFrags below.
+
+  **Where a hero's multiplier attaches is what decides this, not how big it is.** Towers do 85–99% of
+  the damage, so a hero matters in proportion to how much of the board it improves:
+
+  - ParrotX2's Royal Decree is **global** — all 17 towers, 8 seconds in every 20, from level 1.
+  - SpokeIsHere's vulnerability attaches to **enemies**, so whichever towers are shooting the marked
+    group all benefit. Radius-limited and he still wins 2 of 3, which is what proves radius is not
+    the issue.
+  - Wemmbu's and FlameFrags' shared buffs attach to **towers near the hero** — 2 to 4 of 17, since
+    the hero stands on one build zone and their range is 6.5–7 units.
+
+  Giving those two an earlier and wider share of their buff measured as noise, which is consistent
+  with that diagnosis: a bigger multiplier on three towers cannot match a smaller one on seventeen.
+  The open question is whether their board contribution should attach to enemies, the way
+  SpokeIsHere's does, rather than to nearby towers — and that is a design decision about two of the
+  owner's characters.
 
   Treat even these as weak evidence. Removing ParrotX2's +57% meta damage bonus moved him from
   48/100/77 lives to 100/100/100 — impossible as a power effect, since his personal damage is 1–3% of
