@@ -6,8 +6,31 @@ const VERSION := 1
 
 var data: Dictionary = {}
 
+## Isolates a run from persistent progression, in both directions: nothing is read from the save and
+## nothing is written back to it.
+##
+## The balance simulation needs this and did not have it, which quietly invalidated every measurement
+## it has ever produced. Finishing a run calls record_run_result() and save_game(), so each benchmark
+## run permanently levelled the hero it played -- and Hero.setup() reads that level back as
+## `damage *= 1 + 0.03 * (meta_level - 1)`. After a session of sweeping, the save held ParrotX2 at
+## meta level 20 over 123 runs and Wemmbu at 11 over 7, meaning the hero comparison was being made
+## with ParrotX2 carrying +57% damage and Wemmbu +30%, a handicap that grew with how many times each
+## hero happened to have been measured. It also made a single seed drift: the same seed that reported
+## a wave-22 defeat reported wave 18 an hour later, on identical code.
+##
+## This is the third instance of the same class of bug in this benchmark, after an unseeded RNG and a
+## variable timestep: a result is only reproducible if EVERY input is pinned, and persistent
+## progression is an input.
+var benchmark_mode: bool = false
+
 func _ready() -> void:
 	load_game()
+
+## Neutral, unsaved progression for a benchmark: no meta bonus for any hero, no writes to disk.
+func begin_benchmark() -> void:
+	benchmark_mode = true
+	data["hero_meta"] = {}
+	data["xp_bottles"] = 0
 
 func default_data() -> Dictionary:
 	return {
@@ -36,6 +59,8 @@ func load_game() -> void:
 	apply_settings()
 
 func save_game() -> bool:
+	if benchmark_mode:
+		return false                     # a measurement must not change what the next one measures
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		push_error("[SaveSystem] cannot write save file")

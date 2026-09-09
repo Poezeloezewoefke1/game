@@ -456,16 +456,47 @@ tools/balance_sweep.sh parrotx2 normal fort_feather 1 2 3 4 5
 Read this as a claim about the *simulated* player, not a human one — see KNOWN_LIMITATIONS §5 for
 what that does and does not establish.
 
+### The benchmark was measuring a moving target
+
+Every balance figure this report published before this section was measured against a simulation that
+**wrote persistent progression and then read it back**. `_finish_run` calls `record_run_result` and
+`save_game()`; `Hero.setup` applies `damage *= 1 + 0.03 * (meta_level - 1)`. After a long session of
+sweeping, the save held:
+
+```
+parrotx2:    meta level 20 (capped), 123 runs
+flamefrags:  meta level 16,            7 runs
+spokeishere: meta level 14,           11 runs
+wemmbu:      meta level 11,            7 runs
+```
+
+So the hero comparison ran with ParrotX2 at **+57% hero damage** and Wemmbu at **+30%**, a per-hero
+handicap proportional to how often each had been measured. It also explains a discrepancy that
+surfaced by accident: the same seed reported a wave-22 defeat in one sweep and wave 18 an hour later
+on identical code. Determinism *within* a moment was verified byte-identical, so the drift was coming
+from the save file between them.
+
+This is the third bug of exactly this shape in this benchmark, after an unseeded RNG and a variable
+timestep. A result is reproducible only when every input is pinned, and persistent progression is an
+input. `SaveSystem.begin_benchmark()` now isolates the run in both directions, and the sim prints its
+meta level so a contaminated run is visible in the output rather than silently wrong.
+
+**The wave curve was fitted before this and has not been refitted since.** On a clean benchmark
+ParrotX2 wins three of three without dropping below 100 lives.
+
 ### Hero parity: three of four heroes lose every seed
 
 The sweep above is ParrotX2. Running the other three on the same curve, three seeds each:
 
+Superseded by the isolated grid below; the numbers this table originally carried were measured with
+per-hero meta bonuses of +30% to +57% damage. On a clean benchmark, three seeds each:
+
 | hero | result |
 |---|---|
-| ParrotX2 | 3 of 3 wins, on 100/100, 100/100 and 96/100 lives |
-| Wemmbu | 0 of 3, dead at waves 19/19/19 |
-| FlameFrags | 1 of 3, dead at waves 18/18 |
-| SpokeIsHere | 0 of 3, dead at waves 19/21/17 |
+| ParrotX2 | 3 of 3, all three on 100/100 lives |
+| SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
+| Wemmbu | 0 of 3, dead at waves 20/21/21 |
+| FlameFrags | 0 of 3, dead at waves 19/19/19 |
 
 Two controls make the result interpretable rather than just bad news.
 

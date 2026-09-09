@@ -121,8 +121,22 @@ func _recompute() -> void:
 	if is_instance_valid(range_indicator):
 		range_indicator.scale = Vector3(range_r, 1.0, range_r)
 
+## XP needed to leave `lv`. Gentler than the 60 + 45*lv it shipped with, and the reason is measured
+## rather than felt: heroes reached level 5 by wave 15 and level 8 by wave 20, so the third active
+## (unlock 8) arrived for the last two waves and the ultimate (unlock 10) arrived at wave 23 if the
+## run got there at all. Every hero played five-sixths of a campaign on its level-1 and level-4
+## abilities alone.
+##
+## That is not a neutral shortfall, it is the shape of the hero imbalance. ParrotX2's board-wide
+## tools -- Royal Decree and The King's Banner -- are both level 1, so he plays a full kit from wave
+## one. Wemmbu, FlameFrags and SpokeIsHere all have their board-relevant abilities at 8 and 10, in
+## levels the campaign never delivered. The winner and the losers were levelling at the SAME rate;
+## the losers were simply the ones whose kit lived above the ceiling.
+##
+## This curve puts the third active around wave 15 and the ultimate around wave 19, so the back half
+## of a campaign is played with the abilities that were written for it.
 static func xp_for_level(lv: int) -> int:
-	return 60 + lv * 45
+	return 45 + lv * 30
 
 func _refresh_unlocks() -> void:
 	for a in def.get("abilities", []):

@@ -88,6 +88,11 @@ func _ready() -> void:
 	if args.size() > 6:
 		start_wave = maxi(1, int(String(args[6]).to_int()))
 	seed(run_seed)
+	# Pin the last unpinned input. Persistent progression is read by Hero.setup as a damage bonus
+	# and written back at the end of every run, so without this each sweep measured a slightly
+	# stronger hero than the last and the seeds stopped meaning anything. See
+	# SaveSystem.begin_benchmark for what that was worth in practice.
+	SaveSystem.begin_benchmark()
 	game = load("res://scripts/core/game_controller.gd").new()
 	add_child(game)
 	await get_tree().process_frame
@@ -110,6 +115,8 @@ func _ready() -> void:
 			% [st.get("won"), st.get("waves"), st.get("kills")]))
 	print("[SIM] hero=%s difficulty=%s map=%s seed=%d" % [
 		GameState.selected_hero_id, GameState.difficulty, GameState.selected_map_id, run_seed])
+	print("[SIM] meta level   : %d (1 = neutral; anything else means the benchmark is not isolated)"
+		% int(SaveSystem.hero_meta(GameState.selected_hero_id).get("level", 1)))
 	if start_wave > 1:
 		_jump_to_wave(start_wave)
 	print("[SIM] start emeralds=%d lives=%d waves=%d zones=%d%s" % [

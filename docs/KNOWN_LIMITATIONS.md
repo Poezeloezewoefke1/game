@@ -109,20 +109,25 @@ What it does **not** establish, and these are real gaps:
   competent-but-unimaginative benchmark, so the game is probably somewhat easier for an engaged human
   than these numbers suggest.
 - **Three of the four heroes cannot win the campaign.** This is the most serious balance problem in
-  the game and it is measured, not suspected. On the shipped curve, three seeds each:
+  the game and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta level 1, nothing written back), three seeds
+  each. These are the first hero numbers in this repository not contaminated by persisted
+  progression, and they supersede every hero table published before them:
 
   | hero | result |
   |---|---|
-  | ParrotX2 | **4 of 5**, wins on 60–100 lives, the loss on wave 21 |
-  | FlameFrags | 1 of 3, dead at waves 18/18 |
-  | Wemmbu | 0 of 3, dead at waves 20/20/19 |
-  | SpokeIsHere | 0 of 3, dead at waves 20/21/17 |
+  | ParrotX2 | 3 of 3, **all three on 100/100 lives** — the curve is too easy for him |
+  | SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
+  | Wemmbu | 0 of 3, dead at waves 20/21/21 |
+  | FlameFrags | 0 of 3, dead at waves 19/19/19 |
 
-  A round of work aimed squarely at this moved ParrotX2 into the band the curve has been fitted
-  towards all along — 4 of 5 with the loss on the wave-21 cliff, which supersedes the claim above
-  that no slope reaches 4 of 5 — but **it did not close the gap**, and the three heroes are no better
-  off in outcome terms than before it. What that round found is recorded further down, after the
-  controls, because the measurements turned out to be worth more than the attempt.
+  Treat even these as weak evidence. Removing ParrotX2's +57% meta damage bonus moved him from
+  48/100/77 lives to 100/100/100 — impossible as a power effect, since his personal damage is 1–3% of
+  what his board does, so it is reshuffling. Three seeds cannot separate a real change from that.
+
+  Two rounds of work aimed squarely at this have not closed the gap. An earlier round appeared to put
+  ParrotX2 at 4 of 5 on 60–100 lives, which read like progress; that measurement was contaminated by
+  the meta-progression bug above and does not stand. What both rounds found is recorded further down,
+  because the findings turned out to be worth more than the attempts.
 
   A control run pins down what that means. ParrotX2 stripped of **every ability and passive** dies on
   wave 19 with 49 leaks — which is where the other three finish *with their full kits*. Their
@@ -165,7 +170,20 @@ What it does **not** establish, and these are real gaps:
   the curve was fitted to. Refitting upward would mean tuning the map to the one hero who can already
   win it, making it harder still for the three who cannot. That refit is blocked on the parity
   question above.
-- **Run-to-run variance is wide, and reproducibility took two fixes.** Seeding the RNG was not
+- **Every balance number this repository has ever published was measured against a contaminated
+  benchmark, and the fits are not trustworthy.** Finishing a run calls `SaveSystem.record_run_result`
+  and `save_game()`, so each simulated campaign permanently levelled the hero it played — and
+  `Hero.setup` reads that back as `damage *= 1 + 0.03 * (meta_level - 1)`. The save file accumulated
+  ParrotX2 at meta level 20 across 123 runs and Wemmbu at 11 across 7, so the hero comparison was
+  being made with ParrotX2 carrying **+57% hero damage** and Wemmbu **+30%** — a handicap that grew
+  with how many times each hero happened to have been measured, and that drifted between sweeps. It
+  is why the same seed reported a wave-22 defeat in one sweep and wave 18 an hour later on identical
+  code. `SaveSystem.begin_benchmark()` now isolates the simulation in both directions, and the sim
+  prints its meta level so a contaminated run is visible in the output. **The wave curve in
+  `tools/tune_waves.py` was fitted before this and has not been refitted since**; on a clean
+  benchmark ParrotX2 wins 3 of 3 without dropping below 100 lives, so the curve is now too easy for
+  him and the whole fit is owed a redo.
+- **Run-to-run variance is wide, and reproducibility took three fixes.** Seeding the RNG was not
   enough: the game advances on wall-clock delta, so the same build at the same seed produced "won
   with 59 lives" and "lost on wave 19" depending on machine load. The simulation must be run with
   `--fixed-fps 60` (which `tools/balance_sweep.sh` does, and which the sim now warns about if
