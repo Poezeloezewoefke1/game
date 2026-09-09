@@ -109,8 +109,8 @@ What it does **not** establish, and these are real gaps:
   competent-but-unimaginative benchmark, so the game is probably somewhat easier for an engaged human
   than these numbers suggest.
 - **Three of the four heroes cannot win the campaign.** This is the most serious balance problem in
-  the game and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta level 1, nothing written back), three seeds
-  each. These are the first hero numbers in this repository not contaminated by persisted
+  the game and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta
+  level 1, nothing written back), three seeds each. These are the first hero numbers in this repository not contaminated by persisted
   progression, and they supersede every hero table published before them:
 
   | hero | result |
@@ -123,21 +123,33 @@ What it does **not** establish, and these are real gaps:
   The curve itself is not the problem: it fits SpokeIsHere well. ParrotX2 sits above it and Wemmbu
   and FlameFrags below.
 
-  **Where a hero's multiplier attaches is what decides this, not how big it is.** Towers do 85–99% of
-  the damage, so a hero matters in proportion to how much of the board it improves:
+  **What each kit is actually worth**, measured by stripping every ability and passive from a hero
+  and comparing waves survived on the same seed:
 
-  - ParrotX2's Royal Decree is **global** — all 17 towers, 8 seconds in every 20, from level 1.
-  - SpokeIsHere's vulnerability attaches to **enemies**, so whichever towers are shooting the marked
-    group all benefit. Radius-limited and he still wins 2 of 3, which is what proves radius is not
-    the issue.
-  - Wemmbu's and FlameFrags' shared buffs attach to **towers near the hero** — 2 to 4 of 17, since
-    the hero stands on one build zone and their range is 6.5–7 units.
+  | hero | no kit | with kit | the kit is worth |
+  |---|---|---|---|
+  | SpokeIsHere | wave 16 | wave 25, win | **+9 waves** |
+  | ParrotX2 | wave 18 | wave 25, win | **+7 waves** |
+  | Wemmbu | wave 17 | wave 20 | +3 waves |
+  | FlameFrags | wave 19 | wave 21 | +2 waves |
 
-  Giving those two an earlier and wider share of their buff measured as noise, which is consistent
-  with that diagnosis: a bigger multiplier on three towers cannot match a smaller one on seventeen.
-  The open question is whether their board contribution should attach to enemies, the way
-  SpokeIsHere's does, rather than to nearby towers — and that is a design decision about two of the
-  owner's characters.
+  This overturned the explanation given earlier in this document's history, that the divide is
+  board-multiplying versus personal-damage kits. SpokeIsHere has no global tower buff of any kind and
+  his kit is worth *more* than ParrotX2's, so that was not the discriminator.
+
+  What the two effective kits share, and the two weak ones entirely lack, is **persistent board
+  presence** — things that keep fighting after the button is pressed. ParrotX2 has summons, a wall
+  that blocks the lane, and a global buff; SpokeIsHere has six summons, a converted enemy fighting
+  for him, and a debuff that rides the enemies. Wemmbu and FlameFrags have kits made only of
+  instantaneous damage plus a self-buff: once the ability resolves, nothing of it remains on the
+  board.
+
+  Two rounds of buffs test that and support it by failing. Giving both an earlier and wider share of
+  their buff measured as noise; so did attaching their multiplier to enemies instead of to nearby
+  towers, which the superseded theory predicted would work. Every change is documented and truthful,
+  but none of them moved the outcome, because none of them gave those heroes anything that persists.
+  Acting on this means adding a summon, a trap, or a lane-blocker to two of the owner's characters,
+  which is a design decision rather than a repair.
 
   Treat even these as weak evidence. Removing ParrotX2's +57% meta damage bonus moved him from
   48/100/77 lives to 100/100/100 — impossible as a power effect, since his personal damage is 1–3% of
@@ -189,8 +201,12 @@ What it does **not** establish, and these are real gaps:
   the curve was fitted to. Refitting upward would mean tuning the map to the one hero who can already
   win it, making it harder still for the three who cannot. That refit is blocked on the parity
   question above.
-- **Every balance number this repository has ever published was measured against a contaminated
-  benchmark, and the fits are not trustworthy.** Finishing a run calls `SaveSystem.record_run_result`
+- **The wave curve does not need refitting, and that is a measured answer rather than a deferral.**
+  It produces 27–55 lives for SpokeIsHere, which is the band it targets. Raising it to rein in
+  ParrotX2 would push the median hero out of the band and the bottom two further out still. The
+  outlier is the hero, not the map.
+- **Every balance number this repository published before the isolation fix was measured against a
+  contaminated benchmark, and those fits are not trustworthy.** Finishing a run calls `SaveSystem.record_run_result`
   and `save_game()`, so each simulated campaign permanently levelled the hero it played — and
   `Hero.setup` reads that back as `damage *= 1 + 0.03 * (meta_level - 1)`. The save file accumulated
   ParrotX2 at meta level 20 across 123 runs and Wemmbu at 11 across 7, so the hero comparison was

@@ -414,6 +414,14 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 			var centre := global_position
 			for slot in enemies.query_range(centre, float(e.get("radius", 5.0))):
 				enemies.apply_slow(slot, float(e.get("slow_mult", 0.4)), float(e.get("duration", 4.0)))
+				# Optional, and the reason it exists is measured. A hero matters in proportion to how
+				# much of the board it improves, because towers do 85-99% of the damage. A buff
+				# attached to towers NEAR THE HERO reaches 2 to 4 of 17; one attached to the ENEMIES
+				# reaches whichever towers are shooting them, which is why SpokeIsHere wins on a
+				# radius-limited ability while buffs of the same size on Wemmbu and FlameFrags
+				# measured as noise.
+				enemies.apply_vulnerability(slot, float(e.get("vulnerability", 0.0)),
+					float(e.get("vuln_duration", e.get("duration", 4.0))))
 			EventBus.boss_event.emit("web_burst", {"position": centre, "radius": float(e.get("radius", 5.0))})
 		"self_buff":
 			buff_until = time_now + float(e.get("duration", 6.0))
@@ -450,6 +458,10 @@ func _execute_effect(e: Dictionary, ability_name: String) -> void:
 			if best >= 0:
 				enemies.apply_stun(best, float(e.get("stun", 3.0)))
 				enemies.damage(best, float(e.get("damage", 200.0)), "true", 1.0, hero_id)
+				# Same reasoning as area_slow above: a duel that only Flame benefits from is worth a
+				# fraction of one that opens the target up to the whole board.
+				enemies.apply_vulnerability(best, float(e.get("vulnerability", 0.0)),
+					float(e.get("vuln_duration", e.get("stun", 3.0))))
 				EventBus.float_text.emit(enemies.unit_position(best), "1v1", Color(1.0, 0.5, 0.2))
 		"dash":
 			var forward := -global_transform.basis.z

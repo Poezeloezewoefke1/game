@@ -508,6 +508,23 @@ called for. He is still 3 of 3.
 
 Two controls make the result interpretable rather than just bad news.
 
+**What each kit is worth.** Stripping every ability and passive from each hero and comparing waves
+survived on the same seed:
+
+| hero | no kit | with kit | the kit is worth |
+|---|---|---|---|
+| SpokeIsHere | wave 16 | wave 25, win | +9 waves |
+| ParrotX2 | wave 18 | wave 25, win | +7 waves |
+| Wemmbu | wave 17 | wave 20 | +3 waves |
+| FlameFrags | wave 19 | wave 21 | +2 waves |
+
+SpokeIsHere has no global tower buff and his kit outperforms ParrotX2's, which rules out
+"board-multiplying versus personal-damage" as the explanation. The two effective kits both carry
+**persistent board presence** — summons, a lane-blocking wall, a converted enemy, a debuff riding the
+enemies — while Wemmbu's and FlameFrags' kits are instantaneous damage plus a self-buff, leaving
+nothing on the board once the ability resolves. Two rounds of buffs aimed at the superseded theory
+(wider tower auras, then enemy-attached multipliers) both measured as noise, which is consistent.
+
 **Strip ParrotX2's kit entirely** — every ability, every passive — and he dies on wave 19 with 49
 leaks, which is where the other three finish carrying their full kits. So those kits are worth about
 what no kit is worth. The cause is structural: towers do 85–99% of the damage, ParrotX2 is the only
