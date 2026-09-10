@@ -170,6 +170,9 @@ The flight is three host-clock states rendered identically on every peer;
 | 26z15 | The hazard field stands over the crystal it seals | [A] `test_scene_integrity` |
 | 26z16 | **Every interactable has 2.5 m of room from solid set dressing** - the generalisation of defects 55, 56, 57, 75 and 83 | [A] `test_scene_integrity` |
 | 26z17 | **The three planets do not run the same locks in the same order** - Hallow rotates them | [P] Hallow flown end to end at 204.5 s with the coupling on the grove, the guard on the cave and the hazard on the ruins |
+| 26z18 | **A finished planet unlocks the next one and the crew can actually fly there** - lobby, ship, nav console, launch, land | [A] `test_mission_flow :: handover` |
+| 26z19 | Campaign progress survives both the lobby AND the start of the next session | [A] `test_mission_flow :: handover` |
+| 26z20 | The pre-flight checklist is red again on a second flight rather than carried over | [A] `test_mission_flow :: handover` |
 | 26z9 | **Shots at a guard can run at least 10 m along some bearing** - "clear of the scenery" is not the same as "shootable", and checking only the first moved a working guard behind a column | [A] `test_scene_integrity` |
 | 26z10 | **Every crystal is outside the walls** - the grove crystal sat 0.03 m inside GroveBack on two planets | [A] `test_scene_integrity` (the usable-from-somewhere probe, now with `hit_from_inside`) |
 | 26z11 | **A ray that starts inside solid geometry counts as blocked, not clear** - without it the buried approach reads as the best of the twelve | [A] |

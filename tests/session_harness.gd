@@ -85,6 +85,24 @@ func await_scene(key: String, timeout: float = 20.0) -> bool:
 	return false
 
 
+## Wait for a scene by KEY alone, with no level requirement.
+##
+## await_scene() also waits for SpawnManager.has_level(), which is right for a
+## planet or the ship and impossible for the lobby - it is a UI scene and never
+## binds a level, so await_scene(SCENE_LOBBY) can only ever time out. That is
+## what made the campaign-handover test report "the lobby mounts again" as a
+## failure while the log showed the lobby mounted perfectly well.
+func await_scene_key(key: String, timeout: float = 20.0) -> bool:
+	var waited := 0.0
+	while waited < timeout:
+		if SceneManager.current_scene_key == key:
+			await tree.process_frame
+			return true
+		await tree.process_frame
+		waited += tree.root.get_process_delta_time()
+	return false
+
+
 func await_mission_state(state: int, timeout: float = 20.0) -> bool:
 	var waited := 0.0
 	while waited < timeout:

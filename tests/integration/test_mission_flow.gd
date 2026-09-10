@@ -467,7 +467,7 @@ func _phase_campaign_handover() -> void:
 	var returned: bool = await GameManager.host_return_to_lobby()
 	_where("after host_return_to_lobby returned %s" % returned)
 	check(returned, "the crew can return to the lobby after a win")
-	check(await _session.await_scene(GameConfig.SCENE_LOBBY), "the lobby mounts again")
+	check(await _session.await_scene_key(GameConfig.SCENE_LOBBY), "the lobby mounts again")
 	_where("after awaiting the lobby scene")
 
 	var completed: Array = GameManager.snapshot.get("completed_missions", [])
@@ -480,6 +480,7 @@ func _phase_campaign_handover() -> void:
 	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts for a second flight"):
 		return
 	check(await _session.await_mission_state(MS.SHIP_IDLE), "the second flight starts from SHIP_IDLE")
+	_where("aboard for the second flight")
 	check(MissionRules.ship_tasks_remaining(GameManager.snapshot).size() > 0,
 		"the pre-flight checklist is red again rather than carried over from the last flight")
 
@@ -491,6 +492,7 @@ func _phase_campaign_handover() -> void:
 	await _session.move_host_player_to(SHIP_NAV_SPOT)
 	GameManager.request_interact("ship_nav_console")
 	await tree.process_frame
+	_where("after pressing the nav console")
 	check_eq(String(GameManager.snapshot.get("mission_id", "")), MissionCatalog.CINDER,
 		"the nav console now offers somewhere new")
 

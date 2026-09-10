@@ -152,9 +152,24 @@ func host_start_session() -> bool:
 		Logx.warn("mission", "start_session in state %s" % MissionRules.state_name(mission_state()))
 		return false
 	session_epoch += 1
-	# A brand-new session starts the campaign over: first destination, nothing
-	# completed, no seats held, every station red.
-	snapshot = MissionRules.fresh_ship_snapshot(session_epoch)
+	# Carry the campaign across. Everything else about a new session is a clean
+	# slate - first destination, no seats held, every station red - but which
+	# planets the crew has already finished is not session state, it is their
+	# progress, and this is the only route to the second one.
+	#
+	# It used to drop it, with a comment saying a brand-new session starts the
+	# campaign over. That is right for a brand-new session and wrong for the one
+	# path a crew actually takes: the end screen offers Retry, Lobby and Quit,
+	# so winning and going on means lobby, then start again - through here. The
+	# campaign was one planet long, and `_host_reset_facts` two hundred lines
+	# below had been carefully carrying `completed_missions` through the lobby
+	# for it to be thrown away here. Two pieces of code with opposite intentions
+	# and no test between them.
+	#
+	# Preserving it is correct in both cases: a genuinely fresh host arrives
+	# here with nothing completed, so it stays empty.
+	var carried: Array = snapshot.get("completed_missions", [])
+	snapshot = MissionRules.fresh_ship_snapshot(session_epoch, "", carried)
 	if not _host_set_state(MS.TRANSITIONING_TO_SHIP, true):
 		return false
 	await SpawnManager.host_clear_all()

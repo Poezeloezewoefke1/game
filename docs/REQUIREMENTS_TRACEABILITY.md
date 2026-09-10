@@ -261,6 +261,7 @@ Test files are referenced by name; `runner` means `tests/run_tests.gd`.
 | MIS-030 | **A level's lock props agree with the mission's lock table** - the socket unlocks the crystal the mission seals, and the hazard field stands over the one it covers | `MissionRules.locked_crystals`, `coupling_socket.unlocks_crystal_id`, `HazardField` placement | `test_scene_integrity`, per level | AUTO |
 | MIS-031 | **Every interactable has room around it** - no solid set dressing within 2.5 m of the point the host aims its ray at | level authoring | `test_scene_integrity`, per level | AUTO |
 | MIS-032 | The three planets do not run the same locks on the same crystals in the same order | `MissionRules.locked_crystals` | playtest per mission | PLAY |
+| MIS-033 | **The campaign can be played past its first planet** - a finished mission unlocks the next, the progress survives the lobby and the next session, and the crew can plot and fly the new course | `GameManager.host_start_session` carries `completed_missions`; `nav_console.next_id` | `test_mission_flow :: handover`, which flies it | AUTO |
 
 ## Quality gates (QA)
 
