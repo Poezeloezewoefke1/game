@@ -79,6 +79,7 @@ func run_async() -> void:
 	await _phase_altar()
 	await _phase_boss()
 	await _phase_extraction()
+	await _phase_campaign_handover()
 
 	_session.stop()
 	await tree.process_frame
@@ -439,3 +440,92 @@ func _phase_extraction() -> void:
 			GameManager.snapshot.get("completed_missions", [])),
 		"finishing Nerava unlocks the next destination")
 	check_eq(_session.projectile_count(), 0, "no projectiles survive victory")
+
+
+## The second planet. Nothing had ever tested this.
+##
+## Winning a mission records it and unlocks the next one, and both of those are
+## asserted above. What was NOT asserted is everything between that and actually
+## flying somewhere else: the end screen offers Retry, Lobby and Quit - there is
+## no "fly on" - so the only route to the second planet is back through the
+## lobby, and `_host_reset_facts` rebuilds the whole snapshot on the way. It
+## carries `completed_missions` across by hand, reading it out and passing it
+## back in. If that argument were ever dropped the campaign would silently
+## become one planet long, every existing test would stay green, and the only
+## symptom would be a nav console that never offers anywhere new.
+##
+## So this flies the handover: lobby, ship, one press of the console to cycle
+## the destination, and a launch that has to land somewhere it has never landed.
+func _phase_campaign_handover() -> void:
+	set_current("handover")
+
+	# Say where we are at each step. The first run of this phase failed in a way
+	# that could not be read from the log at all - no state change, no illegal
+	# transition, just two refused interacts and a shutdown - and guessing at it
+	# from the outside was going nowhere.
+	_where("before returning to the lobby")
+	var returned: bool = await GameManager.host_return_to_lobby()
+	_where("after host_return_to_lobby returned %s" % returned)
+	check(returned, "the crew can return to the lobby after a win")
+	check(await _session.await_scene(GameConfig.SCENE_LOBBY), "the lobby mounts again")
+	_where("after awaiting the lobby scene")
+
+	var completed: Array = GameManager.snapshot.get("completed_missions", [])
+	check(completed.has(MissionCatalog.NERAVA),
+		"the finished planet survives the trip through the lobby")
+	check(MissionCatalog.unlocked_ids(completed).has(MissionCatalog.CINDER),
+		"and the second destination is still unlocked on the other side of it")
+
+	await GameManager.host_start_session()
+	if not check(await _session.await_scene(GameConfig.SCENE_SHIP), "the hub mounts for a second flight"):
+		return
+	check(await _session.await_mission_state(MS.SHIP_IDLE), "the second flight starts from SHIP_IDLE")
+	check(MissionRules.ship_tasks_remaining(GameManager.snapshot).size() > 0,
+		"the pre-flight checklist is red again rather than carried over from the last flight")
+
+	# One press cycles the destination, because a second one is unlocked now.
+	# On the first flight this same console reported "no other destination
+	# unlocked", which is the whole difference the win is supposed to make.
+	check_eq(String(GameManager.snapshot.get("mission_id", "")), MissionCatalog.NERAVA,
+		"the course starts on the planet just flown")
+	await _session.move_host_player_to(SHIP_NAV_SPOT)
+	GameManager.request_interact("ship_nav_console")
+	await tree.process_frame
+	check_eq(String(GameManager.snapshot.get("mission_id", "")), MissionCatalog.CINDER,
+		"the nav console now offers somewhere new")
+
+	# ...and it is a real course, not a label: fly it.
+	for object_id in SHIP_STATION_SPOTS:
+		await _session.move_host_player_to(SHIP_STATION_SPOTS[object_id])
+		GameManager.request_interact(String(object_id))
+		await tree.process_frame
+	check(MissionRules.ship_tasks_remaining(GameManager.snapshot).is_empty(),
+		"the second pre-flight can be worked through")
+
+	await _session.move_host_player_to(SHIP_SEAT_SPOT)
+	GameManager.request_interact("ship_seat_1")
+	await tree.process_frame
+	await _session.move_host_player_to(_lever_spot())
+	GameManager.request_interact("ship_launch_lever")
+	check(await _session.await_mission_state(MS.LAUNCHING, 5.0), "the second launch starts")
+	check(await _session.await_scene(GameConfig.SCENE_CINDER, 40.0),
+		"the campaign reaches its second planet")
+	check(await _session.await_mission_state(MS.FIND_TEMPLE), "and starts its mission there")
+
+	# The locks are Cinder's, not Nerava's. This is the rotation asserted from
+	# inside a running session rather than from the level files.
+	check_eq(MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_RUINS),
+		MissionRules.LOCK_COUPLING, "Cinder seals its ruins crystal behind the coupling")
+	check_eq(MissionRules.crystal_lock(GameManager.snapshot, GameConfig.CRYSTAL_GROVE),
+		MissionRules.LOCK_GUARD, "Cinder puts the guard on its grove crystal")
+
+
+## Where is the session right now? Printed through the same log the rest of the
+## suite writes to, so it lands in run_validation's output beside the failures.
+func _where(label: String) -> void:
+	Logx.info("test", "handover | %s | state=%s scene=%s mission=%s completed=%s" % [
+		label,
+		MissionRules.state_name(GameManager.mission_state()),
+		SceneManager.current_scene_key,
+		String(GameManager.snapshot.get("mission_id", "")),
+		str(GameManager.snapshot.get("completed_missions", []))])
