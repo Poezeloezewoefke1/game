@@ -494,9 +494,22 @@ per-hero meta bonuses of +30% to +57% damage. On a clean benchmark, three seeds 
 | hero | result |
 |---|---|
 | ParrotX2 | 3 of 3, all three on 100/100 lives |
+| Wemmbu | 3 of 3, wins on 51/21/48 lives |
 | SpokeIsHere | 2 of 3, wins on 27 and 55 lives |
-| Wemmbu | 0 of 3, dead at waves 22/21/20 |
-| FlameFrags | 0 of 3, dead at waves 21/19/19 |
+| FlameFrags | 0 of 3, dead at waves 19/19/19 |
+
+Three of four now finish, against one when this was first measured on a clean benchmark. Wemmbu's fix
+was scale — the webs already lingered, they were too small and too short — and the value shipped was
+probed as a deliberately oversized bracket that the measurement then endorsed; dialling it back to 9
+units and 11 seconds returned him to 0 of 3.
+
+FlameFrags is the exception, and the reason his earlier buffs kept producing byte-identical runs is
+that Trained by Theo unlocked at level 9, which he reaches around wave 17 — the passive was live for
+two waves of a campaign. At unlock 4 the carts become his largest damage source at **31% of his run's
+total**, and he still loses all three seeds at wave 19; a larger blast made him worse. His mean kill
+depth is **0.19 of the path, 82% of kills in the first two tenths**: at 6.5 attack range his damage
+and the carts it drops all land in one place, and whatever survives it walks the rest of the path
+against towers alone. That is kit shape, not magnitude.
 
 Two abilities were found not to be doing what their own text says, both of them the persistent half of
 a hero's kit. Wemmbu's Cobweb Trap "throws cobwebs over a stretch of path" but only swept whoever

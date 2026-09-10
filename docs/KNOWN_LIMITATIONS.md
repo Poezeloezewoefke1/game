@@ -108,8 +108,8 @@ What it does **not** establish, and these are real gaps:
   (reacting to a wave's composition) and worse in others (missing ability windows). The AI is a
   competent-but-unimaginative benchmark, so the game is probably somewhat easier for an engaged human
   than these numbers suggest.
-- **Three of the four heroes cannot win the campaign.** This is the most serious balance problem in
-  the game and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta
+- **One hero of the four still cannot win the campaign, and a second is far above the target band.**
+  This is the most serious balance problem left in the game, and it is measured, not suspected. Measured on an isolated benchmark (every hero at meta
   level 1, nothing written back), three seeds each. These are the first hero numbers in this
   repository not contaminated by persisted progression, and they supersede every hero table
   published before them:
@@ -117,9 +117,16 @@ What it does **not** establish, and these are real gaps:
   | hero | result |
   |---|---|
   | ParrotX2 | 3 of 3, all three on 100/100 lives — above the band the curve targets |
+  | Wemmbu | 3 of 3, wins on 51/21/48 lives — in the band |
   | SpokeIsHere | 2 of 3, wins on 27 and 55 lives — in the band |
-  | Wemmbu | 0 of 3, dead at waves 22/21/20 |
-  | FlameFrags | 0 of 3, dead at waves 21/19/19 |
+  | FlameFrags | 0 of 3, dead at waves 19/19/19 |
+
+  Three of the four now finish the campaign, against one when this was first measured. Wemmbu's fix
+  was scale: his webs already lingered, they were simply too small and too short to matter, and a
+  10-unit patch lasting 14 seconds with a 60% vulnerability puts him squarely in SpokeIsHere's band.
+  Worth recording that the value shipped here was probed as a deliberately *oversized* bracket to test
+  whether the lever worked at all — the measurement then said the oversized setting was the correct
+  one, and a dial-back to 9 units and 11 seconds dropped him straight back to 0 of 3.
 
   The curve itself is not the problem: it fits SpokeIsHere well. ParrotX2 sits above it and Wemmbu
   and FlameFrags below.
@@ -163,8 +170,21 @@ What it does **not** establish, and these are real gaps:
     result is unchanged. Persistence alone is not worth anything — the persistent thing has to hit
     hard enough to matter, and his does not.
 
-  So the gap is still open, and the honest reading is that these two need their numbers *and* their
-  persistence raised together, which remains a design decision about the owner's characters.
+  **FlameFrags is the one that is left, and scaling is not his answer.** Two things were wrong and
+  both are now fixed: his cart was dropping (correct) but his Trained by Theo passive unlocked at
+  level 9, which he only reaches around wave 17, so it was live for the last two waves of a campaign
+  — which is why buffing the cart repeatedly produced byte-identical runs. It now unlocks at 4. With
+  that done the carts are his single largest damage source at **31% of everything his run deals**,
+  and he still loses all three seeds at wave 19. Raising the blast further made him *worse*, not
+  better.
+
+  The diagnostic says why, and it is the shape of his kit rather than its size: his mean kill depth
+  is **0.19 of the path, with 82% of kills in the first two tenths**. He attacks at 6.5 range, the
+  shortest of the four, so his damage and the carts those kills drop all land in one spot; anything
+  that survives that spot walks the remaining 80% of the path against towers alone. Wemmbu's web, by
+  contrast, is a zone that applies to everything passing through it wherever he stands. Giving
+  FlameFrags reach — or a contribution that is not anchored to where he personally kills — is a
+  design decision about the owner's character, so it is scoped and left rather than guessed at.
 
   Treat even these as weak evidence. Removing ParrotX2's +57% meta damage bonus moved him from
   48/100/77 lives to 100/100/100 — impossible as a power effect, since his personal damage is 1–3% of
