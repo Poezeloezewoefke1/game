@@ -179,3 +179,40 @@ export function screenTexture(seed = 1, hue = '#5fe3ff') {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+/** Console screen showing a few lines of text. */
+export function textScreenTexture(lines, color = '#ffb25a', bg = '#140a02') {
+  const [c, g] = canvas(512, 256);
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 512, 256);
+  g.strokeStyle = color;
+  g.globalAlpha = 0.7;
+  g.lineWidth = 3;
+  g.strokeRect(10, 10, 492, 236);
+  g.globalAlpha = 1;
+  g.fillStyle = color;
+  lines.forEach((l, i) => {
+    g.font = i === 0 ? '600 40px "IBM Plex Mono", monospace' : '500 26px "IBM Plex Mono", monospace';
+    g.fillText(l, 30, 64 + i * 46 + (i ? 14 : 0));
+  });
+  for (let y = 0; y < 256; y += 4) { g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(0, y, 512, 1); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Yellow/black hazard stripes. */
+export function hazardTexture() {
+  const [c, g] = canvas(256, 32);
+  g.fillStyle = '#d9a21c';
+  g.fillRect(0, 0, 256, 32);
+  g.fillStyle = '#1a1a1a';
+  for (let x = -32; x < 256; x += 32) {
+    g.beginPath(); g.moveTo(x, 32); g.lineTo(x + 16, 0); g.lineTo(x + 32, 0); g.lineTo(x + 16, 32); g.closePath(); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  t.repeat.set(12, 1);
+  return t;
+}

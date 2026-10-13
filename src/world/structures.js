@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { waterMat, U } from './shading.js';
 import { SITES } from './layout.js';
-import { panelTexture, glyphTextures, labelTexture, screenTexture } from './textures.js';
+import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
 import * as G from './geom.js';
 import { mulberry32 } from '../core/noise.js';
 
@@ -160,7 +160,28 @@ export class Structures {
     s.mesh(label, waterMat({ map: labelTexture('MERIDIAN'), transparent: true, roughness: 0.6 }), 0, -15, 0);
     // interior
     const inner = new THREE.CylinderGeometry(R - 0.2, R - 0.2, yT - (-19.9), 40, 1, true);
-    s.mesh(inner, waterMat({ color: 0xbcb8ad, side: THREE.BackSide, roughness: 0.7 }, { ambient: 0.4 }), 0, (yT + -19.9) / 2, 0);
+    const innerTex = panelTexture('#c9c6bc', 7, 0.25);
+    innerTex.repeat.set(10, 2);
+    s.mesh(inner, waterMat({ map: innerTex, side: THREE.BackSide, roughness: 0.7 }, { ambient: 0.7 }), 0, (yT + -19.9) / 2, 0);
+    // emergency light strips around the wall at deck level
+    this.stripMat = waterMat({ color: 0x220000, emissive: 0xff3b2b, emissiveIntensity: 1.6 });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + 0.13;
+      const st = s.mesh(new THREE.BoxGeometry(1.2, 0.07, 0.05), this.stripMat, Math.cos(a) * (R - 0.27), -19.3, Math.sin(a) * (R - 0.27));
+      st.lookAt(0, -19.3, 0);
+      const up = s.mesh(new THREE.BoxGeometry(1.2, 0.07, 0.05), this.stripMat, Math.cos(a) * (R - 0.27), yT - 1.2, Math.sin(a) * (R - 0.27));
+      up.lookAt(0, yT - 1.2, 0);
+    }
+    // hazard edge around the pool
+    const haz = new THREE.RingGeometry(3.6, 3.95, 48, 1);
+    haz.rotateX(-Math.PI / 2);
+    // remap UVs so stripes run around the ring
+    const huv = haz.attributes.uv, hp = haz.attributes.position;
+    for (let i = 0; i < huv.count; i++) {
+      const ang = Math.atan2(hp.getZ(i), hp.getX(i));
+      huv.setXY(i, ang / (Math.PI * 2) + 0.5, Math.hypot(hp.getX(i), hp.getZ(i)) > 3.8 ? 1 : 0);
+    }
+    s.mesh(haz, waterMat({ map: hazardTexture(), roughness: 0.6 }), 0, -19.88, 0);
     const ceiling = new THREE.CircleGeometry(R - 0.2, 40);
     ceiling.rotateX(Math.PI / 2);
     s.mesh(ceiling, M.interior, 0, yT - 0.3, 0);
@@ -170,7 +191,7 @@ export class Structures {
     // pool water inside the moonpool
     const pool = new THREE.CircleGeometry(3.6, 32);
     pool.rotateX(-Math.PI / 2);
-    this.poolMat = waterMat({ color: 0x0a5a6a, emissive: 0x0b4a5c, emissiveIntensity: 0.6, transparent: true, opacity: 0.85, roughness: 0.1, side: THREE.DoubleSide, depthWrite: false });
+    this.poolMat = waterMat({ color: 0x0a4a5a, emissive: 0x0b3a4c, emissiveIntensity: 0.18, transparent: true, opacity: 0.78, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide, depthWrite: false });
     s.mesh(pool, this.poolMat, 0, -20.2, 0);
     // railing
     const rail = new THREE.TorusGeometry(3.75, 0.06, 6, 48);
@@ -202,14 +223,15 @@ export class Structures {
       const x = Math.cos(angle) * r, z = Math.sin(angle) * r;
       const body = s.mesh(new THREE.BoxGeometry(w, h, 0.9), mat, x, -19.9 + h / 2, z, -angle - Math.PI / 2);
       body.lookAt(0, body.position.y, 0);
-      const scr = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.8, 0.6), screenMat);
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.8, w * 0.4), screenMat);
       scr.position.set(0, h / 2 - 0.45, 0.46);
       scr.rotation.x = -0.25;
       body.add(scr);
       return { x, z, body };
     };
-    this.termScreenMat = M.screen(3, '#5fe3ff');
-    this.termScreenMat.emissiveIntensity = 0.25;
+    this.termTexOff = textScreenTexture(['EMERGENCY POWER', 'Fabricator: essential items', 'Main bus: OFFLINE', '[E] Access terminal'], '#ffb25a', '#140a02');
+    this.termTexOn = textScreenTexture(['MERIDIAN ONLINE', 'Fabricator + upgrade bay', 'Storage \u00b7 Logs \u00b7 Save', '[E] Access terminal'], '#8fe3ea', '#02121a');
+    this.termScreenMat = waterMat({ color: 0x000000, emissive: 0xffffff, emissiveMap: this.termTexOff, emissiveIntensity: 0.9 });
     const term = consoleAt(0, 2.2, 1.5, M.hullDark, this.termScreenMat);
     s.interact({ type: 'stationTerminal' }, term.x * 0.8, -19.4, term.z * 0.8, 3.2);
     // fabricator (beside terminal)
@@ -224,9 +246,24 @@ export class Structures {
     const coreA = Math.PI;
     const cx = Math.cos(coreA) * 5.2, cz = Math.sin(coreA) * 5.2;
     s.mesh(new THREE.CylinderGeometry(0.9, 1.1, 3.2, 16), M.hullDark, cx, -18.3, cz);
-    const coreRing = s.mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.2, 16, 1, true), this.coreMat, cx, -18.2, cz);
-    this.animated.push((t) => { coreRing.rotation.y = t * (this.powered ? 1.2 : 0.1); });
+    const coreRings = [];
+    for (let k = 0; k < 3; k++) {
+      const ring = s.mesh(new THREE.TorusGeometry(0.98, 0.06, 8, 32), this.coreMat, cx, -18.9 + k * 0.55, cz);
+      ring.rotation.x = Math.PI / 2;
+      coreRings.push(ring);
+    }
+    const coreSlot = s.mesh(new THREE.BoxGeometry(0.5, 0.7, 0.2), M.hullDark, cx + 0.95, -18.6, cz);
+    coreSlot.rotation.y = Math.PI / 2;
+    this.animated.push((t) => { coreRings.forEach((r, k) => { r.scale.setScalar(1 + Math.sin(t * (this.powered ? 3 : 0.8) + k) * 0.02); }); });
     s.interact({ type: 'powerCore' }, cx * 0.8, -19.4, cz * 0.8, 3.2);
+    const sign = (text, angle, color) => {
+      const m = s.mesh(new THREE.PlaneGeometry(2.1, 0.39), waterMat({ map: labelTexture(text, color, 1024, 192, '600 96px "Space Grotesk", sans-serif'), transparent: true, emissive: 0xffffff, emissiveIntensity: 0.25 }),
+        Math.cos(angle) * (R - 0.75), -14.6, Math.sin(angle) * (R - 0.75));
+      m.lookAt(0, -14.6, 0);
+    };
+    sign('TERMINAL · FABRICATOR', 0.35, '#e8e2d2');
+    sign('POWER CORE', Math.PI, '#e8742c');
+    sign('MOONPOOL', Math.PI / 2, '#e8e2d2');
     // lockers & clutter
     for (let i = 0; i < 4; i++) {
       const a = -1.9 + i * 0.32;
@@ -1007,7 +1044,10 @@ export class Structures {
     this.floodMat.emissiveIntensity = on ? 3 : 0;
     this.coreMat.emissive.set(on ? 0x6ff3ff : 0xff3b2b);
     this.coreMat.emissiveIntensity = on ? 2.5 : 0.8;
-    this.termScreenMat.emissiveIntensity = on ? 1.5 : 0.25;
+    this.termScreenMat.emissiveMap = on ? this.termTexOn : this.termTexOff;
+    this.termScreenMat.needsUpdate = true;
+    this.stripMat.emissive.set(on ? 0xffe2b8 : 0xff3b2b);
+    this.stripMat.emissiveIntensity = on ? 1.4 : 1.6;
     this.beaconMat.emissive.set(on ? 0x6ff3ff : 0xff3b2b);
     this.dockLightMat.emissive.set(on ? 0x6ff3ff : 0xff3b2b);
   }

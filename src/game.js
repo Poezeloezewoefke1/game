@@ -243,7 +243,7 @@ export class Game {
       const pan = clamp(_v.normalize().dot(right), -1, 1) * 0.8;
       this.audio.cantorCall(e.dist, pan);
     });
-    ev.on('splash', (e) => { if (this.mode === 'play') this.audio.splash(); if (e.up) this.env.bubbles.spawn(this.player.pos.clone().setY(this.player.pos.y - 0.3), 10, 0.5, 0.09); });
+    ev.on('splash', (e) => { if (this.mode === 'play') this.audio.splash(); if (e.up && !this.player.inAirPocket) this.env.bubbles.spawn(this.player.pos.clone().setY(this.player.pos.y - 0.3), 10, 0.5, 0.09); });
   }
 
   onResize() {
