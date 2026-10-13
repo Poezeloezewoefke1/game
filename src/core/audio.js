@@ -356,6 +356,23 @@ export class AudioEngine {
       this.tone({ freq: f, type: i % 2 ? 'triangle' : 'sine', dur: 9, gain: 0.05, attack: 3.5, bus: 'music', reverb: 1.5, delay: i * 0.6, pan: (i - 1.5) * 0.4 });
     });
   }
+  shimmer(dist) {
+    const vol = Math.max(0, 0.05 * (1 - dist / 40));
+    if (vol <= 0) return;
+    for (let i = 0; i < 4; i++) this.tone({ freq: 2400 + Math.random() * 1600, dur: 0.25, gain: vol, delay: i * 0.05 + Math.random() * 0.05, reverb: 0.7 });
+  }
+  crystalRing() {
+    const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+    const n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const f = scale[Math.floor(Math.random() * scale.length)];
+      this.tone({ freq: f, type: 'sine', dur: 3.5, gain: 0.035, attack: 0.02, delay: i * 0.4, reverb: 1.4, pan: (Math.random() - 0.5) * 1.2 });
+      this.tone({ freq: f * 2.76, type: 'sine', dur: 1.2, gain: 0.008, attack: 0.01, delay: i * 0.4, reverb: 1.2 });
+    }
+  }
+  deepGroan() {
+    this.tone({ freq: 38 + Math.random() * 20, type: 'sawtooth', dur: 5, gain: 0.07, attack: 1.5, glide: 0.6, filter: 220, reverb: 1.6, pan: (Math.random() - 0.5) * 1.6 });
+  }
   endingSwell() {
     const notes = [65.41, 98, 130.81, 196, 261.63, 392, 523.25];
     notes.forEach((f, i) => this.tone({ freq: f, type: i < 3 ? 'sawtooth' : 'sine', dur: 14, gain: i < 3 ? 0.06 : 0.05, attack: 5, delay: i * 0.9, bus: 'music', filter: 1800, reverb: 1.8 }));

@@ -1253,6 +1253,19 @@ export class Game {
       this.evaluate();
     }
 
+    // ---- ambient life sounds
+    this.ambTimer = (this.ambTimer ?? 6) - dt;
+    if (this.ambTimer < 0) {
+      this.ambTimer = 5 + Math.random() * 9;
+      const cp = this.camera.position;
+      const school = this.world.creatures.fish.schools.find((sc) => sc.active && sc.center.distanceTo(cp) < 40);
+      const caveD = this.world.structures.caveCurve ? this.world.structures.caveChamber.distanceTo(cp) : 999;
+      const nearCave = caveD < 140 && depth > 40;
+      if (nearCave) this.audio.crystalRing();
+      else if (school) this.audio.shimmer(school.center.distanceTo(cp));
+      else if (depth > 180 && Math.random() < 0.6) this.audio.deepGroan();
+    }
+
     // ---- world + audio
     this.updateWorld(dt, this.camera.position, {});
     this.audio.update(dt, this.audioState());

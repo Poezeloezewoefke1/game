@@ -256,6 +256,17 @@ const ending = await page.evaluate(() => {
 check('Resonance Key starts the Threshold sequence', ending.started);
 check('story conclusion reached', ending.ending && ending.mode === 'ending' && ending.beyond === 'active', ending.mode);
 
+// --- every synthesized sound effect runs without throwing
+const audio = await page.evaluate(() => {
+  const a = window.__ABYSSAL.audio;
+  const fails = [];
+  const calls = ['ui', 'uiOpen', 'uiClose', 'ping', 'scanComplete', 'pickup', 'craft', 'denied', 'damage', 'warn', 'creak', 'splash', 'heartbeat', 'discovery', 'powerOn', 'crystalRing', 'deepGroan', 'endingSwell'];
+  for (const c of calls) { try { a[c](); } catch (e) { fails.push(`${c}: ${e.message}`); } }
+  try { a.breathe(true); a.cantorCall(200, 0.3); a.creatureClick(10); a.stalkerScreech(30); a.shimmer(10); a.echo(100); a.playChord(50); a.playChord(300); a.voiceLog(true); a.voiceLog(false); } catch (e) { fails.push(e.message); }
+  return { ready: a.ready, fails };
+});
+check('audio engine initialised and all effects play', audio.ready && audio.fails.length === 0, audio.fails.join(', '));
+
 check('no runtime errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures}/${results.length} checks passed`);
