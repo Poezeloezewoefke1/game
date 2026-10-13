@@ -194,6 +194,16 @@ const prog = await page.evaluate(() => {
   g.input.simulate('KeyW', true); g.simulate(3); g.input.simulate('KeyW', false);
   out.subMoved = g.sub.pos.distanceTo(s0);
   out.o2InSub = g.state.o2 === g.o2Max;
+  // drive into the steep Abyss wall: it should stop the sub, not lift it up the cliff
+  g.state.upgrades.hull = 2;
+  const ab = { x: 380, z: 540 };
+  g.sub.place(new g.sub.pos.constructor(ab.x + 125, -430, ab.z), -Math.PI / 2);
+  const y0 = g.sub.pos.y;
+  g.input.simulate('KeyW', true); g.simulate(8); g.input.simulate('KeyW', false);
+  out.wallClimb = g.sub.pos.y - y0;
+  out.wallR = Math.hypot(g.sub.pos.x - ab.x, g.sub.pos.z - ab.z);
+  out.wallGround = g.sub.pos.y - g.world.terrain.heightAt(g.sub.pos.x, g.sub.pos.z);
+  g.state.upgrades.hull = 0;
   g.exitSub(true);
   out.exited = !g.inSub;
   return out;
@@ -207,6 +217,7 @@ check('crafted upgrade applies (O2 tank)', prog.tankAfter > prog.tankBefore, `${
 check('Kestrel can be boarded and piloted', prog.inSub && prog.subMoved > 5, `${prog.subMoved.toFixed(1)} m`);
 check('oxygen is supplied inside the Kestrel', prog.o2InSub);
 check('can exit the Kestrel', prog.exited);
+check('steep walls block the Kestrel instead of lifting it', prog.wallClimb < 12 && prog.wallGround > 0, `climb ${prog.wallClimb.toFixed(1)} m, r=${prog.wallR.toFixed(0)}`);
 
 // --- save / load round trip
 const save = await page.evaluate(() => {

@@ -98,18 +98,22 @@ export class CollisionWorld {
       if (!any) break;
     }
     if (!skipTerrain && this.terrain) {
-      const gh = this.terrain.heightAt(p.x, p.z);
-      if (p.y - r < gh) {
-        const n = this.terrain.normalAt(p.x, p.z);
-        // push along normal mostly, but guarantee above ground
+      // push out along the surface normal so steep walls act as walls
+      // (a purely vertical push would lift you up cliff faces)
+      for (let k = 0; k < 4; k++) {
+        const gh = this.terrain.heightAt(p.x, p.z);
         const pen = gh + r - p.y;
-        p.y += pen;
+        if (pen <= 0) break;
+        const n = this.terrain.normalAt(p.x, p.z);
+        p.addScaledVector(n, pen * Math.max(n.y, 0.25));
         if (vel) {
           const vn = vel.dot(n);
           if (vn < 0) vel.addScaledVector(n, -vn);
         }
         hit = true;
       }
+      const gh = this.terrain.heightAt(p.x, p.z);
+      if (p.y < gh + r * 0.5) p.y = gh + r * 0.5; // never end up inside the seabed
     }
     return hit;
   }
