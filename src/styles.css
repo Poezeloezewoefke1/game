@@ -191,9 +191,10 @@ kbd {
 .ending-stats b { display: block; font-size: 20px; color: var(--ink); font-weight: 500; }
 
 /* ---------------------------------------------------------------- PDA */
-.overlay { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(2, 14, 20, 0.6), rgba(0, 4, 8, 0.85)); }
+.overlay { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(2, 14, 20, 0.6), rgba(0, 4, 8, 0.85)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .pda-frame { width: min(1100px, 94vw); height: min(700px, 88vh); display: flex; flex-direction: column; background: rgba(4, 16, 24, 0.9); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(143, 227, 234, 0.04); overflow: hidden; }
-.pda-head { display: flex; align-items: center; gap: 20px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.pda-head { display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+@media (max-width: 1250px) { .pda-brand .long { display: none; } .tabs button { padding: 8px 9px; } }
 .pda-brand { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; color: var(--ink-faint); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .pda-brand b { color: var(--teal); font-weight: 500; }
 .pda-brand .mark { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }

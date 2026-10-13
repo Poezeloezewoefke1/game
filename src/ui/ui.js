@@ -384,8 +384,8 @@ export class UI {
       let x = (_p.x * 0.5 + 0.5) * w, y = (-_p.y * 0.5 + 0.5) * h;
       if (m.clamp) {
         if (behind) { x = w - x; y = h - 40; }
-        x = Math.max(40, Math.min(w - 40, x));
-        y = Math.max(60, Math.min(h - 60, y));
+        x = Math.max(110, Math.min(w - 110, x));
+        y = Math.max(70, Math.min(h - 150, y));
       } else if (x < 0 || x > w || y < 0 || y > h) { el.style.display = 'none'; continue; }
       el.style.display = '';
       el.className = `marker ${m.cls || ''}`;
@@ -746,6 +746,7 @@ export class UI {
       header = `<div class="station-actions">
         <button data-st="save">Save expedition</button>
         <button data-st="storeAll">Store all materials</button>
+        ${s.flags.power ? '<button data-st="recall">Recall Kestrel to dock</button>' : ''}
         <span class="panel-note" style="margin:0;align-self:center;font-size:12px">${s.flags.power ? 'Main power online. Upgrade bay and fabricator available.' : 'EMERGENCY POWER — fabricator limited to essential items.'}</span></div>`;
     } else {
       header = '<div class="panel-note" style="margin-top:0;font-size:13px">Kestrel field fabricator: consumables only. Upgrades require Meridian Station’s upgrade bay.</div>';
@@ -755,6 +756,7 @@ export class UI {
     body.querySelectorAll('[data-craft]').forEach((b) => b.addEventListener('click', () => { g.craft(b.dataset.craft, mode); this.renderPDA(); }));
     body.querySelectorAll('[data-st=save]').forEach((b) => b.addEventListener('click', () => { g.saveGame(true); }));
     body.querySelectorAll('[data-st=storeAll]').forEach((b) => b.addEventListener('click', () => { g.storeAll(); this.renderPDA(); }));
+    body.querySelectorAll('[data-st=recall]').forEach((b) => b.addEventListener('click', () => { g.recallSub(); }));
   }
 
   renderStatus() {

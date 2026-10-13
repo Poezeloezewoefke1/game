@@ -157,9 +157,16 @@ export class ViewModel {
 
   pickup() { this.reach = 1; }
 
+  attachCockpit(group) {
+    this.cockpit = group;
+    this.root.add(group);
+  }
+
   update(dt, camera, opts) {
-    const { mouse, speed, bob, scanning, scanTarget, visible, pdaOpen, lampOn, ambient, time } = opts;
-    this.root.visible = visible;
+    const { mouse, speed, bob, scanning, scanTarget, visible, pdaOpen, lampOn, ambient, time, cockpit } = opts;
+    this.root.visible = visible || !!cockpit;
+    this.hand.visible = visible;
+    if (this.cockpit) this.cockpit.visible = !!cockpit;
     this.root.position.copy(camera.position);
     this.root.quaternion.copy(camera.quaternion);
     this.root.updateMatrixWorld(true);
@@ -178,7 +185,7 @@ export class ViewModel {
     this.hand.rotation.y = -0.12 - this.scanPulse * 0.1 + this.sway.x;
     this.pdaRaise = THREE.MathUtils.lerp(this.pdaRaise, pdaOpen ? 1 : 0, 1 - Math.exp(-dt * 9));
     this.left.position.set(-0.32 + this.pdaRaise * 0.18, -0.75 + this.pdaRaise * 0.42, -0.5);
-    this.left.visible = this.pdaRaise > 0.02;
+    this.left.visible = visible && this.pdaRaise > 0.02;
     this.emitMat.emissiveIntensity = 1.2 + this.scanPulse * 2 + Math.sin(time * 4) * 0.2;
     this.hemi.intensity = ambient;
     this.lamp.intensity = lampOn ? 1.6 : 0.05;

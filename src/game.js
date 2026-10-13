@@ -169,7 +169,7 @@ export class Game {
     this.player = new Player(this.camera, collision);
     this.sub = new Kestrel(this.scene, collision);
     this.viewmodel = new ViewModel();
-    this.viewmodel.scene.add(this.sub.buildCockpit());
+    this.viewmodel.attachCockpit(this.sub.buildCockpit());
     this.post = new Post(r, this.scene, this.viewmodel.scene, this.camera);
     this.bindEvents();
     this.applySettings();
@@ -551,7 +551,6 @@ export class Game {
     this.stats.boarded++;
     this.sub.setLights(true);
     this.state.lamp = false;
-    this.sub.cockpit.visible = true;
     this.audio.splash();
     this.audio.tone({ freq: 220, dur: 0.6, gain: 0.08, glide: 2 });
     this.ui.notify('Kestrel', 'Pilot aboard', 'W/S thrust · A/D strafe · Space/C rise/dive · Shift boost · E exit');
@@ -567,7 +566,6 @@ export class Game {
     }
     this.confirmExitDeep = 0;
     this.inSub = false;
-    this.sub.cockpit.visible = false;
     // place the diver beside the hatch, clear of geometry
     const side = _v.set(Math.cos(this.sub.yaw), 0, -Math.sin(this.sub.yaw)).multiplyScalar(-3.4);
     const p = this.sub.pos.clone().add(side).add(V(0, 0.8, 0));
@@ -788,9 +786,10 @@ export class Game {
     // structure interactables
     for (const it of this.world.structures.interactables) {
       if (!it.active) continue;
-      if (this.inSub && !it.fromSub) continue;
+      const manip = this.inSub && (it.type === 'item' || it.type === 'log');
+      if (this.inSub && !it.fromSub && !manip) continue;
       const dist = it.pos.distanceTo(origin);
-      if (dist > it.radius) continue;
+      if (dist > (manip && !it.fromSub ? Math.max(7, it.radius) : it.radius)) continue;
       _v.subVectors(it.pos, origin).normalize();
       const dot = _v.dot(dir);
       if (dot < (it.radius > 10 ? 0.3 : 0.82)) continue;
@@ -1000,7 +999,7 @@ export class Game {
     // keep ambient life moving slowly behind menus
     this.updateWorld(dt * (this.mode === 'pause' ? 0 : 0.25), this.camera.position, {});
     this.viewmodel.update(dt, this.camera, {
-      mouse: [0, 0], speed: 0, bob: this.player.bob, visible: !this.inSub && this.mode === 'pda', pdaOpen: this.mode === 'pda',
+      mouse: [0, 0], speed: 0, bob: this.player.bob, visible: !this.inSub && this.mode === 'pda', cockpit: this.inSub && this.mode !== 'ending', pdaOpen: this.mode === 'pda',
       lampOn: this.state.lamp, ambient: this.vmAmbient || 1, time: performance.now() * 0.001,
     });
     if (this.mode === 'pda' && this.input.hit('pda')) this.closePDA();
@@ -1073,7 +1072,7 @@ export class Game {
     if (input.hit('pause')) { this.pause(); return; }
     if (input.hit('pda')) { this.openPDA(); return; }
     if (input.hit('map')) { this.openPDA('map'); return; }
-    if (this.cinematic) { this.updateCinematic(dt); this.sub.cameraTransform(this.camera); this.updateWorld(dt, this.camera.position, {}); this.audio.update(dt, this.audioState()); this.ui.updateHUD(dt, this.hudFrame(null, null)); return; }
+    if (this.cinematic) { this.updateCinematic(dt); this.sub.cameraTransform(this.camera); this.viewmodel.update(dt, this.camera, { mouse: [0, 0], speed: 0, bob: 0, visible: false, cockpit: true, ambient: 0.2, time: s.time }); this.updateWorld(dt, this.camera.position, {}); this.audio.update(dt, this.audioState()); this.ui.updateHUD(dt, this.hudFrame(null, null)); return; }
 
     const mouse = input.consumeMouse();
     const prevPos = this.player.pos.clone();
@@ -1095,10 +1094,16 @@ export class Game {
         this.sub.hull = Math.min(100, this.sub.hull + dt * 4);
       }
       if (this.sub.power <= 0 && this.sub.lightsOn) this.sub.setLights(true);
+      this.dashTimer = (this.dashTimer || 0) - dt;
+      if (this.dashTimer < 0) { this.dashTimer = 0.2; this.sub.drawDash(this.hullRating); }
     } else {
       this.player.look(mouse[0], mouse[1], this.settings);
       this.player.update(dt, input, this.settings, this.swimMult, this.events);
       this.sub.idle(dt);
+      if (this.state.flags.power && this.sub.pos.distanceTo(this.world.structures.dockPoint) < 10) {
+        this.sub.power = Math.min(100, this.sub.power + dt * 8);
+        this.sub.hull = Math.min(100, this.sub.hull + dt * 4);
+      }
       if (input.hit('lamp')) {
         if (s.battery > 0) { s.lamp = !s.lamp; this.audio.tone({ freq: s.lamp ? 1200 : 800, dur: 0.05, gain: 0.05, bus: 'ui' }); }
         this.stats.lampToggles++;
@@ -1157,10 +1162,10 @@ export class Game {
     }
     if (!warning) {
       if (s.o2 <= 0 && !breathing) warning = 'Oxygen depleted — surface now';
-      else if (s.o2 < 15 && !breathing) { warning = 'Oxygen low'; warningAmber = s.o2 > 7; } else if (this.inSub && this.sub.power < 10) { warning = 'Kestrel power low — return to dock'; warningAmber = true; } else if (!this.inSub && depth > this.suitRating * 0.9) { warning = 'Approaching suit depth limit'; warningAmber = true; } else if (this.inSub && depth > this.hullRating * 0.9) { warning = 'Approaching crush depth'; warningAmber = true; }
+      else if (s.o2 < 15 && !breathing) { warning = 'Oxygen low'; warningAmber = s.o2 > 7; } else if (this.inSub && this.docked) { warning = this.sub.power < 99.5 || this.sub.hull < 99.5 ? 'Docked — charging & repairing' : 'Docked — systems nominal'; warningAmber = true; } else if (this.inSub && this.sub.power < 10) { warning = 'Kestrel power low — return to dock'; warningAmber = true; } else if (!this.inSub && depth > this.suitRating * 0.9) { warning = 'Approaching suit depth limit'; warningAmber = true; } else if (this.inSub && depth > this.hullRating * 0.9) { warning = 'Approaching crush depth'; warningAmber = true; }
     }
     this.warnTimer -= dt;
-    if (warning && this.warnTimer < 0) { this.warnTimer = warningAmber ? 3 : 1.4; this.audio.warn(); }
+    if (warning && this.warnTimer < 0 && !(this.inSub && this.docked)) { this.warnTimer = warningAmber ? 3 : 1.4; this.audio.warn(); }
     if (s.o2 <= 0 && !breathing) {
       this.beatTimer = (this.beatTimer || 0) - dt;
       if (this.beatTimer < 0) { this.beatTimer = 0.9; this.audio.heartbeat(); }
@@ -1245,7 +1250,7 @@ export class Game {
     this.vmAmbient = 0.08 + lightLevel * 1.3 + (this.player.inAirPocket ? 0.8 : 0);
     this.viewmodel.update(dt, this.camera, {
       mouse, speed: this.player.speed, bob: this.player.bob, scanning: this.scan.active, scanTarget: target?.pos,
-      visible: !this.inSub, pdaOpen: false, lampOn: s.lamp, ambient: this.vmAmbient, time: s.time,
+      visible: !this.inSub, cockpit: this.inSub, pdaOpen: false, lampOn: s.lamp || (this.inSub && this.sub.lightsOn), ambient: this.vmAmbient, time: s.time,
     });
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt);

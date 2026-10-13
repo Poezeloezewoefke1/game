@@ -99,45 +99,58 @@ export class Kestrel {
     return g;
   }
 
-  /** Cockpit frame shown in first person when piloting (added to the viewmodel scene). */
+  /** Cockpit frame shown in first person when piloting (attached to the camera rig). */
   buildCockpit() {
     const g = new THREE.Group();
     const frameM = new THREE.MeshStandardMaterial({ color: 0x1a1f25, roughness: 0.7, metalness: 0.4 });
     const accentM = new THREE.MeshStandardMaterial({ color: 0x2a3138, roughness: 0.6, metalness: 0.4 });
-    // canopy struts
+    const orangeM = new THREE.MeshStandardMaterial({ color: 0xb85a22, roughness: 0.6 });
+    // canopy rim: an arch hugging the edges of the view
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(1.32, 0.05, 8, 48, Math.PI), frameM);
+    rim.position.set(0, -0.5, -0.95);
+    g.add(rim);
     for (const sx of [-1, 1]) {
-      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.4, 0.06), frameM);
-      strut.position.set(sx * 0.62, 0.1, -0.85);
-      strut.rotation.z = sx * -0.45;
-      strut.rotation.x = 0.35;
-      g.add(strut);
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.9, 0.07), frameM);
+      pillar.position.set(sx * 1.3, -0.5, -0.95);
+      g.add(pillar);
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), frameM);
+      brace.position.set(sx * 1.05, 0.55, -1.0);
+      brace.rotation.z = sx * 0.9;
+      g.add(brace);
     }
-    const top = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.04, 6, 32, Math.PI), frameM);
-    top.position.set(0, -0.15, -0.95);
-    top.rotation.x = -0.25;
-    g.add(top);
-    // dashboard
-    const dash = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.32, 0.55), accentM);
-    dash.position.set(0, -0.56, -0.72);
-    dash.rotation.x = 0.4;
+    // dashboard across the bottom of the view
+    const dash = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 0.5), accentM);
+    dash.position.set(0, -0.6, -0.78);
+    dash.rotation.x = 0.35;
     g.add(dash);
+    const lip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.015, 0.02), orangeM);
+    lip.position.set(0, -0.505, -0.62);
+    g.add(lip);
     this.dashCanvas = document.createElement('canvas');
-    this.dashCanvas.width = 512; this.dashCanvas.height = 128;
+    this.dashCanvas.width = 512; this.dashCanvas.height = 96;
     this.dashTex = new THREE.CanvasTexture(this.dashCanvas);
     this.dashTex.colorSpace = THREE.SRGBColorSpace;
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ map: this.dashTex, toneMapped: false }));
-    scr.position.set(0, -0.4, -0.58);
-    scr.rotation.x = -0.75;
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.079), new THREE.MeshBasicMaterial({ map: this.dashTex, toneMapped: false }));
+    scr.position.set(-0.62, -0.445, -0.7);
+    scr.rotation.set(-0.5, 0.25, 0);
     g.add(scr);
+    // small indicator lights
+    this.dashLights = [];
+    for (let i = 0; i < 6; i++) {
+      const l = new THREE.Mesh(new THREE.CircleGeometry(0.006, 10), new THREE.MeshBasicMaterial({ color: i < 2 ? 0x6ff3ff : 0xffb25a, toneMapped: false }));
+      l.position.set(-0.36 + i * 0.03 + (i > 2 ? 0.6 : 0), -0.505, -0.64);
+      l.rotation.x = -0.6;
+      g.add(l);
+      this.dashLights.push(l);
+    }
     // control sticks
     for (const sx of [-1, 1]) {
-      const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.25, 8), frameM);
-      stick.position.set(sx * 0.35, -0.62, -0.45);
-      stick.rotation.x = -0.4;
+      const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.2, 8), frameM);
+      stick.position.set(sx * 0.42, -0.55, -0.5);
+      stick.rotation.x = -0.3;
       g.add(stick);
     }
     this.cockpit = g;
-    g.visible = false;
     return g;
   }
 
@@ -145,29 +158,32 @@ export class Kestrel {
     if (!this.dashCanvas) return;
     const c = this.dashCanvas.getContext('2d');
     c.fillStyle = '#04121a';
-    c.fillRect(0, 0, 512, 128);
-    c.font = '600 22px "IBM Plex Mono", monospace';
+    c.fillRect(0, 0, 512, 96);
     const depth = Math.max(0, -this.pos.y);
     const warn = depth > depthRating * 0.9;
     const cols = [
-      ['DEPTH', `${depth.toFixed(0)} m`, warn ? '#ff6a5a' : '#8ff4ff'],
+      ['DEPTH', `${depth.toFixed(0)}m`, warn ? '#ff6a5a' : '#8ff4ff'],
       ['HULL', `${this.hull.toFixed(0)}%`, this.hull < 35 ? '#ff6a5a' : '#8ff4ff'],
       ['POWER', `${this.power.toFixed(0)}%`, this.power < 20 ? '#ffb25a' : '#8ff4ff'],
       ['SPEED', `${this.vel.length().toFixed(1)}`, '#8ff4ff'],
     ];
     cols.forEach(([k, v, col], i) => {
-      c.fillStyle = 'rgba(143,244,255,0.55)';
-      c.fillText(k, 18 + i * 124, 42);
+      c.fillStyle = 'rgba(143,244,255,0.5)';
+      c.font = '500 15px "IBM Plex Mono", monospace';
+      c.fillText(k, 16 + i * 124, 26);
       c.fillStyle = col;
-      c.font = '600 30px "IBM Plex Mono", monospace';
-      c.fillText(v, 18 + i * 124, 86);
-      c.font = '600 22px "IBM Plex Mono", monospace';
+      c.font = '500 30px "IBM Plex Mono", monospace';
+      c.fillText(v, 16 + i * 124, 62);
     });
-    c.fillStyle = 'rgba(143,244,255,0.25)';
-    c.fillRect(18, 104, 476, 6);
+    c.fillStyle = 'rgba(143,244,255,0.2)';
+    c.fillRect(16, 78, 480, 5);
     c.fillStyle = warn ? '#ff6a5a' : '#8ff4ff';
-    c.fillRect(18, 104, 476 * clamp(depth / depthRating, 0, 1), 6);
+    c.fillRect(16, 78, 480 * clamp(depth / depthRating, 0, 1), 5);
     this.dashTex.needsUpdate = true;
+    if (this.dashLights) {
+      const t = performance.now() * 0.001;
+      this.dashLights.forEach((l, i) => { l.visible = i < 3 ? Math.sin(t * (1 + i) + i) > -0.3 : (warn || this.power < 20) && Math.sin(t * 6) > 0; });
+    }
   }
 
   place(p, yaw) {
