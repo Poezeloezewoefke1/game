@@ -676,6 +676,9 @@ export class Game {
       this.ui.notify(log.kind === 'audio' ? 'Audio log recovered' : 'Record recovered', log.title, `${log.author} · Tab → Logs`, 'violet');
       this.audio.tone({ freq: 523, dur: 0.4, gain: 0.07, reverb: 0.6 });
       this.audio.tone({ freq: 784, dur: 0.6, gain: 0.06, reverb: 0.6, delay: 0.12 });
+      // a short excerpt plays immediately; the full transcript lives in the PDA
+      const first = log.text.split(/(?<=[.!?\u2014])\s/)[0];
+      this.ui.subtitle(`<b>${log.author}:</b> ${first.length > 160 ? `${first.slice(0, 157)}\u2026` : first}`, 7);
     }
     if (log.unlock) this.unlockBlueprint(log.unlock);
     this.evaluate();

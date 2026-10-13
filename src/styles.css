@@ -50,6 +50,10 @@ kbd {
 .obj-title { font-size: 17px; font-weight: 600; margin-top: 4px; letter-spacing: 0.02em; }
 .obj-text { font-size: 13px; color: var(--ink-dim); line-height: 1.45; margin-top: 4px; }
 .obj-dist { font-family: var(--mono); font-size: 11px; color: var(--amber); margin-top: 6px; }
+.obj-side { font-size: 12px; color: var(--ink-faint); margin-top: 10px; line-height: 1.4; }
+.obj-side b { color: var(--ink-dim); font-weight: 500; }
+#hud > * { transition: opacity 0.8s; }
+#hud.cine .objective, #hud.cine .hint, #hud.cine .vitals, #hud.cine .subhud, #hud.cine .depthbox, #hud.cine .compass, #hud.cine .crosshair, #hud.cine .prompt, #hud.cine .markers, #hud.cine .notifications, #hud.cine .warning, #hud.cine .target-label { opacity: 0; }
 
 .hint { position: absolute; left: 26px; top: 46%; max-width: 300px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
   background: var(--glass); border: 1px solid var(--line); border-radius: 4px; opacity: 0; transform: translateX(-8px); transition: opacity 0.4s, transform 0.4s; }

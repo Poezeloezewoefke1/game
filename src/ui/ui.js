@@ -338,7 +338,10 @@ export class UI {
       const t = o.target ? o.target(g) : null;
       this.setText('objDist', t ? `${Math.round(t.distanceTo(f.camPos))} m · ${t.y < -1 ? `${Math.round(-t.y)} m deep` : 'surface'}` : '');
       $('objective').style.display = '';
+      const side = OBJECTIVES.find((x) => x.side && x !== o && g.state.objectives[x.id] === 'active');
+      this.setHTML('objSide', side ? `<b>${esc(side.title)}</b> — ${esc(side.text(g))}` : '');
     } else $('objective').style.display = 'none';
+    $('hud').classList.toggle('cine', !!g.cinematic);
     // scanning
     const ring = $('scanring');
     ring.classList.toggle('on', !!f.scanTarget);
