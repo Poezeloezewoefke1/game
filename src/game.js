@@ -1015,6 +1015,7 @@ export class Game {
       mouse: [0, 0], speed: 0, bob: this.player.bob, visible: !this.inSub && this.mode === 'pda', cockpit: this.inSub && this.mode !== 'ending', pdaOpen: this.mode === 'pda',
       lampOn: this.state.lamp, ambient: this.vmAmbient || 1, time: performance.now() * 0.001,
     });
+    if (this.mode === 'pause' && this.input.hit('pause') && document.getElementById('settings').classList.contains('hidden')) { this.resume(); return; }
     if (this.mode === 'pda' && this.input.hit('pda')) this.closePDA();
     else if (this.mode === 'pda' && this.input.hit('pause')) this.closePDA();
     else if (this.mode === 'pda' && this.input.hit('map') && this.ui.pdaTab === 'map') this.closePDA();
