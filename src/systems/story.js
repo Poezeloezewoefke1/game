@@ -117,8 +117,8 @@ export { LIFEFORMS };
 // Contextual tutorial, shown one at a time.
 export const HINTS = [
   { id: 'move', key: 'W A S D · Mouse', text: 'Swim and look around. You are floating in Meridian Station’s moonpool.', done: (g) => g.stats.moved > 6 },
+  { id: 'o2', key: 'O₂', text: 'Oxygen refills at the surface, in the moonpool and aboard the Kestrel. Watch the bar bottom-left.', done: (g) => g.player.pos.y < -24, time: 8 },
   { id: 'dive', key: 'Space · C · Shift', text: 'Rise, descend and sprint. Dive down through the pool to leave the station.', done: (g) => g.player.pos.y < -24 },
-  { id: 'o2', key: 'O₂', text: 'Oxygen refills at the surface, in the moonpool and aboard the Kestrel. Watch the bar bottom-left.', done: (g) => g.player.pos.y < -24, time: 9 },
   { id: 'scan', key: 'Hold Right Mouse / F', text: 'Aim at a creature or plant and hold to scan it into your databank.', done: (g) => g.state.databank.length > 0 },
   { id: 'collect', key: 'E / Left Click', text: 'Collect resource deposits. Glowing orange-flecked rocks are Ferrite; cyan crystals are Lumen.', done: (g) => g.stats.collected > 0 },
   { id: 'pda', key: 'Tab', text: 'Open your wrist PDA: objectives, map, databank, logs and inventory.', done: (g) => g.stats.pdaOpened > 0 },

@@ -280,14 +280,14 @@ export class Structures {
     this.collision.capsule(V(0, -16.5, -9), V(0, -16.5, -23), 3.7, 'station');
     s.mesh(new THREE.CylinderGeometry(3.65, 3.65, 0.6, 28, 1, true), M.orange, 0, -16.5, -19).rotation.x = Math.PI / 2;
     // cradle arms
-    for (const sx of [-2.2, 2.2]) {
-      s.capsule([sx, -19.5, -12], [sx, -23.2, -13], 0.18, M.hullDark);
-      s.capsule([sx, -19.5, -21], [sx, -23.2, -20], 0.18, M.hullDark);
+    for (const sx of [-3.1, 3.1]) {
+      s.capsule([sx * 0.8, -19.5, -12], [sx, -23.4, -13], 0.18, M.hullDark);
+      s.capsule([sx * 0.8, -19.5, -21], [sx, -23.4, -20], 0.18, M.hullDark);
     }
     this.dockPoint = V(0, -25.2, -16.5);
     this.dockLightMat = waterMat({ color: 0x111111, emissive: 0xff3b2b, emissiveIntensity: 1.5 });
-    for (const sx of [-2.6, 2.6]) for (const sz of [-11.5, -21.5]) {
-      s.mesh(new THREE.SphereGeometry(0.18, 10, 8), this.dockLightMat, sx, -23.3, sz);
+    for (const sx of [-3.1, 3.1]) for (const sz of [-12.8, -20.2]) {
+      s.mesh(new THREE.SphereGeometry(0.18, 10, 8), this.dockLightMat, sx, -23.6, sz);
     }
     // storage tanks
     for (const [x, z] of [[-14, 6], [-13, -7]]) {

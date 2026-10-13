@@ -32,8 +32,32 @@ await page.click('button[data-act=new]');
 await page.waitForTimeout(300);
 await page.keyboard.press('Space');
 await page.waitForFunction(() => window.__ABYSSAL.mode === 'play', null, { timeout: 30000 });
+// real keyboard input through the live game loop (frames are slow under
+// software WebGL, so wait on game state rather than fixed delays)
+await page.evaluate(() => { const g = window.__ABYSSAL; g.settings.quality = 'low'; g.applySettings(); });
+const startX = await page.evaluate(() => window.__ABYSSAL.player.pos.x);
+await page.keyboard.down('KeyW');
+const moved = await page.waitForFunction((x) => window.__ABYSSAL.player.pos.x > x + 0.5, startX, { timeout: 90000 }).then(() => true, () => false);
+await page.keyboard.up('KeyW');
+check('keyboard input moves the diver (live loop)', moved);
+await page.keyboard.press('Tab');
+const opened = await page.waitForFunction(() => window.__ABYSSAL.mode === 'pda', null, { timeout: 60000 }).then(() => true, () => false);
+await page.keyboard.press('Tab');
+const closed = await page.waitForFunction(() => window.__ABYSSAL.mode === 'play', null, { timeout: 60000 }).then(() => true, () => false);
+check('Tab opens and closes the wrist PDA', opened && closed);
+await page.evaluate(() => {
+  const g = window.__ABYSSAL;
+  g.player.place(new g.player.pos.constructor(2.8, -20, 0), -Math.PI / 2, 0.1);
+});
+await page.waitForFunction(() => window.__ABYSSAL.findInteraction()?.it?.type === 'stationTerminal', null, { timeout: 60000 }).catch(() => {});
+await page.keyboard.press('KeyE');
+await page.waitForFunction(() => window.__ABYSSAL.mode === 'pda', null, { timeout: 60000 }).catch(() => {});
+const termState = await page.evaluate(() => ({ mode: window.__ABYSSAL.mode, pda: window.__ABYSSAL.ui.pdaMode }));
+check('E at the terminal opens the station fabricator', termState.mode === 'pda' && termState.pda === 'station', JSON.stringify(termState));
+await page.keyboard.press('Escape');
+await page.waitForTimeout(600);
 // stop the render loop: logic is stepped manually from here
-await page.evaluate(() => window.__ABYSSAL.renderer.setAnimationLoop(null));
+await page.evaluate(() => { const g = window.__ABYSSAL; if (g.mode === 'pda') g.closePDA(); if (g.mode === 'pause') g.resume(); g.renderer.setAnimationLoop(null); g.player.place(new g.player.pos.constructor(-1.6, -20, 0.4), -Math.PI / 2, 0); });
 
 const r = await page.evaluate(() => {
   const g = window.__ABYSSAL;

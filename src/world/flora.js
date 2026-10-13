@@ -51,10 +51,11 @@ export class Scatter {
     }
   }
 
-  cull(cam) {
+  cull(cam, distScale = 1) {
+    const max = this.maxDist * distScale;
     for (const m of this.meshes) {
       const bs = m.boundingSphere;
-      m.visible = bs.center.distanceTo(cam) - bs.radius < this.maxDist;
+      m.visible = bs.center.distanceTo(cam) - bs.radius < max;
     }
   }
 }
@@ -232,8 +233,8 @@ export class Flora {
     for (const s of this.sets) s.build(this.group);
   }
 
-  update(camPos) {
-    for (const s of this.sets) s.cull(camPos);
+  update(camPos, distScale = 1) {
+    for (const s of this.sets) s.cull(camPos, distScale);
   }
 
   pointsOf(name) {

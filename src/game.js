@@ -287,6 +287,7 @@ export class Game {
 
   // ---------------------------------------------------------------- flow
   toMenu() {
+    if (this.renderer) this.hideClickHint();
     this.mode = 'menu';
     this.ui.only('menu');
     this.ui.updateMenu(Store.hasSave());
@@ -365,6 +366,7 @@ export class Game {
 
   pause() {
     if (this.mode !== 'play') return;
+    this.hideClickHint();
     this.mode = 'pause';
     this.scan.active = false;
     this.ui.only('pause');
@@ -380,6 +382,11 @@ export class Game {
     if (this.mode === 'play' && !this.ui.pdaOpen && this.everLocked) this.pause();
   }
 
+  hideClickHint() {
+    this.showingClick = false;
+    document.getElementById('clickToPlay').classList.add('hidden');
+  }
+
   quitToTitle() {
     this.ui.hide('pause');
     this.ui.hide('ending');
@@ -390,6 +397,7 @@ export class Game {
   // ---------------------------------------------------------------- PDA
   openPDA(tab = null, mode = null) {
     if (this.mode !== 'play') return;
+    this.hideClickHint();
     const m = mode || (this.inSub ? 'sub' : 'field');
     this.mode = 'pda';
     this.scan.active = false;
@@ -515,6 +523,7 @@ export class Game {
   }
 
   die(cause) {
+    this.hideClickHint();
     this.state.health = 0;
     this.mode = 'dead';
     this.state.stats.deaths++;
@@ -745,6 +754,7 @@ export class Game {
     this.addLog('varga3', true);
     this.saveGame(false);
     this.mode = 'ending';
+    this.hideClickHint();
     this.input.unlock();
     this.ui.hide('hud');
     const s = this.state;
@@ -792,7 +802,7 @@ export class Game {
       if (dist > (manip && !it.fromSub ? Math.max(7, it.radius) : it.radius)) continue;
       _v.subVectors(it.pos, origin).normalize();
       const dot = _v.dot(dir);
-      if (dot < (it.radius > 10 ? 0.3 : 0.82)) continue;
+      if (dot < (it.radius > 10 ? 0.3 : 0.74)) continue;
       consider(dist * (2 - dot), { kind: 'struct', it });
     }
     // resources
@@ -1032,7 +1042,7 @@ export class Game {
       aboveSurface: !this.inSub && this.player.aboveSurface && this.mode !== 'menu',
       lampOn: this.inSub ? this.sub.lightsOn : this.state.lamp,
     });
-    this.world.flora.update(p);
+    this.world.flora.update(p, this.settings.quality === 'low' ? 0.6 : this.settings.quality === 'medium' ? 0.8 : 1);
     this.world.terrain.cull(p, this.player.aboveSurface && !this.inSub ? 120 : 340);
     const scare = this.sonarScare;
     this.sonarScare = null;
@@ -1259,6 +1269,11 @@ export class Game {
     }
 
     // ---- HUD
+    const needClick = this.everLocked && !this.input.locked;
+    if (needClick !== this.showingClick) {
+      this.showingClick = needClick;
+      document.getElementById('clickToPlay').classList.toggle('hidden', !needClick);
+    }
     this.ui.updateHUD(dt, this.hudFrame({ prompt, warning, warningAmber, cracks }, target));
     this.updateMarkers();
   }
