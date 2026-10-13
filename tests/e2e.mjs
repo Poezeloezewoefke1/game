@@ -57,7 +57,7 @@ check('E at the terminal opens the station fabricator', termState.mode === 'pda'
 await page.keyboard.press('Escape');
 await page.waitForTimeout(600);
 // stop the render loop: logic is stepped manually from here
-await page.evaluate(() => { const g = window.__ABYSSAL; if (g.mode === 'pda') g.closePDA(); if (g.mode === 'pause') g.resume(); g.renderer.setAnimationLoop(null); g.player.place(new g.player.pos.constructor(-1.6, -20, 0.4), -Math.PI / 2, 0); });
+await page.evaluate(() => { const g = window.__ABYSSAL; if (g.mode === 'pda') g.closePDA(); g.input.onLockChange = null; g.everLocked = false; g.input.unlock(); g.input.down.clear(); g.input.endFrame(); if (g.mode === 'pause') g.resume(); g.mode = 'play'; g.renderer.setAnimationLoop(null); g.player.place(new g.player.pos.constructor(-1.6, -20, 0.4), -Math.PI / 2, 0); });
 
 const r = await page.evaluate(() => {
   const g = window.__ABYSSAL;
