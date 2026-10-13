@@ -1,0 +1,33 @@
+{
+  "name": "abyssal-the-lost-ocean",
+  "version": "1.0.0",
+  "description": "ABYSSAL: The Lost Ocean — first-person underwater sci-fi exploration game (Three.js)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "node tests/e2e.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Poezeloezewoefke1/game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Poezeloezewoefke1/game/issues"
+  },
+  "homepage": "https://github.com/Poezeloezewoefke1/game#readme",
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1",
+    "vite": "^8.3.4"
+  },
+  "private": true,
+  "type": "module"
+}

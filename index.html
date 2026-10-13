@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ABYSSAL — The Lost Ocean</title>
+  <meta name="description" content="A first-person underwater science-fiction exploration game." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23051521' stroke='%238fe8f0' stroke-width='2'/%3E%3Cpath d='M8 18c3-4 13-4 16 0' stroke='%238fe8f0' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -------------------------------------------------------------- -->
+  <div id="hud" class="hidden">
+    <div class="visor"></div>
+    <div class="vignette" id="vignette"></div>
+    <canvas id="cracks" width="1024" height="1024"></canvas>
+    <div class="flash" id="flash"></div>
+
+    <div class="compass" id="compass"><div class="compass-strip" id="compassStrip"></div><div class="compass-center"></div></div>
+
+    <div class="objective" id="objective">
+      <div class="eyebrow">Objective</div>
+      <div class="obj-title" id="objTitle"></div>
+      <div class="obj-text" id="objText"></div>
+      <div class="obj-dist" id="objDist"></div>
+    </div>
+
+    <div class="hint" id="hint"><div class="hint-key" id="hintKey"></div><div class="hint-text" id="hintText"></div></div>
+
+    <div class="vitals" id="vitals">
+      <div class="vital" id="vO2"><div class="v-label">O<sub>2</sub></div><div class="v-bar"><div class="v-fill"></div></div><div class="v-val"></div></div>
+      <div class="vital" id="vHealth"><div class="v-label">Vital</div><div class="v-bar"><div class="v-fill"></div></div><div class="v-val"></div></div>
+      <div class="vital" id="vBattery"><div class="v-label">Cell</div><div class="v-bar"><div class="v-fill"></div></div><div class="v-val"></div></div>
+    </div>
+
+    <div class="depthbox" id="depthbox">
+      <div class="eyebrow" id="depthLabel">Depth</div>
+      <div class="depth-num"><span id="depthNum">0</span><small>m</small></div>
+      <div class="depth-rating" id="depthRating"></div>
+      <div class="depth-gauge"><div class="dg-fill" id="dgFill"></div><div class="dg-limit" id="dgLimit"></div></div>
+      <div class="depth-meta" id="depthMeta"></div>
+    </div>
+
+    <div class="subhud hidden" id="subhud">
+      <div class="sh-item"><span>Hull</span><b id="shHull">100%</b></div>
+      <div class="sh-item"><span>Power</span><b id="shPower">100%</b></div>
+      <div class="sh-item"><span>Speed</span><b id="shSpeed">0</b></div>
+      <div class="sh-help">E exit · Q sonar · L lights · Shift boost</div>
+    </div>
+
+    <div class="crosshair" id="crosshair">
+      <svg viewBox="0 0 100 100" class="scanring" id="scanring"><circle cx="50" cy="50" r="40" class="sr-bg"/><circle cx="50" cy="50" r="40" class="sr-fg" id="scanArc"/></svg>
+      <div class="dot"></div>
+    </div>
+    <div class="target-label" id="targetLabel"></div>
+    <div class="prompt" id="prompt"></div>
+    <div class="warning" id="warning"></div>
+    <div class="discovery" id="discovery"><div class="d-eyebrow" id="dEyebrow"></div><div class="d-title" id="dTitle"></div><div class="d-sub" id="dSub"></div></div>
+    <div class="notifications" id="notifications"></div>
+    <div class="subtitle" id="subtitle"></div>
+    <div class="markers" id="markers"></div>
+    <div class="boundary" id="boundary">Strong current — survey limit</div>
+  </div>
+
+  <!-- PDA --------------------------------------------------------------- -->
+  <div id="pda" class="overlay hidden">
+    <div class="pda-frame">
+      <header class="pda-head">
+        <div class="pda-brand"><span class="mark"></span>DEEPREACH <b id="pdaMode">FIELD PDA</b></div>
+        <nav class="tabs" id="pdaTabs"></nav>
+        <button class="close" id="pdaClose" aria-label="Close">Close <kbd>Tab</kbd></button>
+      </header>
+      <section class="pda-body" id="pdaBody"></section>
+    </div>
+  </div>
+
+  <!-- Menus ------------------------------------------------------------- -->
+  <div id="loading" class="screen">
+    <div class="wordmark small">ABYSSAL</div>
+    <div class="load-bar"><div id="loadFill"></div></div>
+    <div class="load-text" id="loadText">Sounding the seafloor…</div>
+  </div>
+
+  <div id="menu" class="screen hidden">
+    <div class="menu-inner">
+      <div class="wordmark">ABYSSAL</div>
+      <div class="tagline">THE LOST OCEAN</div>
+      <div class="menu-buttons" id="menuButtons">
+        <button data-act="continue" id="btnContinue">Continue Expedition</button>
+        <button data-act="new">New Expedition</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="controls">Controls</button>
+        <button data-act="credits">Credits</button>
+      </div>
+      <div class="menu-foot">Headphones recommended · Click to capture the mouse</div>
+    </div>
+  </div>
+
+  <div id="pause" class="screen dim hidden">
+    <div class="menu-inner">
+      <div class="eyebrow center">Paused</div>
+      <div class="menu-buttons">
+        <button data-act="resume">Resume</button>
+        <button data-act="save" id="btnSave">Save Expedition</button>
+        <button data-act="load" id="btnLoad">Load Last Save</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="controls">Controls</button>
+        <button data-act="quit">Quit to Title</button>
+      </div>
+      <div class="menu-foot" id="pauseFoot"></div>
+    </div>
+  </div>
+
+  <div id="settings" class="screen dim hidden">
+    <div class="panel">
+      <div class="eyebrow">Settings</div>
+      <div class="settings-grid" id="settingsGrid"></div>
+      <div class="panel-actions"><button data-act="back">Back</button></div>
+    </div>
+  </div>
+
+  <div id="controls" class="screen dim hidden">
+    <div class="panel">
+      <div class="eyebrow">Controls</div>
+      <div class="controls-grid">
+        <div><kbd>W A S D</kbd><span>Swim / steer</span></div>
+        <div><kbd>Mouse</kbd><span>Look</span></div>
+        <div><kbd>Space</kbd><span>Rise</span></div>
+        <div><kbd>C</kbd><span>Descend</span></div>
+        <div><kbd>Shift</kbd><span>Sprint (uses more O₂) / Kestrel boost</span></div>
+        <div><kbd>Right Mouse</kbd> <kbd>F</kbd><span>Hold to scan</span></div>
+        <div><kbd>E</kbd> <kbd>Left Click</kbd><span>Collect / interact / enter &amp; exit Kestrel</span></div>
+        <div><kbd>Q</kbd><span>Sonar ping</span></div>
+        <div><kbd>L</kbd><span>Headlamp / Kestrel lights</span></div>
+        <div><kbd>Tab</kbd><span>Wrist PDA (objectives, map, databank, logs, inventory)</span></div>
+        <div><kbd>M</kbd><span>Open the map</span></div>
+        <div><kbd>H</kbd><span>Use a field medkit</span></div>
+        <div><kbd>Esc</kbd> <kbd>P</kbd><span>Pause</span></div>
+      </div>
+      <p class="panel-note">Oxygen refills at the surface, inside Meridian Station's moonpool and aboard the Kestrel. Exceeding your suit's depth rating damages you — upgrade at the station.</p>
+      <div class="panel-actions"><button data-act="back">Back</button></div>
+    </div>
+  </div>
+
+  <div id="credits" class="screen dim hidden">
+    <div class="panel">
+      <div class="eyebrow">Credits</div>
+      <p class="panel-note">ABYSSAL: The Lost Ocean — an original world and story.</p>
+      <p class="panel-note">Built with <b>three.js</b> (MIT). Typefaces <b>Space Grotesk</b> and <b>IBM Plex Mono</b> (SIL Open Font License).</p>
+      <p class="panel-note">All geometry, textures, creatures, music and sound are generated procedurally at runtime — no external art or audio assets are used.</p>
+      <div class="panel-actions"><button data-act="back">Back</button></div>
+    </div>
+  </div>
+
+  <div id="intro" class="screen black hidden">
+    <div class="intro-text" id="introText"></div>
+    <div class="intro-skip">Press <kbd>Space</kbd> to continue</div>
+  </div>
+
+  <div id="death" class="screen black hidden">
+    <div class="menu-inner">
+      <div class="eyebrow center red">Signal lost</div>
+      <div class="death-text" id="deathText"></div>
+      <div class="menu-buttons"><button data-act="respawn">Recover at Meridian Station</button></div>
+    </div>
+  </div>
+
+  <div id="ending" class="screen black hidden">
+    <div class="menu-inner wide">
+      <div class="ending-lines" id="endingLines"></div>
+      <div class="ending-card hidden" id="endingCard">
+        <div class="tagline">CHAPTER I COMPLETE</div>
+        <div class="wordmark">THE LOST OCEAN</div>
+        <div class="ending-stats" id="endingStats"></div>
+        <p class="panel-note center">The Low Song has resolved. Far to the north, beyond the survey line, something has begun to answer.</p>
+        <div class="menu-buttons"><button data-act="keepExploring">Keep Exploring</button><button data-act="quit">Return to Title</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm" class="screen dim hidden">
+    <div class="panel small">
+      <div class="eyebrow" id="confirmTitle">Confirm</div>
+      <p class="panel-note" id="confirmText"></p>
+      <div class="panel-actions"><button data-act="no">Cancel</button><button data-act="yes" class="primary">Confirm</button></div>
+    </div>
+  </div>
+
+  <div id="clickToPlay" class="click-hint hidden">Click to resume</div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
