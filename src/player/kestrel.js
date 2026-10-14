@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { waterMat } from '../world/shading.js';
+import { surface } from '../world/surfaces.js';
 import { panelTexture, labelTexture } from '../world/textures.js';
 import { clamp } from '../core/noise.js';
 
@@ -40,10 +41,10 @@ export class Kestrel {
     const g = new THREE.Group();
     const tex = panelTexture('#e4e1d8', 11, 0.3);
     tex.repeat.set(2, 1);
-    const hullM = waterMat({ map: tex, roughness: 0.45, metalness: 0.2 });
-    const darkM = waterMat({ color: 0x3b4148, roughness: 0.6, metalness: 0.3 });
-    const orangeM = waterMat({ color: 0xd8692a, roughness: 0.5 });
-    const glassM = waterMat({ color: 0x8fd8ff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35, depthWrite: false });
+    const hullM = waterMat({ map: tex, roughness: 0.38, metalness: 0.25 }, { surface: surface('paint', { space: 'object', scale: 1.2 }), reflect: 1.2 });
+    const darkM = waterMat({ color: 0x3b4148, roughness: 0.45, metalness: 0.6 }, { surface: surface('paintScratched', { space: 'object', scale: 1.4 }), reflect: 1.2 });
+    const orangeM = waterMat({ color: 0xd8692a, roughness: 0.4, metalness: 0.1 }, { surface: surface('paint', { space: 'object', scale: 1.2 }) });
+    const glassM = waterMat({ color: 0x8fd8ff, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.35, depthWrite: false }, { reflect: 1.6 });
     this.lampM = waterMat({ color: 0x111111, emissive: 0xd8f4ff, emissiveIntensity: 3 });
     const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), hullM);
     body.scale.set(1.5, 1.25, 2.9);

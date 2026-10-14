@@ -2,6 +2,7 @@
 // and the scan beam. Rendered in a separate scene over the world.
 
 import * as THREE from 'three';
+import { normalTexture } from '../world/surfaces.js';
 
 export class ViewModel {
   constructor() {
@@ -23,8 +24,9 @@ export class ViewModel {
   build() {
     const suit = new THREE.MeshStandardMaterial({ color: 0xd9d6cc, roughness: 0.75 });
     const glove = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.8 });
-    const orange = new THREE.MeshStandardMaterial({ color: 0xd8692a, roughness: 0.6 });
-    const dev = new THREE.MeshStandardMaterial({ color: 0x23292f, roughness: 0.45, metalness: 0.5 });
+    const orange = new THREE.MeshStandardMaterial({ color: 0xd8692a, roughness: 0.55 });
+    const dev = new THREE.MeshStandardMaterial({ color: 0x23292f, roughness: 0.38, metalness: 0.7 });
+    this.detailMats = [[suit, '0018', 3, 0.6], [glove, '0018', 5, 0.9], [orange, '0022', 2, 0.4], [dev, '0022', 1.5, 0.6]];
     this.emitMat = new THREE.MeshStandardMaterial({ color: 0x062028, emissive: 0x5fe8ff, emissiveIntensity: 1.5 });
 
     // ---- right hand + scanner
@@ -157,6 +159,20 @@ export class ViewModel {
 
   pickup() { this.reach = 1; }
 
+  /** Enable photoreal detail: normal maps and reflections (skipped in classic mode). */
+  enhance(envMap) {
+    for (const [m, id, rep, k] of this.detailMats) {
+      const t = normalTexture(id).clone();
+      t.repeat.set(rep, rep);
+      t.needsUpdate = true;
+      m.normalMap = t;
+      m.normalScale.set(k, k);
+      m.needsUpdate = true;
+    }
+    this.scene.environment = envMap;
+    this.enhanced = true;
+  }
+
   attachCockpit(group) {
     this.cockpit = group;
     this.root.add(group);
@@ -187,7 +203,8 @@ export class ViewModel {
     this.left.position.set(-0.32 + this.pdaRaise * 0.18, -0.75 + this.pdaRaise * 0.42, -0.5);
     this.left.visible = visible && this.pdaRaise > 0.02;
     this.emitMat.emissiveIntensity = 1.2 + this.scanPulse * 2 + Math.sin(time * 4) * 0.2;
-    this.hemi.intensity = ambient;
+    this.hemi.intensity = ambient * (this.enhanced ? 0.8 : 1);
+    if (this.enhanced) this.scene.environmentIntensity = Math.min(1, ambient * 0.5) + (lampOn ? 0.05 : 0);
     this.lamp.intensity = lampOn ? 1.6 : 0.05;
     // beam
     if (scanning && scanTarget) {

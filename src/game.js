@@ -164,6 +164,8 @@ export class Game {
     terrain.build();
     this.scene.add(terrain.group);
     const collision = new CollisionWorld(terrain);
+    // integrated GPUs: keep the light procedural fish for the 300+ instanced school
+    if (this.settings.quality === 'low') this.assets.disable('glimmerfin');
     this.envMaps = this.classic ? null : buildEnvironmentMaps(r, this.assets);
     this.scene.environment = this.envMaps ? this.envMaps.water : null;
     this.ui.setLoading(0.62, 'Growing reefs and kelp…');
@@ -195,6 +197,7 @@ export class Game {
     this.sub = new Kestrel(this.scene, collision);
     this.viewmodel = new ViewModel();
     this.viewmodel.attachCockpit(this.sub.buildCockpit());
+    if (this.envMaps) this.viewmodel.enhance(this.envMaps.water);
     this.post = new Post(r, this.scene, this.viewmodel.scene, this.camera);
     this.bindEvents();
     this.applySettings();

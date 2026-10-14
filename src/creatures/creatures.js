@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { waterMat, patchMaterial } from '../world/shading.js';
 import { fit } from '../world/assets.js';
+import { surface } from '../world/surfaces.js';
 import { SITES } from '../world/layout.js';
 import { mulberry32, clamp } from '../core/noise.js';
 import * as B from './bodies.js';
@@ -253,9 +254,9 @@ class Shellbacks {
     const homes = [[30, 50], [-60, -40], [80, -90], [-30, 110], [150, 40], [-140, -90],
       [-40, 280], [90, 250], [20, 380], [-150, 360], [170, 330], [330, -20], [450, 30], [260, -60]];
     const geo = B.shellbackGeometry();
-    const mat = waterMat({ vertexColors: true, roughness: 0.8 }, { glow: { color: 0x66ffd0, intensity: 2.2, pulse: 0.8 }, detail: 0.9 });
-    const headMat = waterMat({ color: 0x6d6250, roughness: 0.8 });
-    const legMat = waterMat({ color: 0x4a4036, roughness: 0.9 });
+    const mat = waterMat({ vertexColors: true, roughness: 0.7 }, { glow: { color: 0x66ffd0, intensity: 2.2, pulse: 0.8 }, detail: 0.9, surface: surface('coral', { space: 'object', scale: 3, strength: 0.9 }) });
+    const headMat = waterMat({ color: 0x6d6250, roughness: 0.6 }, { surface: surface('hide', { scale: 6 }) });
+    const legMat = waterMat({ color: 0x4a4036, roughness: 0.7 }, { surface: surface('hide', { scale: 8 }) });
     this.list = homes.map(([x, z], i) => {
       const g = new THREE.Group();
       const body = new THREE.Mesh(geo, mat);
@@ -327,8 +328,8 @@ class Razormaws {
     const geo = B.razormawGeometry();
     const homes = [[-150, 70], [70, 220], [-70, 400], [300, -40], [480, 30], [-330, -60]];
     this.list = homes.map(([x, z], i) => {
-      const mat = waterMat({ vertexColors: true, roughness: 0.5, side: THREE.DoubleSide },
-        { swim: { mode: 1, amp: 0.32, speed: 7, freq: 1.5, len: 4, head: 2, phase: i * 1.3 }, glow: { color: 0xffa040, intensity: 2.2, pulse: 3 } });
+      const mat = waterMat({ vertexColors: true, roughness: 0.42, side: THREE.DoubleSide },
+        { swim: { mode: 1, amp: 0.32, speed: 7, freq: 1.5, len: 4, head: 2, phase: i * 1.3 }, glow: { color: 0xffa040, intensity: 2.2, pulse: 3 }, surface: surface('scales', { scale: 2.6, strength: 0.8 }), reflect: 1.3 });
       const mesh = new THREE.Mesh(geo, mat);
       scene.add(mesh);
       const gh = terrain.heightAt(x, z);
@@ -435,8 +436,8 @@ class Cantors {
       { cx: SITES.abyss.x, cz: SITES.abyss.z, r: 330, y: -175, speed: 7, ang: 0.4, dir: 1 },
       { cx: -60, cz: 420, r: 300, y: -125, speed: 6, ang: 2.6, dir: -1 },
     ].map((c, i) => {
-      const mat = waterMat({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide },
-        { swim: { mode: 1, amp: 2.4, speed: 0.9, freq: 0.05, len: 100, head: 50, phase: i * 2 }, glow: { color: 0x8ff4ff, intensity: 3.2, pulse: 0.5 }, fogScale: 0.6 });
+      const mat = waterMat({ vertexColors: true, roughness: 0.5, side: THREE.DoubleSide },
+        { swim: { mode: 1, amp: 2.4, speed: 0.9, freq: 0.05, len: 100, head: 50, phase: i * 2 }, glow: { color: 0x8ff4ff, intensity: 3.2, pulse: 0.5 }, fogScale: 0.6, surface: surface('hide', { scale: 0.09, strength: 0.9 }), reflect: 1.2 });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.frustumCulled = false;
       scene.add(mesh);
@@ -552,8 +553,8 @@ class Stalkers {
       [SITES.abyss.x + 60, SITES.abyss.z - 40, -420], [SITES.abyss.x - 70, SITES.abyss.z + 50, -520], [SITES.abyss.x, SITES.abyss.z, -590],
     ];
     this.list = homes.map(([x, z, y], i) => {
-      const mat = waterMat({ vertexColors: true, roughness: 0.4, side: THREE.DoubleSide },
-        { swim: { mode: 1, amp: 0.55, speed: 4.5, freq: 0.7, len: 8, head: 4, phase: i }, glow: { color: 0xff6a4a, intensity: 3, pulse: 1.1 } });
+      const mat = waterMat({ vertexColors: true, roughness: 0.35, side: THREE.DoubleSide },
+        { swim: { mode: 1, amp: 0.55, speed: 4.5, freq: 0.7, len: 8, head: 4, phase: i }, glow: { color: 0xff6a4a, intensity: 3, pulse: 1.1 }, surface: surface('stone', { space: 'object', scale: 0.9, strength: 0.9 }), reflect: 1.4 });
       const mesh = new THREE.Mesh(geo, mat);
       scene.add(mesh);
       return { mesh, home: V(x, y, z), p: V(x + 10, y, z), v: V(1, 0, 0), target: V(x, y, z), state: 'patrol', timer: 0, cooldown: 0 };

@@ -35,7 +35,9 @@ export function normalTexture(id) {
   t.needsUpdate = true;
   pending.push(new Promise((resolve) => {
     loader.load(`textures/normals/${id}.webp`, (img) => {
-      t.image = img.image;
+      // new source so the GPU texture is reallocated at the real size
+      t.dispose();
+      t.source = new THREE.TextureSource(img.image);
       t.needsUpdate = true;
       resolve(true);
     }, undefined, () => {

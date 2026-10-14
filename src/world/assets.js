@@ -50,7 +50,10 @@ export class AssetLibrary {
     this.models = new Map();
     this.env = new Map();
     this.failures = [];
+    this.disabled = new Set(); // ids skipped for performance (e.g. Low quality)
   }
+
+  disable(id) { this.disabled.add(id); }
 
   async preload(onProgress) {
     if (!this.enabled) return;
@@ -74,11 +77,11 @@ export class AssetLibrary {
     }));
   }
 
-  has(id) { return this.models.has(id); }
+  has(id) { return this.models.has(id) && !this.disabled.has(id); }
 
   /** A fresh copy of the model's scene graph, or null. */
   instance(id) {
-    const g = this.models.get(id);
+    const g = this.has(id) ? this.models.get(id) : null;
     return g ? g.scene.clone(true) : null;
   }
 
@@ -87,7 +90,7 @@ export class AssetLibrary {
    * baked in (for InstancedMesh use), or null.
    */
   meshData(id) {
-    const g = this.models.get(id);
+    const g = this.has(id) ? this.models.get(id) : null;
     if (!g) return null;
     let found = null;
     g.scene.updateMatrixWorld(true);
