@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { waterMat, U, patchMaterial } from './shading.js';
 import { fit, adaptMaterials } from './assets.js';
+import { buildStationExterior } from './stationModel.js';
 import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
 import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
@@ -59,6 +60,9 @@ class Site {
     return m;
   }
 
+  /** Collider only (used when a detailed model provides the visuals). */
+  collideCapsule(a, b, r) { this.col.capsule(this.w(...a), this.w(...b), r); }
+
   scannable(id, x, y, z, radius = 2) {
     this.owner.scannables.push({ id, pos: this.w(x, y, z), radius });
   }
@@ -71,8 +75,9 @@ class Site {
 }
 
 export class Structures {
-  constructor(scene, terrain, collision, assets = null) {
+  constructor(scene, terrain, collision, assets = null, { classic = false } = {}) {
     this.assets = assets;
+    this.detailed = !classic; // detailed hero exteriors; ?classic keeps the original geometry
     this.scene = scene;
     this.terrain = terrain;
     this.collision = collision;
@@ -147,20 +152,31 @@ export class Structures {
     const s = new Site(this, 'meridian', V(0, 0, 0), 0);
     this.stationSite = s;
     const R = 9, yB = -23, yT = -11;
+    const D = this.detailed;
+    let labelR = R + 0.06, labelY = -15;
+    if (D) {
+      const ext = buildStationExterior(s, { orange: M.orange, window: this.windowMat = waterMat({ color: 0x111111, emissive: 0xffb877, emissiveIntensity: 0.15 }),
+        flood: this.floodMat = waterMat({ color: 0x111111, emissive: 0xffd9a0, emissiveIntensity: 0.0 }),
+        beacon: this.beaconMat = waterMat({ color: 0x220000, emissive: 0xff3b2b, emissiveIntensity: 3 }),
+        dockLight: this.dockLightMat = waterMat({ color: 0x111111, emissive: 0xff3b2b, emissiveIntensity: 1.5 }) }, this.terrain, this.collision);
+      labelR = ext.labelRadius; labelY = ext.labelY;
+    }
     // hub shell
-    s.mesh(new THREE.CylinderGeometry(R, R, yT - yB, 40, 1, true), M.hull, 0, (yB + yT) / 2, 0);
-    const dome = new THREE.SphereGeometry(R, 40, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-    dome.scale(1, 0.35, 1);
-    s.mesh(dome, M.hull, 0, yT, 0);
-    const bottom = new THREE.RingGeometry(3.6, R, 40, 1);
-    bottom.rotateX(Math.PI / 2);
-    s.mesh(bottom, M.hullDark, 0, yB, 0);
-    s.mesh(new THREE.CylinderGeometry(3.6, 3.6, 3.1, 32, 1, true), waterMat({ color: 0x5b636b, side: THREE.DoubleSide, roughness: 0.6 }), 0, yB + 1.55, 0);
-    // orange stripe band
-    s.mesh(new THREE.CylinderGeometry(R + 0.03, R + 0.03, 0.7, 40, 1, true), M.orange, 0, -21.6, 0);
+    if (!D) s.mesh(new THREE.CylinderGeometry(R, R, yT - yB, 40, 1, true), M.hull, 0, (yB + yT) / 2, 0);
+    if (!D) {
+      const dome = new THREE.SphereGeometry(R, 40, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+      dome.scale(1, 0.35, 1);
+      s.mesh(dome, M.hull, 0, yT, 0);
+      const bottom = new THREE.RingGeometry(3.6, R, 40, 1);
+      bottom.rotateX(Math.PI / 2);
+      s.mesh(bottom, M.hullDark, 0, yB, 0);
+      s.mesh(new THREE.CylinderGeometry(3.6, 3.6, 3.1, 32, 1, true), waterMat({ color: 0x5b636b, side: THREE.DoubleSide, roughness: 0.6 }), 0, yB + 1.55, 0);
+      // orange stripe band
+      s.mesh(new THREE.CylinderGeometry(R + 0.03, R + 0.03, 0.7, 40, 1, true), M.orange, 0, -21.6, 0);
+    }
     // label
-    const label = new THREE.CylinderGeometry(R + 0.06, R + 0.06, 1.6, 24, 1, true, -0.55, 1.1);
-    s.mesh(label, waterMat({ map: labelTexture('MERIDIAN'), transparent: true, roughness: 0.6 }), 0, -15, 0);
+    const label = D ? new THREE.CylinderGeometry(labelR, labelR, 1.2, 24, 1, true, -0.38, 0.76) : new THREE.CylinderGeometry(R + 0.06, R + 0.06, 1.6, 24, 1, true, -0.55, 1.1);
+    s.mesh(label, waterMat({ map: labelTexture('MERIDIAN', D ? '#e8e2d2' : '#e8742c'), transparent: true, roughness: 0.6 }), 0, labelY, 0);
     // interior
     const inner = new THREE.CylinderGeometry(R - 0.2, R - 0.2, yT - (-19.9), 40, 1, true);
     const innerTex = panelTexture('#c9c6bc', 7, 0.25);
@@ -288,8 +304,8 @@ export class Structures {
     // station log datapads are added to the station terminal when power returns
 
     // windows (exterior portholes)
-    this.windowMat = waterMat({ color: 0x111111, emissive: 0xffb877, emissiveIntensity: 0.15 });
-    for (let i = 0; i < 10; i++) {
+    if (!D) this.windowMat = waterMat({ color: 0x111111, emissive: 0xffb877, emissiveIntensity: 0.15 });
+    for (let i = 0; i < (D ? 0 : 10); i++) {
       const a = (i / 10) * Math.PI * 2 + 0.3;
       const w = s.mesh(new THREE.CircleGeometry(0.55, 20), this.windowMat, Math.cos(a) * (R + 0.05), -15.5, Math.sin(a) * (R + 0.05));
       w.lookAt(Math.cos(a) * 30, -15.5, Math.sin(a) * 30);
@@ -301,65 +317,80 @@ export class Structures {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
       const top = [Math.cos(a) * 6.5, yB + 0.3, Math.sin(a) * 6.5];
       const bot = [Math.cos(a) * 11, -31.5, Math.sin(a) * 11];
+      if (D) { s.collideCapsule(top, bot, 0.55); continue; }
       s.capsule(top, bot, 0.55, M.hullDark);
       s.mesh(new THREE.CylinderGeometry(1.2, 1.5, 0.6, 12), M.hullDark, bot[0], this.terrain.heightAt(bot[0], bot[2]) + 0.2, bot[2]);
     }
     // east module (quarters)
-    const modA = s.mesh(new THREE.CylinderGeometry(3.2, 3.2, 14, 28, 1, true), M.hull, 16, -17, 0);
-    modA.rotation.z = Math.PI / 2;
     const capA = new THREE.SphereGeometry(3.2, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
     capA.scale(1, 0.45, 1);
-    const capM = s.mesh(capA, M.hull, 23, -17, 0);
-    capM.rotation.z = -Math.PI / 2;
+    if (!D) {
+      const modA = s.mesh(new THREE.CylinderGeometry(3.2, 3.2, 14, 28, 1, true), M.hull, 16, -17, 0);
+      modA.rotation.z = Math.PI / 2;
+      const capM = s.mesh(capA, M.hull, 23, -17, 0);
+      capM.rotation.z = -Math.PI / 2;
+    }
     this.collision.capsule(V(9, -17, 0), V(23.5, -17, 0), 3.3, 'station');
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < (D ? 0 : 5); i++) {
       for (const side of [-1, 1]) {
         const w = s.mesh(new THREE.PlaneGeometry(1.4, 0.6), this.windowMat, 11 + i * 2.6, -16.5, side * 3.22);
         w.rotation.y = side > 0 ? 0 : Math.PI;
       }
     }
     // north module (hangar) + dock cradle for the Kestrel
-    const modB = s.mesh(new THREE.CylinderGeometry(3.6, 3.6, 13, 28, 1, true), M.hull, 0, -16.5, -16);
-    modB.rotation.x = Math.PI / 2;
-    const capB = s.mesh(capA.clone(), M.hull, 0, -16.5, -22.5);
-    capB.rotation.x = -Math.PI / 2;
+    if (!D) {
+      const modB = s.mesh(new THREE.CylinderGeometry(3.6, 3.6, 13, 28, 1, true), M.hull, 0, -16.5, -16);
+      modB.rotation.x = Math.PI / 2;
+      const capB = s.mesh(capA.clone(), M.hull, 0, -16.5, -22.5);
+      capB.rotation.x = -Math.PI / 2;
+      s.mesh(new THREE.CylinderGeometry(3.65, 3.65, 0.6, 28, 1, true), M.orange, 0, -16.5, -19).rotation.x = Math.PI / 2;
+    }
     this.collision.capsule(V(0, -16.5, -9), V(0, -16.5, -23), 3.7, 'station');
-    s.mesh(new THREE.CylinderGeometry(3.65, 3.65, 0.6, 28, 1, true), M.orange, 0, -16.5, -19).rotation.x = Math.PI / 2;
     // cradle arms
     for (const sx of [-3.1, 3.1]) {
+      if (D) {
+        s.collideCapsule([sx * 0.8, -19.5, -12], [sx, -23.4, -13], 0.18);
+        s.collideCapsule([sx * 0.8, -19.5, -21], [sx, -23.4, -20], 0.18);
+        continue;
+      }
       s.capsule([sx * 0.8, -19.5, -12], [sx, -23.4, -13], 0.18, M.hullDark);
       s.capsule([sx * 0.8, -19.5, -21], [sx, -23.4, -20], 0.18, M.hullDark);
     }
     this.dockPoint = V(0, -25.2, -16.5);
-    this.dockLightMat = waterMat({ color: 0x111111, emissive: 0xff3b2b, emissiveIntensity: 1.5 });
-    for (const sx of [-3.1, 3.1]) for (const sz of [-12.8, -20.2]) {
+    if (!D) this.dockLightMat = waterMat({ color: 0x111111, emissive: 0xff3b2b, emissiveIntensity: 1.5 });
+    for (const sx of (D ? [] : [-3.1, 3.1])) for (const sz of [-12.8, -20.2]) {
       s.mesh(new THREE.SphereGeometry(0.18, 10, 8), this.dockLightMat, sx, -23.6, sz);
     }
     // storage tanks
     for (const [x, z] of [[-14, 6], [-13, -7]]) {
       const gh = this.terrain.heightAt(x, z);
       const h = -14 - gh;
+      this.collision.tube(V(x, 0, z), 0, 2.5, gh - 1, -13, 'station');
+      if (D) { s.collideCapsule([x * 0.9, -17, z * 0.9], [x * 0.55, -17, z * 0.55], 0.5); continue; }
       s.mesh(new THREE.CylinderGeometry(2.4, 2.4, h, 20), M.hull, x, gh + h / 2, z);
       const top = new THREE.SphereGeometry(2.4, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2);
       top.scale(1, 0.4, 1);
       s.mesh(top, M.hull, x, -14, z);
       s.mesh(new THREE.CylinderGeometry(2.45, 2.45, 0.5, 20, 1, true), M.orange, x, -16, z);
-      this.collision.tube(V(x, 0, z), 0, 2.5, gh - 1, -13, 'station');
       s.capsule([x * 0.9, -17, z * 0.9], [x * 0.55, -17, z * 0.55], 0.5, M.hullDark);
     }
     // antenna mast to the surface with beacon
-    s.capsule([0, -8, 0], [0, -1.2, 0], 0.22, M.hullDark);
-    this.beaconMat = waterMat({ color: 0x220000, emissive: 0xff3b2b, emissiveIntensity: 3 });
-    s.mesh(new THREE.SphereGeometry(0.4, 12, 10), this.beaconMat, 0, -0.9, 0);
-    const dish = new THREE.SphereGeometry(1.4, 20, 8, 0, Math.PI * 2, 0, Math.PI * 0.35);
-    const dm = s.mesh(dish, M.hull, 0.9, -5, 0);
-    dm.rotation.z = -1.1;
+    if (D) s.collideCapsule([0, -8, 0], [0, -1.2, 0], 0.22);
+    else {
+      s.capsule([0, -8, 0], [0, -1.2, 0], 0.22, M.hullDark);
+      this.beaconMat = waterMat({ color: 0x220000, emissive: 0xff3b2b, emissiveIntensity: 3 });
+      s.mesh(new THREE.SphereGeometry(0.4, 12, 10), this.beaconMat, 0, -0.9, 0);
+      const dish = new THREE.SphereGeometry(1.4, 20, 8, 0, Math.PI * 2, 0, Math.PI * 0.35);
+      const dm = s.mesh(dish, M.hull, 0.9, -5, 0);
+      dm.rotation.z = -1.1;
+    }
     // floodlights on the seabed
-    this.floodMat = waterMat({ color: 0x111111, emissive: 0xffd9a0, emissiveIntensity: 0.0 });
+    if (!D) this.floodMat = waterMat({ color: 0x111111, emissive: 0xffd9a0, emissiveIntensity: 0.0 });
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2 + 0.2;
       const x = Math.cos(a) * 19, z = Math.sin(a) * 19;
       const gh = this.terrain.heightAt(x, z);
+      if (D) { s.collideCapsule([x, gh, z], [x, gh + 3.2, z], 0.12); continue; }
       s.capsule([x, gh, z], [x, gh + 3.2, z], 0.12, M.hullDark);
       const head = s.mesh(new THREE.CylinderGeometry(0.35, 0.25, 0.5, 12), this.floodMat, x, gh + 3.3, z);
       head.lookAt(0, -20, 0);

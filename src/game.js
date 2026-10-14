@@ -171,7 +171,7 @@ export class Game {
     this.ui.setLoading(0.62, 'Growing reefs and kelp…');
     await frame();
     this.env = new Environment(this.scene, this.settings.quality);
-    const structures = new Structures(this.scene, terrain, collision, this.assets);
+    const structures = new Structures(this.scene, terrain, collision, this.assets, { classic: this.classic });
     structures.build();
     const flora = new Flora(this.scene, terrain, collision, this.settings.quality);
     flora.build();
