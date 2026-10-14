@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { waterMat, U, patchMaterial } from './shading.js';
 import { fit, adaptMaterials } from './assets.js';
 import { buildStationExterior } from './stationModel.js';
+import { buildWreckHalf, containerGeometry } from './wreckModel.js';
 import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
 import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
@@ -60,6 +61,9 @@ class Site {
     if (mat) this.col.capsule(this.w(...a), this.w(...b), r);
     return m;
   }
+
+  /** Box collider only (used when a detailed model provides the visuals). */
+  colBox(w, h, d, x, y, z, ry = 0, tag) { this.col.box(this.w(x, y, z), V(w / 2, h / 2, d / 2), this.yaw + ry, tag); }
 
   /** Collider only (used when a detailed model provides the visuals). */
   collideCapsule(a, b, r) { this.col.capsule(this.w(...a), this.w(...b), r); }
@@ -696,15 +700,22 @@ export class Structures {
     const M = this.M;
     const { x, z } = SITES.wreck;
     const gh = this.terrain.heightAt(x, z);
+    const D = this.detailed;
+    const containerGeos = D ? { closed: containerGeometry(false), open: containerGeometry(true) } : null;
     const half = (name, lx, lz, yaw, sink, breach, bridge) => {
       const ox = x + lx, oz = z + lz;
-      const s = new Site(this, name, V(ox, this.terrain.heightAt(ox, oz) - sink, oz), yaw);
+      const s0 = new Site(this, name, V(ox, this.terrain.heightAt(ox, oz) - sink, oz), yaw);
+      // detailed mode: the hull model provides the visuals, every box stays as a collider
+      const s = !D ? s0 : new Proxy(s0, { get: (t, k) => (k === 'box' ? (w, h, d, bx, by, bz, mat, o) => (mat === M.rust ? t.colBox(w, h, d, bx, by, bz) : t.box(w, h, d, bx, by, bz, mat, o)) : t[k]) });
       const L = 28, W = 11, Hh = 8;
       s.box(L, 0.6, W, 0, 0.3, 0, M.rust);
+      if (D) buildWreckHalf(s0.group, M, { L, W, Hh, farX: lx < 0 ? -L / 2 : L / 2, breach, bridge, seed: name.length, windowMat: this.windowMat });
       // keel bulge
-      const keel = s.mesh(new THREE.CylinderGeometry(W / 2, W / 2, L, 16, 1, true, Math.PI / 2, Math.PI), M.rustDark, 0, 0.6, 0);
-      keel.rotation.z = Math.PI / 2;
-      keel.scale.set(1, 1, 0.35);
+      if (!D) {
+        const keel = s.mesh(new THREE.CylinderGeometry(W / 2, W / 2, L, 16, 1, true, Math.PI / 2, Math.PI), M.rustDark, 0, 0.6, 0);
+        keel.rotation.z = Math.PI / 2;
+        keel.scale.set(1, 1, 0.35);
+      }
       // side walls
       if (breach) {
         s.box(10, Hh, 0.5, -9, Hh / 2, W / 2, M.rust);
@@ -724,7 +735,7 @@ export class Structures {
       // jagged break edge
       const nearX = -farX;
       const rnd = mulberry32(name.length);
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < (D ? 0 : 6); i++) {
         const t = s.mesh(new THREE.ConeGeometry(0.6, 1.5 + rnd() * 2, 4), M.rustDark, nearX, rnd() * Hh, -W / 2 + rnd() * W);
         t.rotation.z = (lx < 0 ? -1 : 1) * Math.PI / 2;
       }
@@ -735,6 +746,13 @@ export class Structures {
       }
       // cargo containers
       const cont = (cx, cz, mat, open) => {
+        if (D) {
+          s0.colBox(6, 2.6, 2.6, cx, 0.6 + 1.3, cz);
+          const c = s0.mesh(open ? containerGeos.open : containerGeos.closed, mat, cx, 0.6 + 1.3, cz);
+          c.rotation.z = (cx * 0.013) % 0.04; // settled slightly askew
+          if (open) s0.mesh(new THREE.PlaneGeometry(2.4, 2.4), M.rustDark, cx + 3.3, 1.2, cz + 1.0).rotation.set(-1.2, Math.PI / 2, 0); // door hanging open
+          return;
+        }
         s.box(6, 2.6, 2.6, cx, 0.6 + 1.3, cz, mat);
         if (open) s.mesh(new THREE.PlaneGeometry(2.4, 2.4), M.rustDark, cx + 3.05, 1.9, cz).rotation.y = Math.PI / 2;
       };
@@ -743,7 +761,7 @@ export class Structures {
       cont(6, -2.5, M.containerB, false);
       if (bridge) {
         s.box(7, 6, 8, -8, Hh + 3.25, 0, M.rust);
-        for (let i = 0; i < 4; i++) {
+        if (!D) for (let i = 0; i < 4; i++) {
           s.mesh(new THREE.PlaneGeometry(1.2, 0.8), this.windowMat, -11.55, Hh + 4.5, -2.7 + i * 1.8).rotation.y = -Math.PI / 2;
         }
         s.capsule([-8, Hh + 6.3, 0], [-8, Hh + 16, 0], 0.3, M.rustDark);
