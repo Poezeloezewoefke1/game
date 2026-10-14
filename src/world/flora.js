@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { waterMat } from './shading.js';
+import { surface } from './surfaces.js';
 import { biomeWeights, SITES } from './layout.js';
 import { mulberry32, smoothstep } from '../core/noise.js';
 import * as G from './geom.js';
@@ -138,7 +139,7 @@ export class Flora {
     const plantMat = (swim, glow, extra = {}) => waterMat({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.8, ...extra }, { swim, glow });
     const grassMat = plantMat({ mode: 4, amp: 0.18, speed: 1.4, freq: 2, len: 1.6 }, { color: 0x77ffd8, intensity: 1.2, pulse: 1 });
     const kelpMat = plantMat({ mode: 4, amp: 0.06, speed: 0.55, freq: 5, len: 1 }, { color: 0x6fd8ef, intensity: 1.1, pulse: 0.8 });
-    const coralMat = waterMat({ vertexColors: true, roughness: 0.75 }, { glow: { color: 0xff9a7a, intensity: 0.9, pulse: 0.6 }, detail: 0.9 });
+    const coralMat = waterMat({ vertexColors: true, roughness: 0.75 }, { glow: { color: 0xff9a7a, intensity: 0.9, pulse: 0.6 }, detail: 0.9, surface: surface('coral') });
     const fanMat = plantMat({ mode: 4, amp: 0.05, speed: 0.9, freq: 1, len: 1 }, { color: 0xd7a0ff, intensity: 0.9, pulse: 0.5 });
     const spongeMat = waterMat({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }, { glow: { color: 0x66f0ff, intensity: 2.4, pulse: 0.9 } });
     const anemoneMat = plantMat({ mode: 4, amp: 0.12, speed: 1.6, freq: 6, len: 0.8 }, { color: 0xb07bff, intensity: 2.2, pulse: 1.4 });
@@ -146,7 +147,7 @@ export class Flora {
     const crystalMat = waterMat({ vertexColors: true, roughness: 0.25, metalness: 0.1 }, { glow: { color: 0x9a7bff, intensity: 2.6, pulse: 0.4 } });
     const crystalCyanMat = waterMat({ vertexColors: true, roughness: 0.25, metalness: 0.1 }, { glow: { color: 0x5ff0ff, intensity: 2.4, pulse: 0.5 } });
     const wormMat = plantMat({ mode: 4, amp: 0.05, speed: 1.2, freq: 3, len: 2 }, { color: 0xff5040, intensity: 1.6, pulse: 1.1 });
-    const rockMat = waterMat({ vertexColors: true, roughness: 0.95 }, { detail: 0.35 });
+    const rockMat = waterMat({ vertexColors: true, roughness: 0.9 }, { detail: 0.35, surface: surface('rock'), reflect: 0.7 });
 
     // ---------- geometry variants
     const grass = this.makeSet('seagrass', G.merge([G.seagrassGeometry(1), G.seagrassGeometry(2).translate(0.5, 0, 0.3)]), grassMat, 85);
@@ -231,6 +232,14 @@ export class Flora {
     }, collide: rockCollide });
 
     for (const s of this.sets) s.build(this.group);
+  }
+
+  /** Scatter an extra instanced set (e.g. an external model) using the same culling. */
+  addScatter(name, geo, mat, count, area, weightFn, opts = {}, maxDist = 80) {
+    const set = this.makeSet(name, geo, mat, maxDist);
+    this.scatter([set], count, area, weightFn, opts);
+    set.build(this.group);
+    return set;
   }
 
   update(camPos, distScale = 1) {

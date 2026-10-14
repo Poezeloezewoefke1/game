@@ -7,8 +7,11 @@ import { Environment } from './world/environment.js';
 import { Flora } from './world/flora.js';
 import { Structures } from './world/structures.js';
 import { Resources } from './world/resources.js';
-import { U, makeNoiseTexture } from './world/shading.js';
-import { POIS, SITES, WORLD_HALF } from './world/layout.js';
+import { U, makeNoiseTexture, patchMaterial } from './world/shading.js';
+import { AssetLibrary, fit } from './world/assets.js';
+import { setMaxAnisotropy, preloadSurfaces } from './world/surfaces.js';
+import { buildEnvironmentMaps } from './world/envmaps.js';
+import { POIS, SITES, WORLD_HALF, biomeWeights } from './world/layout.js';
 import { Creatures } from './creatures/creatures.js';
 import { Player } from './player/player.js';
 import { Kestrel } from './player/kestrel.js';
@@ -145,24 +148,46 @@ export class Game {
     this.camera.add(this.lamp.target);
 
     U.uNoiseTex.value = makeNoiseTexture(256);
+    // ?classic turns off every graphics upgrade (external models, surface
+    // detail, reflections) for comparison or as a rollback path
+    this.classic = new URLSearchParams(window.location.search).has('classic');
+    setMaxAnisotropy(Math.min(8, r.capabilities.getMaxAnisotropy()));
+    this.assets = new AssetLibrary({ enabled: !this.classic });
+    this.ui.setLoading(0.01, 'Loading assets…');
+    await Promise.all([
+      this.assets.preload((f) => this.ui.setLoading(0.01 + f * 0.04, 'Loading assets…')),
+      this.classic ? Promise.resolve() : preloadSurfaces(),
+    ]);
     this.ui.setLoading(0.02, 'Sounding the seafloor…');
     const terrain = new Terrain();
     await terrain.generate((f) => this.ui.setLoading(0.05 + f * 0.55, 'Sounding the seafloor…'));
     terrain.build();
     this.scene.add(terrain.group);
     const collision = new CollisionWorld(terrain);
+    this.envMaps = this.classic ? null : buildEnvironmentMaps(r, this.assets);
+    this.scene.environment = this.envMaps ? this.envMaps.water : null;
     this.ui.setLoading(0.62, 'Growing reefs and kelp…');
     await frame();
     this.env = new Environment(this.scene, this.settings.quality);
-    const structures = new Structures(this.scene, terrain, collision);
+    const structures = new Structures(this.scene, terrain, collision, this.assets);
     structures.build();
     const flora = new Flora(this.scene, terrain, collision, this.settings.quality);
     flora.build();
+    const shell = this.assets.meshData('abalone');
+    if (shell) {
+      // photoreal abalone shells on the shelf, coral terraces and near the beacon
+      const geo = fit(shell.geometry, { forward: '+z', length: 0.26, pivot: 'base' });
+      const mat = patchMaterial(shell.material.clone(), { reflect: 1.4 });
+      flora.addScatter('abalone', geo, mat, 140, { x0: -260, x1: 300, z0: -200, z1: 460 }, (x, z, h) => {
+        const b = biomeWeights(x, z);
+        return 0.25 + b.coral * 0.6 + b.shelf * 0.3 + (Math.hypot(x - SITES.beacon.x, z - SITES.beacon.z) < 40 ? 1 : 0);
+      }, { seed: 91, maxSlope: 0.7, tilt: 0.9, sink: 0.02, scale: (r) => 0.7 + r() * 0.8 }, 70);
+    }
     this.ui.setLoading(0.8, 'Waking the wildlife…');
     await frame();
     const resources = new Resources(this.scene, terrain);
     resources.build(structures.resourceSpots);
-    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events);
+    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events, this.assets);
     this.world = { terrain, collision, structures, flora, resources, creatures, latticePos: structures.scannables.find((s) => s.id === 'veyruLattice').pos };
     this.buildFloraIndex();
 
@@ -267,6 +292,8 @@ export class Game {
       this.camera.updateProjectionMatrix();
     }
     if (this.post) { this.post.setQuality(s.quality); this.onResize(); }
+    U.uSurfQuality.value = this.classic ? 0 : s.quality === 'low' ? 0 : s.quality === 'medium' ? 0.85 : 1;
+    U.uEnvBoost.value = this.classic ? 0 : 1;
     if (!s.hints) this.ui.showHint(null);
   }
 
@@ -1070,6 +1097,12 @@ export class Game {
     this.song = song;
     this.world.structures.update(dt, U.uTime.value, song);
     this.world.resources.update(this.state.time);
+    // reflections: interior HDRI inside the station's air pocket, ocean light elsewhere
+    if (this.envMaps) {
+      const inside = !this.inSub && this.player.inAirPocket && this.mode !== 'menu';
+      const want = inside && this.envMaps.interior ? this.envMaps.interior : this.envMaps.water;
+      if (this.scene.environment !== want) this.scene.environment = want;
+    }
     // the headlamp
     this.lamp.intensity = !this.inSub && this.state.lamp && this.mode !== 'menu' ? 5.5 : 0;
   }

@@ -63,6 +63,15 @@ Depth gating: the suit is rated to 60 m at first, then 180 m and 340 m. The Kest
 - **UI:** title screen with a live world behind it, an intro, a HUD (compass, objective, vitals, depth gauge and zone, scan ring, prompts, waypoints), a wrist PDA, pause, settings (sensitivity, invert Y, FOV, volumes, quality, subtitles, hints, head bob), controls, credits, a death screen, and the chapter ending.
 - **Saving:** manual saves from the pause menu or the station terminal, plus autosaves when power is restored, when you fabricate at the station, and at the ending. Saves go to `localStorage`, and Continue loads them from the title screen.
 
+## Graphics and external assets
+
+- **Surface detail:** tileable CC0 normal maps (`public/textures/normals/`) are applied with triplanar projection in the shared underwater shader (`src/world/shading.js`, presets in `src/world/surfaces.js`). It needs no UVs and keeps texel density constant on procedural geometry.
+- **Reflections:** image-based specular reflections from a procedural ocean light field, plus a CC0 HDRI inside the station (`src/world/envmaps.js`). They fade with depth like sunlight; image-based diffuse is disabled because the game's own ambient model provides it.
+- **External models:** optional glTF models listed in `MODEL_MANIFEST` (`src/world/assets.js`) are preloaded and normalised to the size, pivot and facing the game expects. Every one has a procedural fallback, so a missing or broken file never breaks the game. To swap in your own model, put a `.glb` in `public/models/` and point the manifest entry at it.
+- **Quality:** surface detail is disabled on Low and reduced on Medium (Settings → Graphics quality).
+- **Rollback/compare:** open the game with `?classic` to turn off all graphics upgrades.
+- **Credits:** third-party assets and their licenses are listed in `public/CREDITS.md` and on the in-game Credits screen.
+
 ## Project layout
 
 ```
@@ -93,6 +102,7 @@ New biomes can be added by extending `layout.js` (height function and sites), `f
 npm run build
 npm run preview &     # serve the build on :4173
 npm test              # Playwright + Chromium (software WebGL works)
+npm run test:fallback # blocks every external asset and checks the procedural fallbacks
 ```
 
 The suite boots the game and starts a new expedition. It then steps the simulation and checks swimming, moonpool and terrain collision, oxygen drain, refill and drowning, pressure damage, scanning, resource collection, fabrication, restoring station power, upgrades, piloting the Kestrel, the save/load round trip, death and respawn, and the full story conclusion. It also fails on any runtime error. Set `ABYSSAL_URL` or `CHROMIUM_PATH` to override the defaults.

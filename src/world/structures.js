@@ -3,7 +3,9 @@
 // the Threshold. Each site registers colliders, scannables and interactables.
 
 import * as THREE from 'three';
-import { waterMat, U } from './shading.js';
+import { waterMat, U, patchMaterial } from './shading.js';
+import { fit, adaptMaterials } from './assets.js';
+import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
 import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
 import * as G from './geom.js';
@@ -69,7 +71,8 @@ class Site {
 }
 
 export class Structures {
-  constructor(scene, terrain, collision) {
+  constructor(scene, terrain, collision, assets = null) {
+    this.assets = assets;
     this.scene = scene;
     this.terrain = terrain;
     this.collision = collision;
@@ -111,25 +114,25 @@ export class Structures {
     glyph.map.repeat.set(1, 3); glyph.emissive.repeat.set(1, 3);
     this.glyphTex = glyph;
     this.M = {
-      hull: waterMat({ map: hullTex, roughness: 0.55, metalness: 0.15 }),
-      hullDark: waterMat({ map: darkTex, roughness: 0.6, metalness: 0.2 }),
+      hull: waterMat({ map: hullTex, roughness: 0.5, metalness: 0.2 }, { surface: surface('paint') }),
+      hullDark: waterMat({ map: darkTex, roughness: 0.5, metalness: 0.45 }, { surface: surface('paintScratched') }),
       interior: waterMat({ color: 0xc9c4b8, roughness: 0.7 }, { ambient: 0.6 }),
-      deck: waterMat({ map: darkTex, color: 0x777f86, roughness: 0.8 }),
-      orange: waterMat({ color: 0xd8692a, roughness: 0.5 }),
-      lab: waterMat({ map: labTex, roughness: 0.75, metalness: 0.1 }, { detail: 0.25 }),
-      labInner: waterMat({ color: 0x8c948f, roughness: 0.8 }, { detail: 0.4 }),
-      rust: waterMat({ map: rustTex, roughness: 0.85, metalness: 0.2 }, { detail: 0.2 }),
-      rustDark: waterMat({ color: 0x3d2f2a, roughness: 0.9 }, { detail: 0.3 }),
-      containerA: waterMat({ color: 0xc0632e, roughness: 0.7 }, { detail: 0.3 }),
-      containerB: waterMat({ color: 0x2f6f78, roughness: 0.7 }, { detail: 0.3 }),
+      deck: waterMat({ map: darkTex, color: 0x777f86, roughness: 0.6, metalness: 0.5 }, { surface: surface('deck') }),
+      orange: waterMat({ color: 0xd8692a, roughness: 0.45, metalness: 0.1 }, { surface: surface('paint') }),
+      lab: waterMat({ map: labTex, roughness: 0.65, metalness: 0.2 }, { detail: 0.25, surface: surface('paintScratched') }),
+      labInner: waterMat({ color: 0x8c948f, roughness: 0.7 }, { detail: 0.4, surface: surface('paintScratched') }),
+      rust: waterMat({ map: rustTex, roughness: 0.8, metalness: 0.35 }, { detail: 0.2, surface: surface('rust') }),
+      rustDark: waterMat({ color: 0x3d2f2a, roughness: 0.85, metalness: 0.3 }, { detail: 0.3, surface: surface('rust') }),
+      containerA: waterMat({ color: 0xc0632e, roughness: 0.6, metalness: 0.3 }, { detail: 0.3, surface: surface('rust', { strength: 0.7 }) }),
+      containerB: waterMat({ color: 0x2f6f78, roughness: 0.6, metalness: 0.3 }, { detail: 0.3, surface: surface('rust', { strength: 0.7 }) }),
       glass: waterMat({ color: 0x9fd9e8, roughness: 0.05, metalness: 0.0, transparent: true, opacity: 0.25, depthWrite: false }),
       warmLight: waterMat({ color: 0x222222, emissive: 0xffc98a, emissiveIntensity: 0.2 }),
       redLight: waterMat({ color: 0x220000, emissive: 0xff3b2b, emissiveIntensity: 2.5 }),
       cyanLight: waterMat({ color: 0x002222, emissive: 0x5fe8ff, emissiveIntensity: 2.5 }),
-      stone: waterMat({ map: glyph.map, emissiveMap: glyph.emissive, emissive: 0x7a5cff, emissiveIntensity: 0.5, roughness: 0.6, metalness: 0.2 }),
-      stonePlain: waterMat({ color: 0x2b3142, roughness: 0.7 }, { detail: 0.2 }),
-      bone: waterMat({ color: 0xd6cfbf, roughness: 0.85 }, { detail: 0.5 }),
-      rock: waterMat({ vertexColors: true, roughness: 0.95 }, { detail: 0.35 }),
+      stone: waterMat({ map: glyph.map, emissiveMap: glyph.emissive, emissive: 0x7a5cff, emissiveIntensity: 0.5, roughness: 0.45, metalness: 0.25 }, { surface: surface('stone') }),
+      stonePlain: waterMat({ color: 0x2b3142, roughness: 0.6 }, { detail: 0.2, surface: surface('stone') }),
+      bone: waterMat({ color: 0xd6cfbf, roughness: 0.8 }, { detail: 0.5, surface: surface('bone') }),
+      rock: waterMat({ vertexColors: true, roughness: 0.9 }, { detail: 0.35, surface: surface('rock') }),
       suit: waterMat({ color: 0xe5e2da, roughness: 0.6 }),
       visor: waterMat({ color: 0x0a0f14, roughness: 0.1, metalness: 0.6 }),
       shard: waterMat({ color: 0x302050, emissive: 0xb48cff, emissiveIntensity: 3, roughness: 0.2 }),
@@ -191,7 +194,7 @@ export class Structures {
     // pool water inside the moonpool
     const pool = new THREE.CircleGeometry(3.6, 32);
     pool.rotateX(-Math.PI / 2);
-    this.poolMat = waterMat({ color: 0x0a4a5a, emissive: 0x0b3a4c, emissiveIntensity: 0.18, transparent: true, opacity: 0.78, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide, depthWrite: false });
+    this.poolMat = waterMat({ color: 0x0a4a5a, emissive: 0x0b3a4c, emissiveIntensity: 0.18, transparent: true, opacity: 0.78, roughness: 0.12, metalness: 0.0, side: THREE.DoubleSide, depthWrite: false }, { reflect: 0 });
     s.mesh(pool, this.poolMat, 0, -20.2, 0);
     // railing
     const rail = new THREE.TorusGeometry(3.75, 0.06, 6, 48);
@@ -273,9 +276,15 @@ export class Structures {
     const crate = s.mesh(new THREE.BoxGeometry(1, 0.7, 0.8), M.hullDark, Math.cos(2.2) * 6.8, -19.55, Math.sin(2.2) * 6.8, 0.4);
     crate.rotation.y = 0.7;
     // a mug and a helmet on the terminal desk area (crew traces)
-    const helmet = s.mesh(new THREE.SphereGeometry(0.28, 16, 12), M.suit, Math.cos(-0.5) * 6.3, -19.6, Math.sin(-0.5) * 6.3);
-    const vis = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12, 0, Math.PI), M.visor);
-    vis.position.z = 0.1; helmet.add(vis);
+    const hx = Math.cos(-0.5) * 6.3, hz = Math.sin(-0.5) * 6.3;
+    // crew traces on top of the terminal, in view from the pool (external models; procedural fallback)
+    if (!this.prop('crewHelmet', s, Math.cos(-0.24) * 5.05, -18.4, Math.sin(-0.24) * 5.05, { length: 0.4, ry: -Math.PI / 2 - 0.5, reflect: 1 })) {
+      const helmet = s.mesh(new THREE.SphereGeometry(0.28, 16, 12), M.suit, hx, -19.6, hz);
+      const vis = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12, 0, Math.PI), M.visor);
+      vis.position.z = 0.1; helmet.add(vis);
+    }
+    this.prop('bottle', s, Math.cos(0.3) * 5.1, -18.4, Math.sin(0.3) * 5.1, { height: 0.26, ry: 0.4 });
+    this.prop('radio', s, Math.cos(2.2) * 6.8, -19.2, Math.sin(2.2) * 6.8, { length: 0.42, ry: -2.2 + Math.PI });
     // station log datapads are added to the station terminal when power returns
 
     // windows (exterior portholes)
@@ -598,7 +607,7 @@ export class Structures {
       G.prep(new THREE.ConeGeometry(0.35, 2.4, 6).translate(0, 1.8, 0), 0xd6cfbf),
       G.prep(new THREE.CylinderGeometry(0.25, 0.4, 3.6, 6).rotateX(Math.PI / 2), 0xd6cfbf),
     ]);
-    const im = new THREE.InstancedMesh(vGeo, waterMat({ vertexColors: true, roughness: 0.85 }, { detail: 0.6 }), curve.length);
+    const im = new THREE.InstancedMesh(vGeo, waterMat({ vertexColors: true, roughness: 0.8 }, { detail: 0.6, surface: surface('bone') }), curve.length);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     curve.forEach((p, i) => {
@@ -630,13 +639,13 @@ export class Structures {
         this.collision.capsule(pts[1], pts[2], 0.4 * s, 'bone');
       }
     }
-    const ribMesh = new THREE.Mesh(G.merge(ribs), waterMat({ vertexColors: true, roughness: 0.85 }, { detail: 0.6 }));
+    const ribMesh = new THREE.Mesh(G.merge(ribs), waterMat({ vertexColors: true, roughness: 0.8 }, { detail: 0.6, surface: surface('bone') }));
     this.group.add(ribMesh);
     // skull — opened
     const head = curve[34].clone().add(V(9, 1.5, 0));
     const skullGeo = new THREE.SphereGeometry(1, 28, 16, 0.6, Math.PI * 2 - 1.2, 0.25, Math.PI * 0.75);
     skullGeo.scale(11, 4.5, 5.5);
-    const skull = new THREE.Mesh(skullGeo, waterMat({ color: 0xd6cfbf, side: THREE.DoubleSide, roughness: 0.85 }, { detail: 0.5 }));
+    const skull = new THREE.Mesh(skullGeo, waterMat({ color: 0xd6cfbf, side: THREE.DoubleSide, roughness: 0.8 }, { detail: 0.5, surface: surface('bone') }));
     skull.position.copy(head);
     skull.rotation.z = 0.12;
     this.group.add(skull);
@@ -779,7 +788,7 @@ export class Structures {
       const rr = 3 + rnd() * 2.2;
       placements.push({ p: end.clone().addScaledVector(dir, 12 + rr * 0.5).add(V(0, 1, 0)), r: rr });
     }
-    const mat = waterMat({ vertexColors: true, roughness: 0.95 }, { detail: 0.4 });
+    const mat = waterMat({ vertexColors: true, roughness: 0.9 }, { detail: 0.4, surface: surface('caveRock') });
     const im = new THREE.InstancedMesh(rockGeo, mat, placements.length);
     const m = new THREE.Matrix4();
     placements.forEach((pl, i) => {
@@ -933,10 +942,12 @@ export class Structures {
     this.collision.sphere(s.w(-1.6, 0.9, 0), 1.9);
     // the suit, slumped
     s.capsule([0, 0.6, 0], [-0.6, 1.4, 0], 0.32, M.suit);
-    const helm = s.mesh(new THREE.SphereGeometry(0.3, 16, 12), M.suit, -0.85, 1.75, 0);
-    const vis = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12, -0.6, 1.8, 0.6, 1.4), M.visor);
-    vis.position.x = 0.1; vis.rotation.y = -Math.PI / 2;
-    helm.add(vis);
+    if (!this.prop('crewHelmet', s, -0.85, 1.8, 0, { length: 0.44, pivot: 'center', ry: Math.PI / 2 + 0.3, rz: -0.35, rx: 0.15 })) {
+      const helm = s.mesh(new THREE.SphereGeometry(0.3, 16, 12), M.suit, -0.85, 1.75, 0);
+      const vis = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12, -0.6, 1.8, 0.6, 1.4), M.visor);
+      vis.position.x = 0.1; vis.rotation.y = -Math.PI / 2;
+      helm.add(vis);
+    }
     s.capsule([0.1, 0.35, 0.2], [1.2, 0.2, 0.35], 0.13, M.suit);
     s.capsule([0.1, 0.35, -0.2], [1.1, 0.2, -0.5], 0.13, M.suit);
     s.capsule([-0.4, 1.2, 0.3], [0.2, 0.6, 0.7], 0.1, M.suit);
@@ -1032,6 +1043,18 @@ export class Structures {
     body.rotation.z = 0.4;
     s.mesh(new THREE.BoxGeometry(2.6, 0.08, 0.5), M.hullDark, 0.3, 0.1, 0.9).rotation.z = 0.4;
     this.collision.sphere(s.origin, 1.1);
+  }
+
+  /** Place an external prop model if it is available; returns null so callers can fall back. */
+  prop(id, site, x, y, z, { length = 0, height = 0, ry = 0, rx = 0, rz = 0, pivot = 'base', reflect = 1 } = {}) {
+    const raw = this.assets?.instance(id);
+    if (!raw) return null;
+    const obj = fit(raw, { forward: '+z', length: length || 1, height, pivot });
+    adaptMaterials(obj, (m) => patchMaterial(m, { reflect }));
+    obj.position.set(x, y, z);
+    obj.rotation.set(rx, ry, rz);
+    site.group.add(obj);
+    return obj;
   }
 
   setPower(on) {

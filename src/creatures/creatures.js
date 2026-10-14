@@ -3,7 +3,8 @@
 // hollow stalkers of the deep. Each species exposes scan targets.
 
 import * as THREE from 'three';
-import { waterMat } from '../world/shading.js';
+import { waterMat, patchMaterial } from '../world/shading.js';
+import { fit } from '../world/assets.js';
 import { SITES } from '../world/layout.js';
 import { mulberry32, clamp } from '../core/noise.js';
 import * as B from './bodies.js';
@@ -44,7 +45,7 @@ function steerTo(v, desired, maxAccel, dt) {
 
 // ---------------------------------------------------------------- GLIMMERFIN
 class FishSchools {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, assets) {
     this.terrain = terrain;
     const homes = [
       [40, -60, 70], [-90, 40, 70], [120, 90, 60], // shelf
@@ -64,9 +65,33 @@ class FishSchools {
       return { home: V(x, 0, z), radius: r, center, target: center.clone(), fish, rnd, active: true };
     });
     const total = this.schools.length * this.perSchool;
-    const mat = waterMat({ vertexColors: true, roughness: 0.35, metalness: 0.5, side: THREE.DoubleSide },
-      { swim: { mode: 1, amp: 0.05, speed: 16, freq: 7, len: 1, head: 0.5 }, glow: { color: 0x7ff6ff, intensity: 2.4, pulse: 5 } });
-    const geo = B.glimmerfinGeometry();
+    const swim = { mode: 1, amp: 0.05, speed: 16, freq: 7, len: 1, head: 0.5 };
+    const glow = { color: 0x7ff6ff, intensity: 2.4, pulse: 5 };
+    let geo, mat;
+    const ext = assets?.meshData('glimmerfin');
+    if (ext) {
+      // external photoreal fish, normalised to the procedural contract:
+      // head toward +z, centred, 1 unit long (instances scale it to 0.38-0.56 m)
+      geo = fit(ext.geometry, { forward: '+z', length: 1, pivot: 'center' });
+      const pos = geo.attributes.position, nor = geo.attributes.normal;
+      const glowArr = new Float32Array(pos.count);
+      for (let i = 0; i < pos.count; i++) {
+        // keep the species' bioluminescent lateral line
+        const y = pos.getY(i), z = pos.getZ(i), side = Math.abs(nor.getX(i));
+        glowArr[i] = side > 0.5 && z > -0.3 && z < 0.3 ? Math.max(0, 1 - Math.abs(y - 0.015) / 0.012) * 0.8 : 0;
+      }
+      geo.setAttribute('aGlow', new THREE.BufferAttribute(glowArr, 1));
+      mat = ext.material.clone();
+      mat.color.multiply(new THREE.Color(1.0, 1.12, 1.25)); // cooler, alien sheen
+      mat.metalness = 0.3; // scales the model's metalness map: wet scales, not chrome
+      mat.roughness = 0.5;
+      mat.side = THREE.DoubleSide;
+      patchMaterial(mat, { swim, glow: { ...glow, intensity: 1.4 }, reflect: 1.3 });
+      this.external = true;
+    } else {
+      mat = waterMat({ vertexColors: true, roughness: 0.35, metalness: 0.5, side: THREE.DoubleSide }, { swim, glow });
+      geo = B.glimmerfinGeometry();
+    }
     const phases = new Float32Array(total);
     for (let i = 0; i < total; i++) phases[i] = Math.random() * 6.28;
     geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phases, 1));
@@ -601,9 +626,9 @@ class Stalkers {
 }
 
 export class Creatures {
-  constructor(scene, terrain, caveCenter, events) {
+  constructor(scene, terrain, caveCenter, events, assets = null) {
     this.events = events;
-    this.fish = new FishSchools(scene, terrain);
+    this.fish = new FishSchools(scene, terrain, assets);
     this.drifters = new Drifters(scene, terrain);
     this.shellbacks = new Shellbacks(scene, terrain);
     this.razormaws = new Razormaws(scene, terrain);

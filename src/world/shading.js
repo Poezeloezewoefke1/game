@@ -6,6 +6,7 @@
 // Three.js still handles spot/point lights (headlamp, sub lights) normally.
 
 import * as THREE from 'three';
+import { ShaderChunk } from 'three';
 
 export const U = {
   uTime: { value: 0 },
@@ -26,6 +27,8 @@ export const U = {
   uSonarStrength: { value: 0 },
   uCaustics: { value: 1 },
   uNoiseTex: { value: null },
+  uSurfQuality: { value: 1 }, // 0 disables triplanar surface detail (Low quality / classic)
+  uEnvBoost: { value: 1 }, // global scale for image-based reflections
 };
 
 export const GLSL_COMMON = /* glsl */`
@@ -46,6 +49,8 @@ uniform vec3 uSonarOrigin;
 uniform float uSonarRadius;
 uniform float uSonarStrength;
 uniform float uCaustics;
+uniform float uSurfQuality;
+uniform float uEnvBoost;
 
 float abyssCaustic(vec2 uv, float t) {
   vec2 p = mod(uv * 6.28318, 6.28318) - 250.0;
@@ -77,6 +82,13 @@ vec3 abyssAmbient(vec3 albedo, vec3 wN, vec3 wp) {
   light += uSunColor * caust * 1.6 * uDaylight;
   light *= mix(0.12, 1.0, uDaylight);
   return albedo * (light * absorb + uDeepAmbient);
+}
+
+// image-based reflections fade with depth like sunlight does (stronger in air pockets)
+vec3 abyssEnvAtten(vec3 wp) {
+  float depth = max(0.0, -wp.y);
+  vec3 a = exp(-uAbsorb * depth) * mix(0.15, 1.0, uDaylight);
+  return mix(a, vec3(1.0), uInAir) + uDeepAmbient * 2.0;
 }
 
 vec3 abyssFog(vec3 col, vec3 wp) {
@@ -151,9 +163,13 @@ export function patchMaterial(mat, opts = {}) {
   mat.userData.swimPhase = { value: swim?.phase ?? 0 };
   const glow = opts.glow;
   if (glow) mat.userData.glowColor = { value: new THREE.Color(glow.color ?? 0x66eeff) };
+  const surf = opts.surface;
+  const reflect = opts.reflect ?? 1;
   const key = [
     'abyss', swim ? swim.mode : 0, detail ? 1 : 0, ambientScale, fogScale, opts.noFog ? 1 : 0, glow ? 1 : 0,
+    surf ? surf.space : 0,
   ].join('_');
+  mat.userData.abyssSurface = surf || null;
 
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, U);
@@ -171,6 +187,17 @@ export function patchMaterial(mat, opts = {}) {
     }
     shader.defines = shader.defines || {};
     if (swim || glow) shader.defines.NEEDS_PHASE = 1;
+    shader.uniforms.uEnvScale = { value: reflect };
+    if (surf) {
+      shader.defines.USE_SURFACE = 1;
+      if (surf.space === 'object') shader.defines.SURF_OBJECT = 1;
+      shader.uniforms.uSurfMap = { value: surf.map };
+      shader.uniforms.uSurfSide = { value: surf.side };
+      shader.uniforms.uSurfScale = { value: new THREE.Vector2(surf.scale, surf.sideScale) };
+      shader.uniforms.uSurfStrength = { value: surf.strength };
+      shader.uniforms.uSurfCavity = { value: surf.cavity };
+      shader.uniforms.uSurfRough = { value: surf.rough };
+    }
     if (glow) {
       shader.defines.USE_GLOW = 1;
       shader.uniforms.uGlowColor = mat.userData.glowColor;
@@ -196,6 +223,9 @@ attribute float aPhase;
 attribute float aGlow;
 varying float vGlow;
 varying float vGlowPhase;
+#endif
+#ifdef USE_SURFACE
+varying vec3 vSurfP; varying vec3 vSurfN; varying vec3 vSurfBX; varying vec3 vSurfBY; varying vec3 vSurfBZ;
 #endif`);
     vs = vs.replace('#include <begin_vertex>', `#include <begin_vertex>
 ${SWIM_VERTEX}
@@ -215,7 +245,23 @@ ${SWIM_VERTEX}
   #ifdef USE_INSTANCING
     abyssWP = instanceMatrix * abyssWP;
   #endif
-  vAbyssWP = (modelMatrix * abyssWP).xyz;`);
+  vAbyssWP = (modelMatrix * abyssWP).xyz;
+  #ifdef USE_SURFACE
+    mat4 surfM = modelMatrix;
+    #ifdef USE_INSTANCING
+      surfM = modelMatrix * instanceMatrix;
+    #endif
+    #ifdef SURF_OBJECT
+      vSurfP = transformed;
+      vSurfN = objectNormal;
+      mat3 surfV = mat3(viewMatrix * surfM);
+    #else
+      vSurfP = vAbyssWP;
+      vSurfN = mat3(surfM) * objectNormal;
+      mat3 surfV = mat3(viewMatrix);
+    #endif
+    vSurfBX = surfV[0]; vSurfBY = surfV[1]; vSurfBZ = surfV[2];
+  #endif`);
     shader.vertexShader = vs;
 
     // ---- fragment
@@ -229,7 +275,45 @@ varying vec3 vAbyssWP;
 uniform vec3 uGlowColor; uniform float uGlowPulse; uniform float uGlowIntensity;
 varying float vGlow; varying float vGlowPhase;
 #endif
+uniform float uEnvScale;
+#ifdef USE_SURFACE
+uniform sampler2D uSurfMap; uniform sampler2D uSurfSide; uniform vec2 uSurfScale;
+uniform float uSurfStrength; uniform float uSurfCavity; uniform float uSurfRough;
+varying vec3 vSurfP; varying vec3 vSurfN; varying vec3 vSurfBX; varying vec3 vSurfBY; varying vec3 vSurfBZ;
+#endif
 ${detail ? 'uniform sampler2D uNoiseTex;' : ''}`);
+    // reflections: keep image-based specular, drop image-based diffuse (the
+    // underwater ambient above already provides it), and absorb with depth
+    fs = fs.replace('#include <lights_fragment_maps>', ShaderChunk.lights_fragment_maps
+      .replace('iblIrradiance += getIBLIrradiance( geometryNormal );', '')
+      .replace('radiance += iblRadiance;', 'radiance += iblRadiance * uEnvScale * uEnvBoost * abyssEnvAtten(vAbyssWP);'));
+    fs = fs.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+#ifdef USE_SURFACE
+  if (uSurfQuality > 0.0) {
+    // triplanar normal mapping (whiteout blend) in world or object space
+    vec3 sn = normalize(vSurfN);
+    vec3 bw = pow(abs(sn), vec3(4.0));
+    bw /= (bw.x + bw.y + bw.z);
+    vec3 sp = vSurfP;
+    vec3 tx = texture2D(uSurfSide, sp.zy * uSurfScale.y).xyz * 2.0 - 1.0;
+    vec3 ty = texture2D(uSurfMap, sp.xz * uSurfScale.x).xyz * 2.0 - 1.0;
+    vec3 tz = texture2D(uSurfSide, sp.xy * uSurfScale.y).xyz * 2.0 - 1.0;
+    float k = uSurfStrength * uSurfQuality;
+    tx.xy *= k; ty.xy *= k; tz.xy *= k;
+    vec3 nx = vec3(tx.xy + sn.zy, abs(tx.z) * sn.x);
+    vec3 ny = vec3(ty.xy + sn.xz, abs(ty.z) * sn.y);
+    vec3 nz = vec3(tz.xy + sn.xy, abs(tz.z) * sn.z);
+    vec3 nb = normalize(nx.zyx * bw.x + ny.xzy * bw.y + nz.xyz * bw.z);
+    vec3 bx = normalize(vSurfBX), by = normalize(vSurfBY), bz = normalize(vSurfBZ);
+    float fd = gl_FrontFacing ? 1.0 : -1.0;
+    vec3 nView = normalize(bx * nb.x + by * nb.y + bz * nb.z) * fd;
+    vec3 baseView = normalize(bx * sn.x + by * sn.y + bz * sn.z) * fd;
+    normal = normalize(normal + (nView - baseView));
+    float cav = clamp((1.0 - dot(nb, sn)) * 3.0, 0.0, 1.0);
+    diffuseColor.rgb *= 1.0 - cav * uSurfCavity * uSurfQuality;
+    roughnessFactor = clamp(roughnessFactor + cav * uSurfRough, 0.04, 1.0);
+  }
+#endif`);
     fs = fs.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 #ifdef USE_GLOW
   totalEmissiveRadiance += uGlowColor * vGlow * uGlowIntensity * (0.72 + 0.28 * sin(uTime * uGlowPulse + vGlowPhase * 6.2831));

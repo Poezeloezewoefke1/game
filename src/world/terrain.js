@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { rawHeight, biomeWeights, WORLD_HALF } from './layout.js';
 import { waterMat } from './shading.js';
+import { surface } from './surfaces.js';
 import { clamp, lerp, smoothstep } from '../core/noise.js';
 
 const SPACING = 3;
@@ -88,7 +89,7 @@ export class Terrain {
   }
 
   build(noiseTex) {
-    this.material = waterMat({ vertexColors: true, roughness: 0.95 }, { detail: 0.11 });
+    this.material = waterMat({ vertexColors: true, roughness: 0.92 }, { detail: 0.11, surface: surface('seabed'), reflect: 0.6 });
     // the detail sampler is shared through U.uNoiseTex; terrain needs it bound
     this.material.userData.noise = noiseTex;
     const chunksPerSide = CELLS / CHUNK;
