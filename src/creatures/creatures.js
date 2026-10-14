@@ -9,6 +9,7 @@ import { surface } from '../world/surfaces.js';
 import { SITES } from '../world/layout.js';
 import { mulberry32, clamp } from '../core/noise.js';
 import * as B from './bodies.js';
+import * as S from './species.js';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -36,6 +37,35 @@ function keepInWater(terrain, p, v, clearance, dt, strength = 4) {
   if (p.y > -2.5) v.y -= (p.y + 2.5) * 2 * dt;
 }
 
+// smooth heading with banking into turns (replaces snapping lookAt)
+const _fq = new THREE.Quaternion();
+const _rq = new THREE.Quaternion();
+const _fm = new THREE.Matrix4();
+const ZERO = new THREE.Vector3();
+const ZAXIS = new THREE.Vector3(0, 0, 1);
+function faceAlong(obj, st, vel, dt, rate = 5, bank = 0.3) {
+  if (vel.lengthSq() < 1e-4 || dt <= 0) return;
+  _fm.lookAt(vel, ZERO, UP); // +z along vel
+  _fq.setFromRotationMatrix(_fm);
+  const yaw = Math.atan2(vel.x, vel.z);
+  if (st.yawPrev === undefined) { st.yawPrev = yaw; st.roll = 0; obj.quaternion.copy(_fq); }
+  let dy = yaw - st.yawPrev;
+  dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  st.yawPrev = yaw;
+  st.roll += (clamp((-dy / dt) * bank, -0.7, 0.7) - st.roll) * (1 - Math.exp(-dt * 3));
+  _fq.multiply(_rq.setFromAxisAngle(ZAXIS, st.roll));
+  obj.quaternion.slerp(_fq, 1 - Math.exp(-dt * rate));
+}
+
+/** Two-level LOD for a single creature: detailed close up, light far away. */
+function lodMesh(hi, lo, mat, dist) {
+  if (!lo) return new THREE.Mesh(hi, mat);
+  const lod = new THREE.LOD();
+  lod.addLevel(new THREE.Mesh(hi, mat), 0);
+  lod.addLevel(new THREE.Mesh(lo, mat), dist);
+  return lod;
+}
+
 function steerTo(v, desired, maxAccel, dt) {
   _w.subVectors(desired, v);
   const l = _w.length();
@@ -46,7 +76,7 @@ function steerTo(v, desired, maxAccel, dt) {
 
 // ---------------------------------------------------------------- GLIMMERFIN
 class FishSchools {
-  constructor(scene, terrain, assets) {
+  constructor(scene, terrain, assets, classic = false) {
     this.terrain = terrain;
     const homes = [
       [40, -60, 70], [-90, 40, 70], [120, 90, 60], // shelf
@@ -61,7 +91,7 @@ class FishSchools {
       const rnd = mulberry32(300 + i);
       const fish = [];
       for (let k = 0; k < this.perSchool; k++) {
-        fish.push({ p: center.clone().add(V((rnd() - 0.5) * 8, (rnd() - 0.5) * 4, (rnd() - 0.5) * 8)), v: V(rnd() - 0.5, 0, rnd() - 0.5).multiplyScalar(2), s: 0.38 + rnd() * 0.18 });
+        fish.push({ p: center.clone().add(V((rnd() - 0.5) * 8, (rnd() - 0.5) * 4, (rnd() - 0.5) * 8)), v: V(rnd() - 0.5, 0, rnd() - 0.5).multiplyScalar(2), s: 0.38 + rnd() * 0.18, ph: rnd() * 6.28 });
       }
       return { home: V(x, 0, z), radius: r, center, target: center.clone(), fish, rnd, active: true };
     });
@@ -90,28 +120,39 @@ class FishSchools {
       patchMaterial(mat, { swim, glow: { ...glow, intensity: 1.4 }, reflect: 1.3 });
       this.external = true;
     } else {
-      mat = waterMat({ vertexColors: true, roughness: 0.35, metalness: 0.5, side: THREE.DoubleSide }, { swim, glow });
-      geo = B.glimmerfinGeometry();
+      mat = waterMat({ vertexColors: true, roughness: 0.35, metalness: classic ? 0.5 : 0.3, side: THREE.DoubleSide }, { swim, glow, reflect: 1.3 });
+      geo = classic ? B.glimmerfinGeometry() : S.glimmerfin();
     }
-    const phases = new Float32Array(total);
-    for (let i = 0; i < total; i++) phases[i] = Math.random() * 6.28;
-    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phases, 1));
-    this.mesh = new THREE.InstancedMesh(geo, mat, total);
-    this.mesh.frustumCulled = false;
-    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    scene.add(this.mesh);
+    this.total = total;
+    const instanced = (g, m) => {
+      g.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(total), 1).setUsage(THREE.DynamicDrawUsage));
+      const mesh = new THREE.InstancedMesh(g, m, total);
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.count = 0;
+      scene.add(mesh);
+      return mesh;
+    };
+    // near: the detailed fish; far (past NEAR_LOD m): a light procedural fish
+    this.mesh = instanced(geo, mat);
+    this.far = null;
+    if (!classic) {
+      const farMat = waterMat({ vertexColors: true, roughness: 0.4, metalness: 0.3, side: THREE.DoubleSide }, { swim, glow, reflect: 1.3 });
+      this.far = instanced(S.glimmerfin({ lod: 1 }), farMat);
+    }
   }
 
   update(dt, ctx) {
     const { playerPos, predators, isNight } = ctx;
-    let idx = 0;
+    const NEAR_LOD = 18;
+    const near = this.mesh, far = this.far;
+    const nearPh = near.geometry.attributes.aPhase.array;
+    const farPh = far ? far.geometry.attributes.aPhase.array : null;
+    let ni = 0, fi = 0;
     for (const s of this.schools) {
       const dist = s.center.distanceTo(playerPos);
       s.active = dist < 230;
-      if (!s.active) {
-        for (let k = 0; k < s.fish.length; k++) { _m.makeScale(0, 0, 0); this.mesh.setMatrixAt(idx++, _m); }
-        continue;
-      }
+      if (!s.active) continue;
       // school target wanders around home; at night they all face the Abyss
       if (s.center.distanceTo(s.target) < 6 || Math.random() < 0.002) {
         const a = s.rnd() * Math.PI * 2, r = s.rnd() * s.radius;
@@ -166,10 +207,17 @@ class FishSchools {
         if (f.v.lengthSq() < 0.3) f.v.addScaledVector(toTarget, 0.1);
         f.p.addScaledVector(f.v, dt);
         orientMatrix(_m, f.p, f.v, f.s);
-        this.mesh.setMatrixAt(idx++, _m);
+        if (!far || f.p.distanceTo(playerPos) < NEAR_LOD) { near.setMatrixAt(ni, _m); nearPh[ni++] = f.ph; } else { far.setMatrixAt(fi, _m); farPh[fi++] = f.ph; }
       }
     }
-    this.mesh.instanceMatrix.needsUpdate = true;
+    near.count = ni;
+    near.instanceMatrix.needsUpdate = true;
+    near.geometry.attributes.aPhase.needsUpdate = true;
+    if (far) {
+      far.count = fi;
+      far.instanceMatrix.needsUpdate = true;
+      far.geometry.attributes.aPhase.needsUpdate = true;
+    }
   }
 
   nearestFish(p, maxDist) {
@@ -199,7 +247,7 @@ class FishSchools {
 
 // ---------------------------------------------------------------- DRIFTERS
 class Drifters {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, classic = false) {
     this.terrain = terrain;
     const rnd = mulberry32(55);
     this.list = [];
@@ -213,20 +261,26 @@ class Drifters {
         this.list.push({ p: V(px, y, pz), base: y, v: V((rnd() - 0.5) * 0.4, 0, (rnd() - 0.5) * 0.4), s: 0.7 + rnd() * 0.9, ph: rnd() * 6.28, tilt: rnd() });
       }
     }
-    const geo = B.drifterGeometry();
-    const phases = new Float32Array(this.list.length);
-    this.list.forEach((d, i) => { phases[i] = d.ph; });
-    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phases, 1));
     const mat = waterMat({ vertexColors: true, transparent: true, opacity: 0.78, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false },
       { swim: { mode: 3, amp: 0.16, speed: 1.6, freq: 1.4, len: 0.75 }, glow: { color: 0xa88cff, intensity: 1.1, pulse: 1.6 } });
-    this.mesh = new THREE.InstancedMesh(geo, mat, this.list.length);
-    this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = 2;
-    scene.add(this.mesh);
+    const count = this.list.length;
+    const instanced = (geo) => {
+      geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(count), 1).setUsage(THREE.DynamicDrawUsage));
+      const mesh = new THREE.InstancedMesh(geo, mat, count);
+      mesh.frustumCulled = false;
+      mesh.renderOrder = 2;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      scene.add(mesh);
+      return mesh;
+    };
+    // detailed bell within NEAR_LOD m, light bell beyond
+    this.mesh = instanced(classic ? B.drifterGeometry() : S.drifter());
+    this.far = classic ? null : instanced(S.drifter({ lod: 1 }));
   }
 
   update(dt, ctx, t) {
-    this.list.forEach((d, i) => {
+    let ni = 0, fi = 0;
+    this.list.forEach((d) => {
       const pd = d.p.distanceTo(ctx.playerPos);
       if (pd < 5) d.v.addScaledVector(_v.subVectors(d.p, ctx.playerPos).normalize(), dt * 0.6);
       d.v.multiplyScalar(1 - dt * 0.2);
@@ -237,9 +291,17 @@ class Drifters {
       d.p.y = d.base + Math.sin(t * 0.3 + d.ph) * 1.5 + pulse * 0.15;
       _q.setFromAxisAngle(_v.set(Math.cos(d.ph), 0, Math.sin(d.ph)), 0.15 * Math.sin(t * 0.4 + d.tilt * 6));
       _m.compose(d.p, _q, _s.set(d.s, d.s, d.s));
-      this.mesh.setMatrixAt(i, _m);
+      const m = !this.far || pd < 35 ? this.mesh : this.far;
+      const k = m === this.mesh ? ni++ : fi++;
+      m.setMatrixAt(k, _m);
+      m.geometry.attributes.aPhase.array[k] = d.ph;
     });
-    this.mesh.instanceMatrix.needsUpdate = true;
+    for (const [m, c] of [[this.mesh, ni], [this.far, fi]]) {
+      if (!m) continue;
+      m.count = c;
+      m.instanceMatrix.needsUpdate = true;
+      m.geometry.attributes.aPhase.needsUpdate = true;
+    }
   }
 
   scanTargets(p, out) {
@@ -249,10 +311,12 @@ class Drifters {
 
 // ---------------------------------------------------------------- SHELLBACKS
 class Shellbacks {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, classic = false) {
     this.terrain = terrain;
+    this.classic = classic;
     const homes = [[30, 50], [-60, -40], [80, -90], [-30, 110], [150, 40], [-140, -90],
       [-40, 280], [90, 250], [20, 380], [-150, 360], [170, 330], [330, -20], [450, 30], [260, -60]];
+    if (!classic) { this.buildDetailed(scene, terrain, homes); return; }
     const geo = B.shellbackGeometry();
     const mat = waterMat({ vertexColors: true, roughness: 0.7 }, { glow: { color: 0x66ffd0, intensity: 2.2, pulse: 0.8 }, detail: 0.9, surface: surface('coral', { space: 'object', scale: 3, strength: 0.9 }) });
     const headMat = waterMat({ color: 0x6d6250, roughness: 0.6 }, { surface: surface('hide', { scale: 6 }) });
@@ -282,6 +346,31 @@ class Shellbacks {
     });
   }
 
+  buildDetailed(scene, terrain, homes) {
+    // one mesh per animal (shell + walking legs) plus the retractable head
+    const bodyGeo = S.shellbackBody();
+    const headGeo = S.shellbackHead();
+    const headMat = waterMat({ vertexColors: true, roughness: 0.55 }, { surface: surface('hide', { space: 'object', scale: 6 }), reflect: 1.2 });
+    this.list = homes.map(([x, z], i) => {
+      const g = new THREE.Group();
+      const mat = waterMat({ vertexColors: true, roughness: 0.62 }, {
+        swim: { mode: 5, amp: 0.1, speed: 1, freq: 1, len: 1, phase: i },
+        glow: { color: 0x66ffd0, intensity: 2.2, pulse: 0.8 }, detail: 0.6,
+        surface: surface('coral', { space: 'object', scale: 3, strength: 0.75 }), reflect: 1.1,
+      });
+      g.add(new THREE.Mesh(bodyGeo, mat));
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.set(0, 0.12, 1.02);
+      g.add(head);
+      const s = 1.2 + (i % 4) * 0.3;
+      g.scale.setScalar(s);
+      const p = V(x, terrain.heightAt(x, z) + 0.3 * s, z);
+      g.position.copy(p);
+      scene.add(g);
+      return { g, head, legs: [], mat, home: V(x, 0, z), p, target: p.clone(), yaw: i, s, wait: 0, t: i };
+    });
+  }
+
   update(dt, ctx) {
     for (const c of this.list) {
       const pd = c.p.distanceTo(ctx.playerPos);
@@ -289,7 +378,7 @@ class Shellbacks {
       if (!c.g.visible) continue;
       const shy = pd < 4.5;
       c.head.scale.setScalar(THREE.MathUtils.lerp(c.head.scale.x, shy ? 0.4 : 1, dt * 4));
-      c.head.position.z = 1.15 * c.head.scale.x;
+      c.head.position.z = (this.classic ? 1.15 : 1.02) * c.head.scale.x;
       if (shy) continue;
       if (c.wait > 0) { c.wait -= dt; continue; }
       const d = Math.hypot(c.target.x - c.p.x, c.target.z - c.p.z);
@@ -309,6 +398,7 @@ class Shellbacks {
       c.p.y = this.terrain.heightAt(c.p.x, c.p.z) + 0.3 * c.s;
       c.t += dt * 3;
       c.legs.forEach((l, k) => { l.rotation.x = Math.sin(c.t + k * 1.7) * 0.4; });
+      if (c.mat) c.mat.userData.swimPhase.value += dt * 6; // gait advances only while walking
       const n = this.terrain.normalAt(c.p.x, c.p.z, _v);
       _q.setFromUnitVectors(UP, n);
       c.g.quaternion.copy(_q).multiply(new THREE.Quaternion().setFromAxisAngle(UP, c.yaw));
@@ -323,14 +413,15 @@ class Shellbacks {
 
 // ---------------------------------------------------------------- RAZORMAW
 class Razormaws {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, classic = false) {
     this.terrain = terrain;
-    const geo = B.razormawGeometry();
+    const geo = classic ? B.razormawGeometry() : S.razormaw();
+    const lo = classic ? null : S.razormaw({ lod: 1 });
     const homes = [[-150, 70], [70, 220], [-70, 400], [300, -40], [480, 30], [-330, -60]];
     this.list = homes.map(([x, z], i) => {
       const mat = waterMat({ vertexColors: true, roughness: 0.42, side: THREE.DoubleSide },
         { swim: { mode: 1, amp: 0.32, speed: 7, freq: 1.5, len: 4, head: 2, phase: i * 1.3 }, glow: { color: 0xffa040, intensity: 2.2, pulse: 3 }, surface: surface('scales', { scale: 2.6, strength: 0.8 }), reflect: 1.3 });
-      const mesh = new THREE.Mesh(geo, mat);
+      const mesh = lodMesh(geo, lo, mat, 45);
       scene.add(mesh);
       const gh = terrain.heightAt(x, z);
       const p = V(x, gh + 8, z);
@@ -412,11 +503,10 @@ class Razormaws {
       steerTo(r.v, desired, r.state === 'charge' ? 14 : 6, dt);
       keepInWater(this.terrain, r.p, r.v, 2, dt);
       r.p.addScaledVector(r.v, dt);
-      if (r.v.lengthSq() > 0.01) {
-        _v.copy(r.p).add(r.v);
-        r.mesh.position.copy(r.p);
-        r.mesh.lookAt(_v);
-      }
+      // tail beat follows swimming speed (phase advance, so no jumps)
+      r.mat.userData.swimPhase.value += dt * 7 * clamp(r.v.length() / 4 - 1, -0.6, 1.4);
+      r.mesh.position.copy(r.p);
+      faceAlong(r.mesh, r, r.v, dt, r.state === 'charge' ? 8 : 4, 0.25);
     }
   }
 
@@ -429,15 +519,15 @@ class Razormaws {
 
 // ---------------------------------------------------------------- CANTORS
 class Cantors {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, classic = false) {
     this.terrain = terrain;
-    const geo = B.cantorGeometry();
+    const geo = classic ? B.cantorGeometry() : S.cantor();
     this.list = [
       { cx: SITES.abyss.x, cz: SITES.abyss.z, r: 330, y: -175, speed: 7, ang: 0.4, dir: 1 },
       { cx: -60, cz: 420, r: 300, y: -125, speed: 6, ang: 2.6, dir: -1 },
     ].map((c, i) => {
       const mat = waterMat({ vertexColors: true, roughness: 0.5, side: THREE.DoubleSide },
-        { swim: { mode: 1, amp: 2.4, speed: 0.9, freq: 0.05, len: 100, head: 50, phase: i * 2 }, glow: { color: 0x8ff4ff, intensity: 3.2, pulse: 0.5 }, fogScale: 0.6, surface: surface('hide', { scale: 0.09, strength: 0.9 }), reflect: 1.2 });
+        { swim: { mode: classic ? 1 : 6, amp: classic ? 2.4 : 2.0, speed: 0.9, freq: 0.05, len: 100, head: 50, phase: i * 2 }, glow: { color: 0x8ff4ff, intensity: 3.2, pulse: 0.5 }, fogScale: 0.6, surface: surface('hide', { scale: 0.09, strength: 0.9 }), reflect: 1.2 });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.frustumCulled = false;
       scene.add(mesh);
@@ -493,9 +583,9 @@ class Cantors {
 
 // ---------------------------------------------------------------- VEIL RAYS
 class VeilRays {
-  constructor(scene, terrain, caveCenter) {
+  constructor(scene, terrain, caveCenter, classic = false) {
     this.terrain = terrain;
-    const geo = B.veilRayGeometry();
+    const geo = classic ? B.veilRayGeometry() : S.veilRay();
     const make = (center, r, y, nightOnly, i) => {
       const mat = waterMat({ vertexColors: true, transparent: true, opacity: 0.7, side: THREE.DoubleSide, roughness: 0.3, depthWrite: false },
         { swim: { mode: 2, amp: 0.22, speed: 2.4, freq: 0.6, len: 1, phase: i }, glow: { color: 0x9fe8ff, intensity: 2.8, pulse: 1.2 } });
@@ -530,11 +620,8 @@ class VeilRays {
         const ty = r.y + Math.sin(t * 0.5) * 1.2;
         r.p.lerp(_v.set(tx, ty, tz), dt * 0.8);
       }
-      _v.subVectors(r.p, prev);
-      if (_v.lengthSq() > 1e-6) {
-        r.mesh.position.copy(r.p);
-        r.mesh.lookAt(_v.add(r.p));
-      }
+      r.mesh.position.copy(r.p);
+      if (dt > 0) faceAlong(r.mesh, r, _v.subVectors(r.p, prev).divideScalar(dt), dt, 3, 0.35);
     }
   }
 
@@ -545,9 +632,10 @@ class VeilRays {
 
 // ---------------------------------------------------------------- HOLLOW STALKERS
 class Stalkers {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, classic = false) {
     this.terrain = terrain;
-    const geo = B.stalkerGeometry();
+    const geo = classic ? B.stalkerGeometry() : S.stalker();
+    const lo = classic ? null : S.stalker({ lod: 1 });
     const homes = [
       [-380, 410, -240], [-220, 560, -245], [-60, 660, -250],
       [SITES.abyss.x + 60, SITES.abyss.z - 40, -420], [SITES.abyss.x - 70, SITES.abyss.z + 50, -520], [SITES.abyss.x, SITES.abyss.z, -590],
@@ -555,9 +643,9 @@ class Stalkers {
     this.list = homes.map(([x, z, y], i) => {
       const mat = waterMat({ vertexColors: true, roughness: 0.35, side: THREE.DoubleSide },
         { swim: { mode: 1, amp: 0.55, speed: 4.5, freq: 0.7, len: 8, head: 4, phase: i }, glow: { color: 0xff6a4a, intensity: 3, pulse: 1.1 }, surface: surface('stone', { space: 'object', scale: 0.9, strength: 0.9 }), reflect: 1.4 });
-      const mesh = new THREE.Mesh(geo, mat);
+      const mesh = lodMesh(geo, lo, mat, 55);
       scene.add(mesh);
-      return { mesh, home: V(x, y, z), p: V(x + 10, y, z), v: V(1, 0, 0), target: V(x, y, z), state: 'patrol', timer: 0, cooldown: 0 };
+      return { mesh, mat, home: V(x, y, z), p: V(x + 10, y, z), v: V(1, 0, 0), target: V(x, y, z), state: 'patrol', timer: 0, cooldown: 0 };
     });
   }
 
@@ -614,10 +702,9 @@ class Stalkers {
       steerTo(s.v, desired, accel, dt);
       keepInWater(this.terrain, s.p, s.v, 4, dt);
       s.p.addScaledVector(s.v, dt);
-      if (s.v.lengthSq() > 0.01) {
-        s.mesh.position.copy(s.p);
-        s.mesh.lookAt(_w.copy(s.p).add(s.v));
-      }
+      s.mat.userData.swimPhase.value += dt * 4.5 * clamp(s.v.length() / 4 - 1, -0.6, 1.5);
+      s.mesh.position.copy(s.p);
+      faceAlong(s.mesh, s, s.v, dt, s.state === 'stalk' ? 6 : 3, 0.2);
     }
   }
 
@@ -627,15 +714,15 @@ class Stalkers {
 }
 
 export class Creatures {
-  constructor(scene, terrain, caveCenter, events, assets = null) {
+  constructor(scene, terrain, caveCenter, events, assets = null, { classic = false } = {}) {
     this.events = events;
-    this.fish = new FishSchools(scene, terrain, assets);
-    this.drifters = new Drifters(scene, terrain);
-    this.shellbacks = new Shellbacks(scene, terrain);
-    this.razormaws = new Razormaws(scene, terrain);
-    this.cantors = new Cantors(scene, terrain);
-    this.veilRays = new VeilRays(scene, terrain, caveCenter);
-    this.stalkers = new Stalkers(scene, terrain);
+    this.fish = new FishSchools(scene, terrain, assets, classic);
+    this.drifters = new Drifters(scene, terrain, classic);
+    this.shellbacks = new Shellbacks(scene, terrain, classic);
+    this.razormaws = new Razormaws(scene, terrain, classic);
+    this.cantors = new Cantors(scene, terrain, classic);
+    this.veilRays = new VeilRays(scene, terrain, caveCenter, classic);
+    this.stalkers = new Stalkers(scene, terrain, classic);
     this.time = 0;
   }
 

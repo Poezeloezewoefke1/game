@@ -23,7 +23,7 @@ const r = await page.evaluate(() => {
   const g = window.__ABYSSAL;
   g.renderer.setAnimationLoop(null);
   g.simulate(1);
-  return { failures: g.assets.failures.length, fishExternal: !!g.world.creatures.fish.external, fishCount: g.world.creatures.fish.mesh.count, mode: g.mode, err: g.lastError ? String(g.lastError) : null };
+  return { failures: g.assets.failures.length, fishExternal: !!g.world.creatures.fish.external, fishCount: g.world.creatures.fish.total, mode: g.mode, err: g.lastError ? String(g.lastError) : null };
 });
 const ok = blocked > 0 && r.failures >= 5 && !r.fishExternal && r.fishCount > 0 && r.mode === 'play' && !r.err && errors.length === 0;
 console.log(`${ok ? 'PASS' : 'FAIL'}  game runs on procedural fallbacks with all external assets blocked`, JSON.stringify({ blocked, ...r, errors: errors.slice(0, 3) }));

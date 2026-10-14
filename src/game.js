@@ -189,7 +189,7 @@ export class Game {
     await frame();
     const resources = new Resources(this.scene, terrain);
     resources.build(structures.resourceSpots);
-    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events, this.assets);
+    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events, this.assets, { classic: this.classic });
     this.world = { terrain, collision, structures, flora, resources, creatures, latticePos: structures.scannables.find((s) => s.id === 'veyruLattice').pos };
     this.buildFloraIndex();
 

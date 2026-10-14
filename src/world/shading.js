@@ -124,11 +124,13 @@ const SWIM_VERTEX = /* glsl */`
   #if SWIM_MODE == 1
     // lateral body wave; head at +z, tail at -z
     float sT = clamp((uSwimHead - transformed.z) / uSwimLen, 0.0, 1.0);
+    // paired fins scull out of phase with the body wave
+    transformed.y += sin(uTime * uSwimSpeed * 0.55 + swimPhase * 1.3 + 1.7) * aFin * uSwimAmp * 1.1;
     transformed.x += sin(uTime * uSwimSpeed + swimPhase - transformed.z * uSwimFreq) * uSwimAmp * (0.15 + sT * sT);
   #elif SWIM_MODE == 2
-    // wing flap; wings span along x
+    // wing flap; wings span along x, the wave runs from leading to trailing edge
     float wx = abs(transformed.x);
-    transformed.y += sin(uTime * uSwimSpeed + swimPhase - wx * uSwimFreq) * uSwimAmp * wx * wx;
+    transformed.y += sin(uTime * uSwimSpeed + swimPhase - wx * uSwimFreq + transformed.z * 0.9) * uSwimAmp * wx * wx;
   #elif SWIM_MODE == 3
     // bell pulse (jellyfish); bell above y=0, tendrils below
     float pulse = sin(uTime * uSwimSpeed + swimPhase);
@@ -139,6 +141,17 @@ const SWIM_VERTEX = /* glsl */`
       transformed.x += sin(uTime * 1.3 + swimPhase + d * uSwimFreq) * d * 0.08;
       transformed.z += cos(uTime * 1.1 + swimPhase + d * uSwimFreq) * d * 0.08;
     }
+  #elif SWIM_MODE == 6
+    // cetacean stroke: vertical body wave growing toward the fluke
+    float sT6 = clamp((uSwimHead - transformed.z) / uSwimLen, 0.0, 1.0);
+    transformed.y += sin(uTime * uSwimSpeed + swimPhase - transformed.z * uSwimFreq) * uSwimAmp * (0.1 + sT6 * sT6);
+    transformed.y += sin(uTime * uSwimSpeed * 0.5 + swimPhase + 1.7) * aFin * uSwimAmp * 1.2;
+  #elif SWIM_MODE == 5
+    // walking legs: metachronal wave front to back, sides in antiphase;
+    // the gait advances only through uSwimPhase (driven by ground speed)
+    float lp = swimPhase + transformed.z * 2.6 + step(0.0, transformed.x) * 3.14159;
+    transformed.z += sin(lp) * aFin * uSwimAmp;
+    transformed.y += max(0.0, cos(lp)) * aFin * uSwimAmp * 0.6;
   #elif SWIM_MODE == 4
     // plant sway grows with height
     float hT = clamp(transformed.y / uSwimLen, 0.0, 1.0);
@@ -212,6 +225,7 @@ uniform float uTime;
 varying vec3 vAbyssWP;
 #ifdef SWIM_MODE
 uniform float uSwimAmp; uniform float uSwimSpeed; uniform float uSwimFreq; uniform float uSwimLen; uniform float uSwimHead;
+attribute float aFin; // 0 = rigid body; >0 = fin / leg flex weight (absent -> 0)
 #endif
 #ifdef NEEDS_PHASE
 uniform float uSwimPhase;
