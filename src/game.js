@@ -194,7 +194,7 @@ export class Game {
     this.buildFloraIndex();
 
     this.player = new Player(this.camera, collision);
-    this.sub = new Kestrel(this.scene, collision);
+    this.sub = new Kestrel(this.scene, collision, { classic: this.classic });
     this.viewmodel = new ViewModel();
     this.viewmodel.attachCockpit(this.sub.buildCockpit());
     if (this.envMaps) this.viewmodel.enhance(this.envMaps.water);
@@ -889,6 +889,7 @@ export class Game {
       const n = target.node;
       if (!this.addItem(n.type, 1)) { this.audio.denied(); this.ui.notify('Inventory full', 'Store materials at Meridian Station', '', 'amber'); return; }
       this.world.resources.collect(n, this.state.time);
+      if (this.inSub) this.sub.reach();
       this.stats.collected++;
       this.audio.pickup();
       this.viewmodel.pickup();

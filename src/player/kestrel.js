@@ -6,6 +6,7 @@ import { waterMat } from '../world/shading.js';
 import { surface } from '../world/surfaces.js';
 import { panelTexture, labelTexture } from '../world/textures.js';
 import { clamp } from '../core/noise.js';
+import { buildKestrelModel } from './kestrelModel.js';
 
 const _v = new THREE.Vector3();
 const _f = new THREE.Vector3();
@@ -15,8 +16,11 @@ const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 export const SUB_RADIUS = 2.1;
 
 export class Kestrel {
-  constructor(scene, collision) {
+  constructor(scene, collision, { classic = false } = {}) {
     this.collision = collision;
+    this.classic = classic;
+    this.vThrust = 0;
+    this.armReach = 0;
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.yaw = 0;
@@ -28,13 +32,23 @@ export class Kestrel {
     this.lightsOn = true;
     this.online = false;
     this.docked = true;
-    this.group = this.buildModel();
+    this.group = classic ? this.buildModel() : this.buildDetailedModel();
     scene.add(this.group);
     this.light = new THREE.SpotLight(0xd8f4ff, 0, 95, 0.55, 0.55, 1.0);
     this.light.position.set(0, 0.2, 2.6);
     this.light.target.position.set(0, -0.6, 20);
     this.group.add(this.light);
     this.group.add(this.light.target);
+  }
+
+  /** Detailed hull (default); buildModel() below is the original, kept for ?classic. */
+  buildDetailedModel() {
+    const m = buildKestrelModel();
+    this.props = m.props;
+    this.arms = m.arms;
+    this.lampM = m.lampM;
+    this.statusLight = m.statusLight;
+    return m.group;
   }
 
   buildModel() {
@@ -229,6 +243,8 @@ export class Kestrel {
     this.vel.add(acc.multiplyScalar(dt));
     this.vel.multiplyScalar(Math.exp(-1.4 * dt));
     if (this.power <= 0) this.vel.y -= 0.6 * dt; // sinks slowly without power
+    const vIn = this.power > 0 ? (input.held('up') ? 1 : 0) - (input.held('down') ? 1 : 0) : 0;
+    this.vThrust = THREE.MathUtils.lerp(this.vThrust, vIn, 1 - Math.exp(-dt * 5));
     this.thrust = THREE.MathUtils.lerp(this.thrust, Math.min(1, thrust) * boost, 1 - Math.exp(-dt * 4));
     this.power = Math.max(0, this.power - dt * (0.06 + this.thrust * 0.22 * boost + (this.lightsOn ? 0.02 : 0)));
     this.roll = THREE.MathUtils.lerp(this.roll, -this.vel.dot(r) * 0.03, 1 - Math.exp(-dt * 3));
@@ -237,6 +253,7 @@ export class Kestrel {
 
   idle(dt) {
     this.thrust = THREE.MathUtils.lerp(this.thrust, 0, 1 - Math.exp(-dt * 3));
+    this.vThrust = THREE.MathUtils.lerp(this.vThrust, 0, 1 - Math.exp(-dt * 3));
     this.vel.multiplyScalar(Math.exp(-2 * dt));
     this.roll = THREE.MathUtils.lerp(this.roll, 0, 1 - Math.exp(-dt * 2));
     return this.integrate(dt);
@@ -252,10 +269,32 @@ export class Kestrel {
     const nhit = this.collision.resolve(nose, 1.2, this.vel);
     if (nhit) this.pos.copy(nose).sub(this.forward(_v).multiplyScalar(1.8));
     const after = this.vel.length();
-    this.prop.rotation.z += this.thrust * dt * 30;
+    this.animateParts(dt);
     this.syncModel();
     return (hit || nhit) ? Math.max(0, before - after) : 0;
   }
+
+  animateParts(dt) {
+    if (this.prop) this.prop.rotation.z += this.thrust * dt * 30;
+    if (this.props) {
+      for (const p of this.props) {
+        const spin = p.kind === 'main' ? this.thrust * 34 + 0.4 : this.vThrust * 40;
+        p.obj.rotateZ(spin * dt * p.dir);
+      }
+    }
+    if (this.arms) {
+      // manipulators unfold briefly when the Kestrel collects something
+      this.armReach = Math.max(0, this.armReach - dt * 0.9);
+      const k = Math.sin(Math.min(1, this.armReach) * Math.PI);
+      const t = performance.now() * 0.001;
+      for (const a of this.arms) {
+        a.shoulder.rotation.x = a.rest.s - k * 0.65 + Math.sin(t * 0.7 + a.side) * 0.015;
+        a.elbow.rotation.x = a.rest.e + k * 2.0;
+      }
+    }
+  }
+
+  reach() { this.armReach = 1; }
 
   cameraTransform(camera) {
     const f = this.forward(_v);
