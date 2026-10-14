@@ -173,7 +173,7 @@ export class Game {
     this.env = new Environment(this.scene, this.settings.quality);
     const structures = new Structures(this.scene, terrain, collision, this.assets, { classic: this.classic });
     structures.build();
-    const flora = new Flora(this.scene, terrain, collision, this.settings.quality);
+    const flora = new Flora(this.scene, terrain, collision, this.settings.quality, { classic: this.classic });
     flora.build();
     const shell = this.assets.meshData('abalone');
     if (shell) {

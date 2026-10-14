@@ -7,6 +7,8 @@ import { surface } from './surfaces.js';
 import { biomeWeights, SITES } from './layout.js';
 import { mulberry32, smoothstep } from '../core/noise.js';
 import * as G from './geom.js';
+import { boulderGeometry } from './rocks.js';
+import * as P from './plants.js';
 
 const TILE = 150;
 const _m = new THREE.Matrix4();
@@ -17,18 +19,22 @@ const _up = new THREE.Vector3(0, 1, 0);
 const _e = new THREE.Euler();
 
 export class Scatter {
-  constructor(name, geometry, material, maxDist = 260) {
+  /** opts.lod = { geometry, dist }: tiles farther than `dist` draw the light geometry. opts.tile: tile size. */
+  constructor(name, geometry, material, maxDist = 260, opts = {}) {
     this.name = name;
     this.geometry = geometry;
     this.material = material;
     this.maxDist = maxDist;
+    this.lod = opts.lod || null;
+    this.tile = opts.tile || TILE;
+    this.lodMeshes = [];
     this.tiles = new Map();
     this.meshes = [];
     this.points = []; // world positions for scanning/queries
   }
 
   add(matrix, phase, pos) {
-    const key = `${Math.floor(pos.x / TILE)},${Math.floor(pos.z / TILE)}`;
+    const key = `${Math.floor(pos.x / this.tile)},${Math.floor(pos.z / this.tile)}`;
     let t = this.tiles.get(key);
     if (!t) { t = { matrices: [], phases: [] }; this.tiles.set(key, t); }
     t.matrices.push(matrix.clone());
@@ -49,21 +55,38 @@ export class Scatter {
       mesh.matrixAutoUpdate = false;
       this.meshes.push(mesh);
       parent.add(mesh);
+      if (this.lod) {
+        // far version shares the instance data
+        const lo = new THREE.InstancedMesh(this.lod.geometry.clone(), this.material, t.matrices.length);
+        lo.instanceMatrix = mesh.instanceMatrix;
+        lo.geometry.setAttribute('aPhase', mesh.geometry.attributes.aPhase);
+        lo.boundingSphere = mesh.boundingSphere;
+        lo.name = this.name;
+        lo.matrixAutoUpdate = false;
+        lo.visible = false;
+        this.lodMeshes.push(lo);
+        parent.add(lo);
+      } else this.lodMeshes.push(null);
     }
   }
 
   cull(cam, distScale = 1) {
     const max = this.maxDist * distScale;
-    for (const m of this.meshes) {
+    const near = this.lod ? this.lod.dist * Math.min(1, distScale) : Infinity;
+    this.meshes.forEach((m, i) => {
       const bs = m.boundingSphere;
-      m.visible = bs.center.distanceTo(cam) - bs.radius < max;
-    }
+      const d = bs.center.distanceTo(cam) - bs.radius;
+      const lo = this.lodMeshes[i];
+      m.visible = d < Math.min(max, lo ? near : max);
+      if (lo) lo.visible = !m.visible && d < max;
+    });
   }
 }
 
 export class Flora {
-  constructor(scene, terrain, collision, quality = 'high') {
+  constructor(scene, terrain, collision, quality = 'high', { classic = false } = {}) {
     this.scene = scene;
+    this.classic = classic;
     this.terrain = terrain;
     this.collision = collision;
     this.group = new THREE.Group();
@@ -85,8 +108,8 @@ export class Flora {
     return false;
   }
 
-  makeSet(name, geo, mat, maxDist) {
-    const s = new Scatter(name, geo, mat, maxDist);
+  makeSet(name, geo, mat, maxDist, opts) {
+    const s = new Scatter(name, geo, mat, maxDist, opts);
     this.sets.push(s);
     return s;
   }
@@ -151,11 +174,16 @@ export class Flora {
 
     // ---------- geometry variants
     const grass = this.makeSet('seagrass', G.merge([G.seagrassGeometry(1), G.seagrassGeometry(2).translate(0.5, 0, 0.3)]), grassMat, 85);
-    const kelp = this.makeSet('kelp', G.kelpGeometry(3), kelpMat, 210);
-    const kelp2 = this.makeSet('kelp', G.kelpGeometry(7), kelpMat, 210);
-    const coralA = this.makeSet('branchCoral', G.branchCoralGeometry(4, 0xd8644a), coralMat, 200);
-    const coralB = this.makeSet('branchCoral', G.branchCoralGeometry(9, 0xe0a040), coralMat, 200);
-    const coralC = this.makeSet('branchCoral', G.branchCoralGeometry(15, 0xb04a8a), coralMat, 200);
+    const C = this.classic;
+    const kelpSet = (seed) => (C ? this.makeSet('kelp', G.kelpGeometry(seed), kelpMat, 210)
+      : this.makeSet('kelp', P.kelpGeometry(seed), kelpMat, 210, { tile: 50, lod: { geometry: P.kelpGeometry(seed, { lod: 1 }), dist: 18 } }));
+    const coralSet = (seed, color) => (C ? this.makeSet('branchCoral', G.branchCoralGeometry(seed, color), coralMat, 200)
+      : this.makeSet('branchCoral', P.branchCoralGeometry(seed, color), coralMat, 200, { tile: 60, lod: { geometry: P.branchCoralGeometry(seed, color, { lod: 1 }), dist: 25 } }));
+    const kelp = kelpSet(3);
+    const kelp2 = kelpSet(7);
+    const coralA = coralSet(4, 0xd8644a);
+    const coralB = coralSet(9, 0xe0a040);
+    const coralC = coralSet(15, 0xb04a8a);
     const fanA = this.makeSet('fanCoral', G.fanCoralGeometry(2, 0x9a4fc0), fanMat, 200);
     const fanB = this.makeSet('fanCoral', G.fanCoralGeometry(5, 0xc0506a), fanMat, 200);
     const brain = this.makeSet('brainCoral', G.brainCoralGeometry(3, 0xb8a46c), coralMat, 200);
@@ -168,9 +196,17 @@ export class Flora {
     const crystal = this.makeSet('crystal', G.crystalClusterGeometry(5, 0x8a6cff), crystalMat, 300);
     const crystalC = this.makeSet('crystal', G.crystalClusterGeometry(9, 0x50d8f0), crystalCyanMat, 300);
     const worms = this.makeSet('tubeWorm', G.tubeWormGeometry(6), wormMat, 200);
-    const rockGeos = [G.rockGeometry(1), G.rockGeometry(2), G.rockGeometry(3, 2, 0.5)];
-    const rocks = rockGeos.map((g) => this.makeSet('rock', g, rockMat, 320));
-    rockGeos.forEach((g) => G.colorize(g, (x, y, z, c) => c.setRGB(0.42, 0.43, 0.45).multiplyScalar(0.8 + y * 0.2)));
+    let rocks;
+    if (this.classic) {
+      const rockGeos = [G.rockGeometry(1), G.rockGeometry(2), G.rockGeometry(3, 2, 0.5)];
+      rocks = rockGeos.map((g) => this.makeSet('rock', g, rockMat, 320));
+      rockGeos.forEach((g) => G.colorize(g, (x, y, z, c) => c.setRGB(0.42, 0.43, 0.45).multiplyScalar(0.8 + y * 0.2)));
+    } else {
+      // fractured boulders: detailed near, light far (same silhouette family)
+      const variants = [{ seed: 1 }, { seed: 2, strata: 0.7 }, { seed: 3, cuts: 9 }, { seed: 4, strata: 0.5, cuts: 5 }];
+      rocks = variants.map((o) => this.makeSet('rock', boulderGeometry(o.seed, { ...o, detail: 9 }), rockMat, 320,
+        { tile: 100, lod: { geometry: boulderGeometry(o.seed, { ...o, detail: 3 }), dist: 35 } }));
+    }
 
     const col = this.collision;
     const rockCollide = (p, s) => {

@@ -10,6 +10,7 @@ import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
 import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
 import * as G from './geom.js';
+import { boulderGeometry } from './rocks.js';
 import { mulberry32 } from '../core/noise.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -820,16 +821,46 @@ export class Structures {
       placements.push({ p: end.clone().addScaledVector(dir, 12 + rr * 0.5).add(V(0, 1, 0)), r: rr });
     }
     const mat = waterMat({ vertexColors: true, roughness: 0.9 }, { detail: 0.4, surface: surface('caveRock') });
-    const im = new THREE.InstancedMesh(rockGeo, mat, placements.length);
     const m = new THREE.Matrix4();
-    placements.forEach((pl, i) => {
+    const mats = placements.map((pl) => {
       const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd() * 3, rnd() * 3, rnd() * 3));
-      m.compose(pl.p, q, V(pl.r, pl.r * 1.2, pl.r));
-      im.setMatrixAt(i, m);
       this.collision.sphere(pl.p, pl.r * 0.82, 'cave');
+      return new THREE.Matrix4().compose(pl.p, q, V(pl.r, pl.r * 1.2, pl.r));
     });
-    im.computeBoundingSphere();
-    this.group.add(im);
+    if (!this.detailed) {
+      const im = new THREE.InstancedMesh(rockGeo, mat, placements.length);
+      mats.forEach((mm, i) => im.setMatrixAt(i, mm));
+      im.computeBoundingSphere();
+      this.group.add(im);
+    } else {
+      // fractured cave rock in chunks along the tunnel, each with a light far version
+      const tone = [0.3, 0.31, 0.34];
+      const hiGeos = [boulderGeometry(71, { detail: 6, strata: 0.6, tone, moss: 0.3, flat: 0 }), boulderGeometry(72, { detail: 6, cuts: 9, tone, moss: 0.3, flat: 0 })];
+      const loGeos = [boulderGeometry(71, { detail: 2, strata: 0.6, tone, moss: 0.3, flat: 0 }), boulderGeometry(72, { detail: 2, cuts: 9, tone, moss: 0.3, flat: 0 })];
+      const CH = 48;
+      for (let c0 = 0; c0 < mats.length; c0 += CH) {
+        const chunk = mats.slice(c0, c0 + CH);
+        const center = new THREE.Vector3();
+        chunk.forEach((mm) => center.add(V().setFromMatrixPosition(mm)));
+        center.divideScalar(chunk.length);
+        const off = new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z);
+        const lod = new THREE.LOD();
+        lod.position.copy(center);
+        for (const [geos, dist] of [[hiGeos, 0], [loGeos, 45]]) {
+          const level = new THREE.Group();
+          geos.forEach((geo, gi) => {
+            const list = chunk.filter((_, k) => k % 2 === gi);
+            if (!list.length) return;
+            const im = new THREE.InstancedMesh(geo, mat, list.length);
+            list.forEach((mm, k) => im.setMatrixAt(k, m.multiplyMatrices(off, mm)));
+            im.computeBoundingSphere();
+            level.add(im);
+          });
+          lod.addLevel(level, dist);
+        }
+        this.group.add(lod);
+      }
+    }
     // crystals inside
     const crystalGeo = G.crystalClusterGeometry(14, 0x62e6ff);
     const cmat = waterMat({ vertexColors: true, roughness: 0.25 }, { glow: { color: 0x62e6ff, intensity: 2.8, pulse: 0.5 } });
@@ -968,7 +999,7 @@ export class Structures {
     const gh = this.terrain.heightAt(x, z);
     const s = new Site(this, 'beacon', V(x, gh, z), 0.8);
     // boulder she rests against
-    const rock = s.mesh(G.rockGeometry(31), M.rock, -1.6, 0.6, 0);
+    const rock = s.mesh(this.detailed ? boulderGeometry(31, { detail: 6 }) : G.rockGeometry(31), M.rock, -1.6, 0.6, 0);
     rock.scale.set(2.2, 1.8, 2.6);
     this.collision.sphere(s.w(-1.6, 0.9, 0), 1.9);
     // the suit, slumped
