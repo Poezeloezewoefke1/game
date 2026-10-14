@@ -7,6 +7,8 @@ import { waterMat, U, patchMaterial } from './shading.js';
 import { fit, adaptMaterials } from './assets.js';
 import { buildStationExterior } from './stationModel.js';
 import { buildWreckHalf, containerGeometry } from './wreckModel.js';
+import { pillarGeometry, archBlocks, rubbleGeometry } from './ruinsModel.js';
+import { Kit, roundedBox, place } from './shapes.js';
 import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
 import { panelTexture, glyphTextures, labelTexture, screenTexture, textScreenTexture, hazardTexture } from './textures.js';
@@ -957,14 +959,15 @@ export class Structures {
     s.interact({ type: 'item', item: 'shardC', mesh: shardC }, 1.1, altarY + 2.5, 0, 2.6);
     this.addDatapad(s, 'mensah3', -2.6, altarY, 2.6, 'recorder');
     // pillars
-    const pillarGeo = new THREE.CylinderGeometry(1.0, 1.6, 22, 6, 6);
+    const D = this.detailed;
+    const pillarGeo = D ? pillarGeometry(22, 1.6, 1.0, { seed: 1 }) : new THREE.CylinderGeometry(1.0, 1.6, 22, 6, 6);
     const rnd = mulberry32(23);
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2 + 0.15;
       const px = Math.cos(a) * 26, pz = Math.sin(a) * 26;
       const broken = i % 3 === 1;
       const h = broken ? 8 + rnd() * 5 : 22;
-      const pg = broken ? new THREE.CylinderGeometry(1.25, 1.6, h, 6, 3) : pillarGeo;
+      const pg = broken ? (D ? pillarGeometry(h, 1.6, 1.25, { broken: true, seed: i + 3 }) : new THREE.CylinderGeometry(1.25, 1.6, h, 6, 3)) : pillarGeo;
       s.mesh(pg, M.stone, px, 2.6 + h / 2, pz, a);
       this.collision.capsule(s.w(px, 2.6, pz), s.w(px, 2.6 + h, pz), 1.5, 'ruins');
       if (broken) {
@@ -972,7 +975,7 @@ export class Structures {
         const fa = a + 1.2;
         const fx = Math.cos(a) * 34, fz = Math.sin(a) * 34;
         const fy = this.terrain.heightAt(...[s.w(fx, 0, fz)].map((v) => [v.x, v.z])[0]) - floor + 1.2;
-        const fl = s.mesh(new THREE.CylinderGeometry(1.2, 1.25, 10, 6), M.stone, fx, fy, fz, fa);
+        const fl = s.mesh(D ? pillarGeometry(10, 1.25, 1.2, { broken: true, seed: i + 40 }) : new THREE.CylinderGeometry(1.2, 1.25, 10, 6), M.stone, fx, fy, fz, fa);
         fl.rotation.z = Math.PI / 2;
         const dir = V(Math.cos(-fa), 0, Math.sin(-fa));
         this.collision.capsule(s.w(fx - dir.x * 5, fy, fz - dir.z * 5), s.w(fx + dir.x * 5, fy, fz + dir.z * 5), 1.2, 'ruins');
@@ -980,9 +983,44 @@ export class Structures {
       if (i === 0 || i === 5) s.scannable('ruinsGlyph', px, 8, pz, 2.2);
     }
     // great arch at the north entrance
-    const arch = new THREE.TorusGeometry(14, 1.7, 10, 40, Math.PI);
-    const am = s.mesh(arch, M.stone, 0, 2.6, -30);
-    am.scale.set(1, 1.5, 1);
+    if (D) {
+      // voussoir arch with a raised keystone, on two plinths; rim courses and rubble round the plaza
+      const kit = new Kit();
+      for (const b of archBlocks(14, 21, 3.4, 3.2, 17, 5)) kit.add(b.key ? M.stone : M.stonePlain, b.geo);
+      for (const sx of [-14, 14]) kit.add(M.stonePlain, place(roundedBox(4.4, 1.4, 4.2, 0.2, 2), [sx, -0.2, 0]));
+      const ag = new THREE.Group();
+      ag.position.set(0, 2.6, -30);
+      s.group.add(ag);
+      kit.build(ag, 'ruinsArch');
+      const rim = new Kit();
+      const rr = mulberry32(91);
+      for (let tier = 0; tier < 3; tier++) {
+        const r = 22 + (2 - tier) * 4 + 0.05;
+        const y = 0.5 + tier * 0.8 + 0.12;
+        const n = Math.round((Math.PI * 2 * r) / 2.7);
+        for (let k = 0; k < n; k++) {
+          if (rr() < 0.08) continue; // missing stone
+          const a = (k / n) * Math.PI * 2;
+          const sink = rr() < 0.15 ? -0.25 - rr() * 0.3 : 0;
+          const g = roundedBox(2.5, 1.0, 1.1, 0.12, 2);
+          rim.add(M.stonePlain, place(g, [Math.cos(a) * (r - 0.5), y + sink, Math.sin(a) * (r - 0.5)], [(rr() - 0.5) * 0.06, -a + Math.PI / 2, (rr() - 0.5) * 0.06]));
+        }
+      }
+      const rubble = [rubbleGeometry(1), rubbleGeometry(2), rubbleGeometry(3)];
+      for (let k = 0; k < 34; k++) {
+        const a = rr() * Math.PI * 2, d = 27 + rr() * 12;
+        const sc = 0.5 + rr() ** 2 * 1.6;
+        const gx = Math.cos(a) * d, gz = Math.sin(a) * d;
+        const wp = s.w(gx, 0, gz);
+        const gy = this.terrain.heightAt(wp.x, wp.z) - floor;
+        rim.add(M.stonePlain, place(rubble[k % 3].clone(), [gx, gy + sc * 0.3, gz], [rr() * 3, rr() * 3, rr() * 3], [sc * (1 + rr() * 0.5), sc, sc]));
+      }
+      rim.build(s.group, 'ruinsRim');
+    } else {
+      const arch = new THREE.TorusGeometry(14, 1.7, 10, 40, Math.PI);
+      const am = s.mesh(arch, M.stone, 0, 2.6, -30);
+      am.scale.set(1, 1.5, 1);
+    }
     for (let k = 0; k <= 24; k++) {
       const a = (k / 24) * Math.PI;
       this.collision.sphere(s.w(Math.cos(a) * 14, 2.6 + Math.sin(a) * 14 * 1.5, -30), 1.9, 'ruins');
