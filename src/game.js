@@ -1329,7 +1329,7 @@ export class Game {
     this.vmAmbient = 0.08 + lightLevel * 1.3 + (this.player.inAirPocket ? 0.8 : 0);
     this.viewmodel.update(dt, this.camera, {
       mouse, speed: this.player.speed, bob: this.player.bob, scanning: this.scan.active, scanTarget: target?.pos,
-      visible: !this.inSub, cockpit: this.inSub, pdaOpen: false, lampOn: s.lamp || (this.inSub && this.sub.lightsOn), ambient: this.vmAmbient, time: s.time,
+      visible: !this.inSub, cockpit: this.inSub, pdaOpen: false, lampOn: s.lamp || (this.inSub && this.sub.lightsOn), ambient: this.vmAmbient, time: s.time, battery: s.battery / this.batteryMax,
     });
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt);
