@@ -29,6 +29,7 @@ You need a current desktop browser with WebGL 2 and hardware acceleration. Headp
 | `Tab` | Wrist PDA: objectives, map, databank, logs, inventory, equipment |
 | `M` | Map |
 | `H` | Use a field medkit |
+| `V` | Switch between first- and third-person view |
 | `Esc` / `P` | Pause |
 
 A short contextual tutorial teaches these controls as you play. You can turn it off in Settings.
@@ -62,6 +63,7 @@ Depth gating: the suit is rated to 60 m at first, then 180 m and 340 m. The Kest
   - A day/night cycle, an alien sky with a ringed gas giant when you surface, and a sonar pulse that sweeps across all geometry.
 - **Audio:** a Web Audio synthesis engine. It includes an underwater bed, a depth drone, the "Low Song" signal, cantor calls, sonar, scanner, breathing and bubbles, a sub hum and thrusters, creaks under pressure, generative ambient music, and muffling that changes between air and water.
 - **UI:** title screen with a live world behind it, an intro, a HUD (compass, objective, vitals, depth gauge and zone, scan ring, prompts, waypoints), a wrist PDA, pause, settings (sensitivity, invert Y, FOV, volumes, quality, subtitles, hints, head bob), controls, credits, a death screen, and the chapter ending.
+- **Diver:** customise your diver from the title screen or the pause menu (**Diver**): suit, accent, glove and boot colours, suit pattern, visor tint, scanner finish, scanner light colour and a callsign. A live 3D preview shows the full diver. Choices are saved, and they appear on your first-person arms and scanner and on the diver in third person (`V`).
 - **Saving:** manual saves from the pause menu or the station terminal, plus autosaves when power is restored, when you fabricate at the station, and at the ending. Saves go to `localStorage`, and Continue loads them from the title screen.
 
 ## Graphics and external assets
@@ -90,7 +92,7 @@ src/world/flora.js      instanced vegetation, coral, crystals and rocks (tile-cu
 src/world/structures.js Meridian Station, Echo Lab, Corvid wreck, caves, ruins, beacon, Threshold
 src/world/resources.js  collectable deposits (stable ids for saves, slow respawn)
 src/creatures/          procedural bodies and behaviours for seven species
-src/player/             diver physics, Kestrel submersible, first-person equipment
+src/player/             diver physics, Kestrel submersible, first-person gear, diver model and appearance
 src/systems/story.js    objectives and tutorial hints
 src/data/               items, recipes, upgrades, databank entries, expedition logs
 src/ui/                 HUD, PDA, menus, map renderer, icons

@@ -16,6 +16,9 @@ import { Creatures } from './creatures/creatures.js';
 import { Player } from './player/player.js';
 import { Kestrel } from './player/kestrel.js';
 import { ViewModel } from './player/viewmodel.js';
+import { loadLook, saveLook } from './player/look.js';
+import { Customizer } from './ui/customizer.js';
+import { DiverModel } from './player/diverModel.js';
 import { Input } from './core/input.js';
 import { AudioEngine } from './core/audio.js';
 import { Events } from './core/events.js';
@@ -101,6 +104,7 @@ export class Game {
     this.canvas = canvas;
     this.events = new Events();
     this.settings = Store.loadSettings();
+    this.look = loadLook();
     this.audio = new AudioEngine();
     this.input = new Input(canvas);
     this.ui = new UI(this);
@@ -198,6 +202,15 @@ export class Game {
     this.viewmodel = new ViewModel();
     this.viewmodel.attachCockpit(this.sub.buildCockpit());
     if (this.envMaps) this.viewmodel.enhance(this.envMaps.water);
+    this.viewmodel.applyLook(this.look);
+    this.customizer = new Customizer(() => this.look, (look) => this.setLook(look));
+    // the diver as seen in third person (V); materials get the underwater shading
+    this.diver = new DiverModel(this.look);
+    this.diver.root.visible = false;
+    this.scene.add(this.diver.root);
+    this.patchDiver();
+    this.thirdPerson = false;
+    this.tpDist = 0;
     this.post = new Post(r, this.scene, this.viewmodel.scene, this.camera);
     this.bindEvents();
     this.applySettings();
@@ -284,6 +297,65 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.post.setSize(w, h, pr);
     this.env.setPixelRatio(pr, h);
+  }
+
+  /** Apply and persist a diver look (arms, scanner and the third-person diver). */
+  setLook(look) {
+    this.look = look;
+    saveLook(look);
+    this.viewmodel.applyLook(look);
+    if (this.diver) { this.diver.setLook(look); this.patchDiver(); }
+  }
+
+  patchDiver() {
+    this.diver.root.traverse((o) => {
+      if (!o.isMesh || o.material.userData.abyssPatched) return;
+      o.material.userData.abyssPatched = true;
+      patchMaterial(o.material, { reflect: 1 });
+    });
+  }
+
+  /** Where the diver's eyes are: aim rays start here (the camera sits behind in third person). */
+  eyePos() { return this.thirdPerson && !this.inSub ? this.player.pos : this.camera.position; }
+
+  setThirdPerson(on) {
+    this.thirdPerson = !!on;
+    this.tpDist = 0;
+    if (!this.thirdPerson) { this.lamp.position.set(0.15, 0.05, 0); this.lamp.target.position.set(0, -0.6, -10); }
+  }
+
+  /** Pull the camera back behind the diver, stopping short of walls and terrain. */
+  updateThirdPerson(dt) {
+    const show = this.thirdPerson && !this.inSub;
+    this.diver.root.visible = show;
+    if (!show) return;
+    const cam = this.camera, eye = this.player.pos;
+    const back = _d.set(0, 0, 1).applyQuaternion(cam.quaternion);
+    const up = _v.set(0, 1, 0).applyQuaternion(cam.quaternion);
+    const prone = this.diver.prone || 0;
+    const want = 3.4 + prone * 1.6; // back off further when the diver lies flat (fins trail behind)
+    const lift = 0.5 + prone * 0.6;
+    let free = want;
+    const p = new THREE.Vector3();
+    for (let t = 0.3; t <= want; t += 0.2) {
+      p.copy(eye).addScaledVector(back, t).addScaledVector(up, lift * (t / want));
+      const q = p.clone();
+      this.world.collision.resolve(q, 0.28, null);
+      if (q.distanceToSquared(p) > 1e-4) { free = Math.max(0.3, t - 0.2); break; }
+    }
+    this.tpDist = Math.min(free, THREE.MathUtils.lerp(this.tpDist || free, free, 1 - Math.exp(-dt * 4)));
+    cam.position.copy(eye).addScaledVector(back, this.tpDist).addScaledVector(up, lift * (this.tpDist / want));
+    cam.updateMatrixWorld();
+    // headlamp rides on the helmet, not the camera
+    const local = cam.worldToLocal(eye.clone().add(new THREE.Vector3(0, 0.05, 0)));
+    this.lamp.position.copy(local);
+    this.lamp.target.position.copy(local).add(new THREE.Vector3(0, -0.4, -10));
+    // place and animate the diver
+    const d = this.diver;
+    d.root.position.copy(eye);
+    d.root.rotation.set(0, this.player.yaw, 0);
+    d.root.visible = this.tpDist > 0.9; // hide when the camera is jammed against the helmet
+    d.update(dt, { speed: this.player.speed, scanning: this.scan.active, t: this.state.time, pitch: this.player.pitch, surfaced: this.player.surfaced });
   }
 
   applySettings() {
@@ -821,7 +893,7 @@ export class Game {
   // ---------------------------------------------------------------- interaction & scanning
   findInteraction() {
     const cam = this.camera;
-    const origin = cam.position;
+    const origin = this.eyePos();
     const dir = cam.getWorldDirection(_d).clone();
     let best = null;
     let bestScore = Infinity;
@@ -933,7 +1005,7 @@ export class Game {
   }
 
   findScanTarget() {
-    const origin = this.camera.position;
+    const origin = this.eyePos();
     const dir = this.camera.getWorldDirection(_d).clone();
     const range = this.inSub ? 45 : 22;
     let best = null, bt = range;
@@ -976,7 +1048,7 @@ export class Game {
     }
     this.sonarCooldown = 2.2;
     this.stats.pings++;
-    const origin = this.camera.position.clone();
+    const origin = this.eyePos().clone();
     this.env.ping(origin, range);
     this.audio.ping();
     this.sonarScare = { origin };
@@ -1150,6 +1222,8 @@ export class Game {
     } else {
       this.player.look(mouse[0], mouse[1], this.settings);
       this.player.update(dt, input, this.settings, this.swimMult, this.events);
+      if (input.hit('view')) this.setThirdPerson(!this.thirdPerson);
+      this.updateThirdPerson(dt);
       this.sub.idle(dt);
       if (this.state.flags.power && this.sub.pos.distanceTo(this.world.structures.dockPoint) < 10) {
         this.sub.power = Math.min(100, this.sub.power + dt * 8);
@@ -1329,7 +1403,7 @@ export class Game {
     this.vmAmbient = 0.08 + lightLevel * 1.3 + (this.player.inAirPocket ? 0.8 : 0);
     this.viewmodel.update(dt, this.camera, {
       mouse, speed: this.player.speed, bob: this.player.bob, scanning: this.scan.active, scanTarget: target?.pos,
-      visible: !this.inSub, cockpit: this.inSub, pdaOpen: false, lampOn: s.lamp || (this.inSub && this.sub.lightsOn), ambient: this.vmAmbient, time: s.time, battery: s.battery / this.batteryMax,
+      visible: !this.inSub && !this.thirdPerson, cockpit: this.inSub, pdaOpen: false, lampOn: s.lamp || (this.inSub && this.sub.lightsOn), ambient: this.vmAmbient, time: s.time, battery: s.battery / this.batteryMax,
     });
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt);

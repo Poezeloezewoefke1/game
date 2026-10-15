@@ -277,6 +277,37 @@ check('ember shrimp are scannable near the vents', forge.shrimpScan);
 check('vent plumes scald the diver', forge.scalded > 3 && forge.scalded < 40 && forge.mode === 'play', `-${forge.scalded.toFixed(1)}`);
 check('Marchetti drone log can be recovered', forge.log);
 
+// --- diver customisation and the third-person view
+const look = await page.evaluate(() => {
+  const g = window.__ABYSSAL;
+  const V = g.player.pos.constructor;
+  const out = {};
+  g.customizer.set({ suit: 'navy', accent: 'yellow', pattern: 'hazard', name: 'tester-1' });
+  out.look = g.look;
+  out.stored = JSON.parse(localStorage.getItem('abyssal.look.v1') || '{}').suit;
+  out.vmColor = g.viewmodel.M.suit.color.getHex();
+  out.diverColor = g.diver.M.suit.color.getHex();
+  g.customizer.reset();
+  g.state.health = 100; g.state.o2 = 999;
+  g.player.place(new V(10, -22, 10), 0, 0);
+  g.setThirdPerson(true);
+  g.simulate(0.5);
+  out.camBack = g.camera.position.distanceTo(g.player.pos);
+  out.diverVisible = g.diver.root.visible;
+  out.vmHidden = !g.viewmodel.hand.visible;
+  g.input.down.add('KeyW');
+  g.simulate(2);
+  g.input.down.clear();
+  out.prone = g.diver.prone;
+  g.setThirdPerson(false);
+  g.simulate(0.2);
+  out.backToFirst = g.camera.position.distanceTo(g.player.pos) < 0.2 && !g.diver.root.visible && g.viewmodel.hand.visible;
+  return out;
+});
+check('diver look applies to arms, model and storage', look.look.suit === 'navy' && look.look.name === 'TESTER-1' && look.stored === 'navy' && look.vmColor === 0x26344c && look.diverColor === 0x26344c);
+check('third-person view shows the animated diver', look.camBack > 2 && look.diverVisible && look.vmHidden && look.prone > 0.8, `cam ${look.camBack.toFixed(1)} m, prone ${look.prone.toFixed(2)}`);
+check('first-person view restores', look.backToFirst);
+
 // --- ending sequence
 const ending = await page.evaluate(() => {
   const g = window.__ABYSSAL;

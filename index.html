@@ -90,6 +90,7 @@
       <div class="menu-buttons" id="menuButtons">
         <button data-act="continue" id="btnContinue">Continue Expedition</button>
         <button data-act="new">New Expedition</button>
+        <button data-act="diver">Diver</button>
         <button data-act="settings">Settings</button>
         <button data-act="controls">Controls</button>
         <button data-act="credits">Credits</button>
@@ -105,6 +106,7 @@
         <button data-act="resume">Resume</button>
         <button data-act="save" id="btnSave">Save Expedition</button>
         <button data-act="load" id="btnLoad">Load Last Save</button>
+        <button data-act="diver">Diver</button>
         <button data-act="settings">Settings</button>
         <button data-act="controls">Controls</button>
         <button data-act="quit">Quit to Title</button>
@@ -118,6 +120,17 @@
       <div class="eyebrow">Settings</div>
       <div class="settings-grid" id="settingsGrid"></div>
       <div class="panel-actions"><button data-act="back">Back</button></div>
+    </div>
+  </div>
+
+  <div id="diver" class="screen dim hidden">
+    <div class="panel diver-panel">
+      <div class="eyebrow">Diver</div>
+      <div class="diver-layout">
+        <div class="diver-preview"><canvas id="diverCanvas"></canvas><div class="diver-hint">Drag to rotate</div></div>
+        <div class="diver-options" id="diverOptions"></div>
+      </div>
+      <div class="panel-actions"><button data-act="diverRandom">Randomise</button><button data-act="diverReset">Reset</button><button data-act="back" class="primary">Done</button></div>
     </div>
   </div>
 
@@ -137,6 +150,7 @@
         <div><kbd>Tab</kbd><span>Wrist PDA (objectives, map, databank, logs, inventory)</span></div>
         <div><kbd>M</kbd><span>Open the map</span></div>
         <div><kbd>H</kbd><span>Use a field medkit</span></div>
+        <div><kbd>V</kbd><span>First / third-person view</span></div>
         <div><kbd>Esc</kbd> <kbd>P</kbd><span>Pause</span></div>
       </div>
       <p class="panel-note">Oxygen refills at the surface, inside Meridian Station's moonpool and aboard the Kestrel. Exceeding your suit's depth rating damages you — upgrade at the station.</p>

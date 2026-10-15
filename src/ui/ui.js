@@ -15,7 +15,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<'
 export class UI {
   constructor(game) {
     this.game = game;
-    this.screens = ['loading', 'menu', 'pause', 'settings', 'controls', 'credits', 'intro', 'death', 'ending', 'confirm'];
+    this.screens = ['loading', 'menu', 'pause', 'settings', 'controls', 'credits', 'diver', 'intro', 'death', 'ending', 'confirm'];
     this.screenStack = [];
     this.pdaOpen = false;
     this.pdaTab = 'objectives';
@@ -60,6 +60,9 @@ export class UI {
         case 'settings': this.openSub('settings'); break;
         case 'controls': this.openSub('controls'); break;
         case 'credits': this.openSub('credits'); break;
+        case 'diver': this.openSub('diver'); g.customizer.open(); break;
+        case 'diverRandom': g.customizer.randomize(); break;
+        case 'diverReset': g.customizer.reset(); break;
         case 'back': this.closeSub(); break;
         case 'resume': g.resume(); break;
         case 'save': g.saveGame(true); this.updatePauseFoot(); break;
@@ -90,7 +93,8 @@ export class UI {
   }
 
   closeSub() {
-    for (const s of ['settings', 'controls', 'credits']) this.hide(s);
+    for (const s of ['settings', 'controls', 'credits', 'diver']) this.hide(s);
+    this.game.customizer?.close();
     if (this.subReturn) this.show(this.subReturn);
     this.subReturn = null;
   }

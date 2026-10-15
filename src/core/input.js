@@ -16,6 +16,7 @@ export const BINDINGS = {
   pda: ['Tab'],
   map: ['KeyM'],
   medkit: ['KeyH'],
+  view: ['KeyV'],
   pause: ['Escape', 'KeyP'],
 };
 
