@@ -247,6 +247,36 @@ const death = await page.evaluate(() => {
 check('death screen and respawn at station', death.dead && death.mode === 'play' && death.health === 100 && death.inPool);
 check('death costs a share of carried materials', death.ferrite === 7, `${death.ferrite} ferrite`);
 
+// --- the Forge: vent field, ember shrimp, scalding plumes, Marchetti's drone log
+const forge = await page.evaluate(() => {
+  const g = window.__ABYSSAL;
+  const V = g.player.pos.constructor;
+  const st = g.world.structures;
+  const out = { plumes: st.ventPlumes ? st.ventPlumes.length : 0, shrimp: g.world.creatures.shrimp.count };
+  g.state.upgrades.suit = 2; g.state.o2 = 999;
+  const pl = st.ventPlumes[0];
+  g.player.place(pl.pos.clone().add(new V(4, -2, 0)), 0, 0);
+  g.simulate(1.5);
+  const ids = new Set(g.world.creatures.scanTargets(g.player.pos).map((t) => t.id));
+  out.shrimpScan = ids.has('emberShrimp');
+  out.chimneyScan = st.scannables.some((s) => s.id === 'ventChimney');
+  g.state.health = 100;
+  g.player.place(pl.pos.clone().add(new V(0, 2, 0)), 0, 0);
+  g.simulate(1);
+  out.scalded = 100 - g.state.health;
+  g.player.place(pl.pos.clone().add(new V(6, -1, 6)), 0, 0);
+  g.state.health = 100;
+  const pad = st.interactables.find((i) => i.logId === 'marchetti2');
+  g.doInteract({ kind: 'struct', it: pad });
+  out.log = g.state.logs.includes('marchetti2');
+  out.mode = g.mode;
+  return out;
+});
+check('the Forge vent field and ember shrimp exist', forge.plumes === 7 && forge.shrimp > 100 && forge.chimneyScan, `${forge.plumes} vents, ${forge.shrimp} shrimp`);
+check('ember shrimp are scannable near the vents', forge.shrimpScan);
+check('vent plumes scald the diver', forge.scalded > 3 && forge.scalded < 40 && forge.mode === 'play', `-${forge.scalded.toFixed(1)}`);
+check('Marchetti drone log can be recovered', forge.log);
+
 // --- ending sequence
 const ending = await page.evaluate(() => {
   const g = window.__ABYSSAL;

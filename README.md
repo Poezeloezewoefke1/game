@@ -35,19 +35,19 @@ A short contextual tutorial teaches these controls as you play. You can turn it 
 
 ## The loop
 
-1. **Explore** a 1.8 km × 1.8 km ocean region. Areas include the sunlit station shelf, the Lumen Kelp Forest, the Whisper Caves, the stepped Coral Terraces, the Eastern Canyon, the Hadal Rift trench, and a perfectly circular **Abyss** more than 600 m deep.
-2. **Scan** creatures, plants, geology, wrecks and ruins. There are 31 databank entries. Some scans unlock blueprints.
+1. **Explore** a 1.8 km × 1.8 km ocean region. Areas include the sunlit station shelf, the Lumen Kelp Forest, the Whisper Caves, the stepped Coral Terraces, the Eastern Canyon, the Hadal Rift trench with the hydrothermal vents of **the Forge**, and a perfectly circular **Abyss** more than 600 m deep.
+2. **Scan** creatures, plants, geology, wrecks and ruins. There are 36 databank entries. Some scans unlock blueprints.
 3. **Collect** seven resource types (ferrite, lumen crystal, kelp fibre, coral silica, titanite, void glass, Veyru alloy).
 4. **Return** to Meridian Station or the Kestrel to breathe, recharge, store materials and fabricate.
 5. **Craft** upgrades: O₂ tanks, Pressure Suit Mk I/II, hydro-fins, sonar booster, a battery pack, and Kestrel hull reinforcements. Each one opens up deeper water.
-6. **Recover** 15 audio logs and records. Follow the trail from the station to Echo Lab, the Corvid wreck, the Veyru ruins, Commander Lindqvist's beacon and, finally, the Threshold.
+6. **Recover** 16 audio logs and records. Follow the trail from the station to Echo Lab, the Corvid wreck, the Veyru ruins, Commander Lindqvist's beacon and, finally, the Threshold.
 
 Depth gating: the suit is rated to 60 m at first, then 180 m and 340 m. The Kestrel is rated to 200 m, then 450 m and 900 m. Going past your rating causes pressure damage, visor cracks and hull stress.
 
 ## Systems
 
 - **Swimming:** inertia and drag, neutral buoyancy, floating at the surface, collision against terrain, rocks, structures and cave walls, and soft world-boundary currents.
-- **Survival:** oxygen, which refills at the surface, in the station moonpool and in the Kestrel. Also vitals with regeneration, a suit battery for the headlamp, scanner and sonar, and pressure damage. Death returns you to the station and costs a share of your carried materials.
+- **Survival:** oxygen, which refills at the surface, in the station moonpool and in the Kestrel. Also vitals with regeneration, a suit battery for the headlamp, scanner and sonar, pressure damage, and scalding water in the vent plumes. Death returns you to the station and costs a share of your carried materials.
 - **Kestrel submersible:** first-person cockpit, power and hull integrity, crush depth, docking that recharges and repairs, a manipulator arm for collecting from inside, a field fabricator, and autopilot recall from the station terminal.
 - **Ecosystem:**
   - Schooling glimmerfin (boids) that flee you and predators, and at night turn as one toward the Abyss.
@@ -56,6 +56,7 @@ Depth gating: the suit is rated to 60 m at first, then 180 m and 340 m. The Kest
   - 100 m Cantor leviathans circling in the distance, singing.
   - The rare veil ray, found in a hidden grotto and in the kelp at night.
   - Hollow stalkers in the deep. They are drawn to light and engine noise, and sonar startles them.
+  - Ember shrimp swarming the vent chimneys of the Forge. They flee from light but never stray far from the warm water.
 - **Atmosphere:**
   - Per-fragment light absorption with depth (reds fade first), animated caustics, depth-tinted fog, light shafts, marine snow lit by your lamp, bioluminescent plankton and bloom.
   - A day/night cycle, an alien sky with a ringed gas giant when you surface, and a sonar pulse that sweeps across all geometry.
@@ -107,7 +108,7 @@ npm test              # Playwright + Chromium (software WebGL works)
 npm run test:fallback # blocks every external asset and checks the procedural fallbacks
 ```
 
-The suite boots the game and starts a new expedition. It then steps the simulation and checks swimming, moonpool and terrain collision, oxygen drain, refill and drowning, pressure damage, scanning, resource collection, fabrication, restoring station power, upgrades, piloting the Kestrel, the save/load round trip, death and respawn, and the full story conclusion. It also fails on any runtime error. Set `ABYSSAL_URL` or `CHROMIUM_PATH` to override the defaults.
+The suite boots the game and starts a new expedition. It then steps the simulation and checks swimming, moonpool and terrain collision, the Forge vent field (shrimp scanning, plume scalding, the drone log), oxygen drain, refill and drowning, pressure damage, scanning, resource collection, fabrication, restoring station power, upgrades, piloting the Kestrel, the save/load round trip, death and respawn, and the full story conclusion. It also fails on any runtime error. Set `ABYSSAL_URL` or `CHROMIUM_PATH` to override the defaults.
 
 ## Notes and limitations
 

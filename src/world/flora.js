@@ -101,6 +101,13 @@ export class Flora {
       { x: SITES.wreck.x, z: SITES.wreck.z, r: 40 },
       { x: SITES.monolith.x, z: SITES.monolith.z, r: 12 },
     ];
+    // cleared after placement, so the random sequence (and every other plant) is unchanged
+    this.clearings = [{ x: SITES.vents.x, z: SITES.vents.z, r: 24 }];
+  }
+
+  cleared(x, z) {
+    for (const e of this.clearings) if ((x - e.x) ** 2 + (z - e.z) ** 2 < e.r * e.r) return true;
+    return false;
   }
 
   excluded(x, z) {
@@ -147,8 +154,11 @@ export class Flora {
         _q.setFromEuler(_e);
       }
       _m.compose(_p, _q, scale);
-      set.add(_m, rnd(), _p);
-      if (opts.collide) opts.collide(_p, scale);
+      const phase = rnd();
+      if (!this.cleared(x, z)) {
+        set.add(_m, phase, _p);
+        if (opts.collide) opts.collide(_p, scale);
+      }
       placed++;
     }
     return placed;

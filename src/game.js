@@ -189,7 +189,7 @@ export class Game {
     await frame();
     const resources = new Resources(this.scene, terrain);
     resources.build(structures.resourceSpots);
-    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events, this.assets, { classic: this.classic });
+    const creatures = new Creatures(this.scene, terrain, structures.caveChamber, this.events, this.assets, { classic: this.classic, ventPlumes: structures.ventPlumes });
     this.world = { terrain, collision, structures, flora, resources, creatures, latticePos: structures.scannables.find((s) => s.id === 'veyruLattice').pos };
     this.buildFloraIndex();
 
@@ -1192,6 +1192,21 @@ export class Game {
       if (s.health <= 0) { this.die(`Crushed at ${Math.round(depth)} m. The suit was rated to ${this.suitRating} m.`); return; }
       this.creakTimer = (this.creakTimer || 0) - dt;
       if (this.creakTimer < 0) { this.creakTimer = 2 + Math.random() * 2; this.audio.creak(); }
+    }
+    // scalding water in the plumes above the Forge's chimney mouths
+    const plumes = this.world.structures.ventPlumes;
+    if (plumes && !this.inSub) {
+      const pp = this.player.pos;
+      for (const pl of plumes) {
+        const dy = pp.y - pl.pos.y;
+        if (dy < -0.8 || dy > pl.height) continue;
+        if (Math.hypot(pp.x - pl.pos.x, pp.z - pl.pos.z) > pl.r + 0.8 + Math.max(0, dy) * 0.15) continue;
+        s.health -= dt * 9;
+        this.lastHurt = 0;
+        warning = 'Scalding vent water — move away';
+        if (s.health <= 0) { this.die('Scalded in a hydrothermal plume.'); return; }
+        break;
+      }
     }
     if (this.inSub && depth > this.hullRating) {
       const over = depth - this.hullRating;

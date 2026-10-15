@@ -713,8 +713,70 @@ class Stalkers {
   }
 }
 
+// ---------------------------------------------------------------- EMBER SHRIMP (The Forge)
+class EmberShrimp {
+  constructor(scene, terrain, plumes) {
+    this.terrain = terrain;
+    this.list = [];
+    const rnd = mulberry32(808);
+    (plumes || []).forEach((pl, ci) => {
+      const base = pl.pos.clone();
+      for (let k = 0; k < 26; k++) {
+        this.list.push({
+          home: base, ci,
+          ang: rnd() * Math.PI * 2, rad: 1.2 + rnd() * 3, hgt: -0.5 - rnd() * 7,
+          spd: (0.35 + rnd() * 0.5) * (rnd() < 0.5 ? -1 : 1), ph: rnd() * 6.28,
+          p: base.clone(), v: V(), s: 0.12 + rnd() * 0.07, flee: 0,
+        });
+      }
+    });
+    this.count = this.list.length;
+    if (!this.count) return;
+    const geo = S.emberShrimp();
+    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(this.list.map((s) => s.ph)), 1));
+    const mat = waterMat({ vertexColors: true, roughness: 0.35, transparent: true, opacity: 0.88, side: THREE.DoubleSide },
+      { swim: { mode: 1, amp: 0.05, speed: 14, freq: 6, len: 1, head: 0.5 }, glow: { color: 0xff7a30, intensity: 2.4, pulse: 3 }, reflect: 1.2 });
+    this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
+    this.mesh.frustumCulled = false;
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(this.mesh);
+    this.center = (plumes[0] && plumes[0].pos.clone()) || V();
+  }
+
+  update(dt, ctx, t) {
+    if (!this.count) return;
+    const near = this.center.distanceTo(ctx.playerPos) < 140;
+    this.mesh.visible = near;
+    if (!near) return;
+    this.list.forEach((s, i) => {
+      // orbit the chimney in the warm water, darting and bobbing
+      s.ang += dt * s.spd * (1 + 0.6 * Math.sin(t * 2.3 + s.ph));
+      const target = _v.set(s.home.x + Math.cos(s.ang) * s.rad, s.home.y + s.hgt + Math.sin(t * 0.9 + s.ph) * 0.6, s.home.z + Math.sin(s.ang) * s.rad);
+      const pd = s.p.distanceTo(ctx.playerPos);
+      if (pd < 2.4 || (ctx.lampOn && pd < 4)) s.flee = 1.2;
+      if (s.flee > 0) {
+        s.flee -= dt;
+        target.copy(s.p).addScaledVector(_w.subVectors(s.p, ctx.playerPos).normalize(), 3);
+      }
+      const desired = target.sub(s.p).multiplyScalar(2.2).clampLength(0, s.flee > 0 ? 3.5 : 1.4);
+      steerTo(s.v, desired, s.flee > 0 ? 18 : 5, dt);
+      s.p.addScaledVector(s.v, dt);
+      const gh = this.terrain.heightAt(s.p.x, s.p.z);
+      if (s.p.y < gh + 0.3) s.p.y = gh + 0.3;
+      orientMatrix(_m, s.p, s.v.lengthSq() > 1e-4 ? s.v : _w.set(Math.cos(s.ang), 0, Math.sin(s.ang)), s.s);
+      this.mesh.setMatrixAt(i, _m);
+    });
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  scanTargets(p, out) {
+    if (!this.count || this.center.distanceTo(p) > 60) return;
+    for (const s of this.list) if (s.p.distanceTo(p) < 12) out.push({ id: 'emberShrimp', pos: s.p, radius: 0.35 });
+  }
+}
+
 export class Creatures {
-  constructor(scene, terrain, caveCenter, events, assets = null, { classic = false } = {}) {
+  constructor(scene, terrain, caveCenter, events, assets = null, { classic = false, ventPlumes = [] } = {}) {
     this.events = events;
     this.fish = new FishSchools(scene, terrain, assets, classic);
     this.drifters = new Drifters(scene, terrain, classic);
@@ -723,6 +785,7 @@ export class Creatures {
     this.cantors = new Cantors(scene, terrain, classic);
     this.veilRays = new VeilRays(scene, terrain, caveCenter, classic);
     this.stalkers = new Stalkers(scene, terrain, classic);
+    this.shrimp = new EmberShrimp(scene, terrain, ventPlumes);
     this.time = 0;
   }
 
@@ -736,6 +799,7 @@ export class Creatures {
     this.cantors.update(dt, c, this.time);
     this.veilRays.update(dt, c, this.time);
     this.stalkers.update(dt, c);
+    this.shrimp.update(dt, c, this.time);
   }
 
   scanTargets(p) {
@@ -747,6 +811,7 @@ export class Creatures {
     this.cantors.scanTargets(p, out);
     this.veilRays.scanTargets(p, out);
     this.stalkers.scanTargets(p, out);
+    this.shrimp.scanTargets(p, out);
     return out;
   }
 }

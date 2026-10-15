@@ -17,6 +17,9 @@ export const DATABANK = {
   hollowStalker: { cat: 'Fauna', name: 'Hollow Stalker', time: 3.0, danger: true,
     text: 'DANGER. Deep-water hunter with a hollow, lantern-like skull that resonates when it calls. Attracted to light and to engine noise.\n\nEcho Lab containment notes: “Specimen became agitated whenever the Low Song rose in amplitude. Tried to swim toward the south-east wall of the tank. Repeatedly.”' },
 
+  emberShrimp: { cat: 'Fauna', name: 'Ember Shrimp', time: 1.6,
+    text: 'Vent shrimp that swarm in the warm water around the Forge chimneys. A light organ on the back glows the colour of the vent mouths; in the dark the swarms look like sparks circling a fire.\n\nThey graze the bacterial mats and flee from light, but never far — away from the vents the water is too cold for them.' },
+
   // ---- flora
   seagrass: { cat: 'Flora', name: 'Ribbonweed', time: 1.0,
     text: 'Low-growing photosynthetic grass that carpets the sunlit shelf. Tips fluoresce faintly when disturbed, leaving trails behind anything that swims through it.' },
@@ -36,6 +39,10 @@ export const DATABANK = {
     text: 'Bioluminescent stalk with a hooded bulb. The light is produced by symbiotic microbes that the plant feeds with sugar. A natural beacon — the crew used lines of them to mark safe routes.' },
   crystal: { cat: 'Geology', name: 'Resonant Crystal', time: 1.6,
     text: 'Piezoelectric crystal clusters that glow when stressed by sound. In the Rift and the Abyss they light up in slow waves whenever the Low Song swells.' },
+  sulfurMat: { cat: 'Flora', name: 'Sulfur Mat', time: 1.3,
+    text: 'Living carpet of chemosynthetic bacteria feeding on hydrogen sulfide from the vents. White at the centre, rust-orange at the edge where iron oxidises. Every vent animal here eats it, or eats something that does.' },
+  ventChimney: { cat: 'Geology', name: 'Black Smoker', time: 2.0,
+    text: 'Hydrothermal chimney built of metal sulfides precipitating from 350 °C water as it meets the cold rift floor. Some of these stand eleven metres tall and grow several centimetres a week.\n\nWARNING: the plume above the mouth will scald through a suit.' },
   tubeWorm: { cat: 'Fauna', name: 'Vent Plume Worms', time: 1.4,
     text: 'Chemosynthetic worms clustered around warm seeps in the Rift. Their red plumes are full of a haemoglobin analogue. They retract instantly at the touch of light.' },
 
@@ -56,6 +63,10 @@ export const DATABANK = {
     text: 'Partial translation (Mensah cipher, applied by your suit):\n\n“… WE DID NOT DROWN. WE BECAME THE TIDE. THE SONG IS CARRIED BY THE LARGE ONES WHO REMEMBER. WAIT FOR THE ONES WHO LISTEN …”' },
   veyruLattice: { cat: 'Veyru', name: 'Pressure Lattice', time: 3.0, unlock: 'hull3',
     text: 'A load-bearing lattice of Veyru alloy, still perfectly true after millennia under 270 m of water. Your suit has extracted a structural pattern from it.\n\nBLUEPRINT ACQUIRED: Kestrel Abyssal Hull.' },
+  forge: { cat: 'Sites', name: 'The Forge', time: 2.5,
+    text: 'A hydrothermal vent field on the floor of the Hadal Rift, 280 m down. Seven active chimneys stand on a sulfide mound in a rough spiral.\n\nTeo Marchetti’s survey drone recorded the chimneys “breathing” in time with the Low Song. The ferrite here is almost pure.' },
+  surveyDrone: { cat: 'Sites', name: 'Survey Drone MD-3', time: 1.5,
+    text: 'Meridian’s deep survey drone, lost on day 141. Pressure housing intact; one fin snapped where it struck a chimney. The recorder is still running on its isotope cell.' },
   gate: { cat: 'Veyru', name: 'The Threshold', time: 4.0,
     text: 'A ring of Veyru alloy 70 metres across, standing upright on the floor of the Abyss. The Low Song is loudest here. It is not a door. It is a resonator — an ear the size of a cathedral.' },
   lindqvistSuit: { cat: 'Sites', name: 'Commander Lindqvist’s Suit', time: 2.0,
@@ -99,6 +110,8 @@ export const LOGS = {
   // field
   hara2: { title: 'Field recording — Whisper Caves', author: 'Dr. June Hara', where: 'Whisper Caves', kind: 'audio',
     text: 'The walls in here are carved. Not eroded — carved, with channels that run water past the crystals so they ring when the tide turns. The whole cave is an instrument.\n\nI’ve found a shard near the entrance. It hums when I hold it. There’s another one deeper in — I can see it glowing past the narrows, but my air is low. Next dive. Kofi is going to lose his mind.' },
+  marchetti2: { title: 'Drone telemetry — the Forge', author: 'Teo Marchetti', where: 'The Forge', kind: 'audio',
+    text: 'MD-3 is at 278 metres and the water is thirty degrees warmer than it has any right to be. Vents. Seven of them, standing on a mound like chimneys on a burnt house.\n\nHere’s the thing nobody will believe: they pulse. The smoke goes up in beats, and the beats line up with the Low Song. June says geology can’t keep time. I’m looking at it keeping time.\n\nAnd the ferrite down here is almost pure. If anyone ever wants to build something that goes deeper than my poor Kestrel, this is where the iron is.\n\n…losing her. Plume caught the fin. Keep away from the mouths — they’ll cook a suit.' },
   corvid: { title: 'Corvid — automated log', author: 'Barge Corvid (autonomous)', where: 'Wreck of the Corvid', kind: 'text',
     text: 'DAY 96 / 03:12  NAV FAULT: magnetometer interference, source bearing 131.\nDAY 96 / 03:14  Heading correction failed. Ballast compensation failed.\nDAY 96 / 03:15  Hull breach, forward cargo.\nDAY 96 / 03:16  Cargo manifest: 12× titanite plate (deep hull), 4× O₂ cylinder (deep), 1× sonar array.\nDAY 96 / 03:16  Going down. Beacon active.\nDAY 96 / 03:16  Beacon suppressed by external signal.' },
   mensah3: { title: 'Final entry', author: 'Dr. Kofi Mensah', where: 'Veyru Ruins', kind: 'audio',

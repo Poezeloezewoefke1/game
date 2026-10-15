@@ -25,6 +25,7 @@ export const SITES = {
   ruins: { x: -290, z: 505, floor: -268 },
   abyss: { x: 380, z: 540, rIn: 140, rOut: 235, floor: -640 },
   beacon: { x: 196, z: 368 },
+  vents: { x: -150, z: 620 },
 };
 
 // Biome weights (0..1) used for colouring and scattering.
@@ -117,6 +118,10 @@ export function rawHeight(x, z) {
   // Rim of the abyss slightly raised.
   h += (1 - smoothstep(0, 30, Math.abs(da - SITES.abyss.rOut - 20))) * 6;
 
+  // The Forge: a low sulfide mound on the rift floor.
+  const ventD = Math.hypot(x - SITES.vents.x, z - SITES.vents.z);
+  h += (1 - smoothstep(6, 42, ventD)) * (5 + detail * 0.8);
+
   // Distant edges fall away into deep water.
   const edge = Math.max(Math.abs(x), Math.abs(z));
   h -= smoothstep(700, 900, edge) * 120;
@@ -137,6 +142,7 @@ export const POIS = [
   { id: 'wreck', name: 'Wreck of the Corvid', sub: 'Autonomous supply barge', x: SITES.wreck.x, z: SITES.wreck.z, radius: 60, icon: 'wreck' },
   { id: 'rift', name: 'Hadal Rift', sub: 'Trench', x: -300, z: 480, radius: 130, icon: 'biome' },
   { id: 'ruins', name: 'Veyru Ruins', sub: 'Ancient structure', x: SITES.ruins.x, z: SITES.ruins.z, radius: 70, icon: 'ruin' },
+  { id: 'vents', name: 'The Forge', sub: 'Hydrothermal vent field', x: SITES.vents.x, z: SITES.vents.z, radius: 45, icon: 'biome' },
   { id: 'beacon', name: 'Lindqvist’s Beacon', sub: 'Personal locator', x: SITES.beacon.x, z: SITES.beacon.z, radius: 35, icon: 'signal' },
   { id: 'abyss', name: 'The Abyss', sub: 'Unexplored', x: SITES.abyss.x, z: SITES.abyss.z, radius: 240, icon: 'abyss' },
   { id: 'gate', name: 'The Threshold', sub: 'Source of the Low Song', x: SITES.abyss.x, z: SITES.abyss.z, y: -600, radius: 90, icon: 'signal', minDepth: 450 },

@@ -8,6 +8,8 @@ import { fit, adaptMaterials } from './assets.js';
 import { buildStationExterior } from './stationModel.js';
 import { buildWreckHalf, containerGeometry } from './wreckModel.js';
 import { buildEchoLabExterior } from './labModel.js';
+import { chimneyGeometry, plumeMaterial, bacterialMat, droneGeometry, sulfideRubble } from './ventsModel.js';
+import { tubeWormGeometry } from './plants.js';
 import { pillarGeometry, archBlocks, rubbleGeometry } from './ruinsModel.js';
 import { vertebraGeometry, ribGeometry, skullGeometry, mandibleGeometry, monolithGeometry, gateRingGeometry, gateDetails, plinthStones } from './sitesModel.js';
 import { Kit, roundedBox, place } from './shapes.js';
@@ -113,6 +115,7 @@ export class Structures {
     this.buildBeacon();
     this.buildGate();
     this.buildDebris();
+    this.buildVents(); // last: its resource spots append after every existing id (save compatibility)
   }
 
   mats() {
@@ -1078,6 +1081,94 @@ export class Structures {
       this.resourceSpots.push({ type: 'voidGlass', pos: s.w(Math.cos(a) * d, 2.65, Math.sin(a) * d), floorY: plazaTop });
     }
     this.scannables = this.scannables.filter((sc) => sc.radius > 0.2);
+  }
+
+  // ------------------------------------------------------------------ THE FORGE (vent field)
+  buildVents() {
+    const { x, z } = SITES.vents;
+    const rnd = mulberry32(611);
+    const t = this.terrain;
+    const chimMat = waterMat({ vertexColors: true, roughness: 0.85 }, { detail: 0.4, surface: surface('rock', { strength: 0.9 }), glow: { color: 0xff7a30, intensity: 2.2, pulse: 0.7 } });
+    const plumeMat = plumeMaterial();
+    this.ventPlumes = [];
+    const spots = [[0, 0, 11, 1.9], [7, 4, 7, 1.3], [-6, 5, 8.5, 1.5], [3, -8, 6, 1.1], [-9, -6, 9.5, 1.6], [12, -3, 5, 1.0], [-2, 12, 6.5, 1.2]];
+    spots.forEach(([dx, dz, h, r0], i) => {
+      const bx = x + dx, bz = z + dz, by = t.heightAt(bx, bz) - 0.3;
+      const geo = chimneyGeometry(h, r0, r0 * 0.32, i + 1);
+      const m = new THREE.Mesh(geo, chimMat);
+      m.position.set(bx, by, bz);
+      m.rotation.y = rnd() * Math.PI * 2;
+      this.group.add(m);
+      this.collision.capsule(V(bx, by, bz), V(bx, by + h * 0.92, bz), r0 * 0.75, 'vent');
+      const top = V(bx, by + h, bz);
+      const plume = new THREE.Mesh(new THREE.CylinderGeometry(2.6 + h * 0.15, r0 * 0.3, 18 + h, 18, 1, true).translate(0, (18 + h) / 2, 0), plumeMat);
+      plume.position.copy(top);
+      plume.renderOrder = 3;
+      this.group.add(plume);
+      this.ventPlumes.push({ pos: top, height: 10, r: r0 * 0.5 });
+      if (i < 3) this.scannables.push({ id: 'ventChimney', pos: V(bx, by + h * 0.5, bz), radius: r0 + 0.5 });
+    });
+    // sulfide rubble around the chimney feet
+    const rubbleGeos = [sulfideRubble(1), sulfideRubble(2)];
+    const rubbleMat = waterMat({ vertexColors: true, roughness: 0.9 }, { detail: 0.4, surface: surface('rock') });
+    const rm = new THREE.Matrix4();
+    for (let gi = 0; gi < 2; gi++) {
+      const im = new THREE.InstancedMesh(rubbleGeos[gi], rubbleMat, 40);
+      for (let k = 0; k < 40; k++) {
+        const a = rnd() * Math.PI * 2, d = 2 + rnd() * 18;
+        const px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d;
+        const sc = 0.3 + rnd() ** 2 * 1.2;
+        rm.compose(V(px, t.heightAt(px, pz) - sc * 0.2, pz), new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd() * 3, rnd() * 3, rnd() * 3)), V(sc, sc * 0.7, sc));
+        im.setMatrixAt(k, rm);
+      }
+      im.computeBoundingSphere();
+      this.group.add(im);
+    }
+    // bacterial mats
+    const matMat = waterMat({ vertexColors: true, roughness: 0.95 }, { glow: { color: 0xfff0c0, intensity: 0.8, pulse: 0.4 } });
+    const mats = [];
+    for (let k = 0; k < 6; k++) {
+      const a = k * 1.05 + rnd() * 0.4, d = 5 + rnd() * 12;
+      const mx = x + Math.cos(a) * d, mz = z + Math.sin(a) * d;
+      mats.push(bacterialMat(mx, mz, 2 + rnd() * 2.5, t, k + 1));
+      if (k < 2) this.scannables.push({ id: 'sulfurMat', pos: V(mx, t.heightAt(mx, mz) + 0.3, mz), radius: 2 });
+    }
+    this.group.add(new THREE.Mesh(G.merge(mats), matMat));
+    // tube worm thickets at the chimney feet
+    const wormGeo = tubeWormGeometry(21);
+    const phases = [];
+    const wm = [];
+    spots.forEach(([dx, dz, , r0]) => {
+      for (let k = 0; k < 4; k++) {
+        const a = rnd() * Math.PI * 2, d = r0 + 0.4 + rnd() * 1.2;
+        const px = x + dx + Math.cos(a) * d, pz = z + dz + Math.sin(a) * d;
+        const sc = 0.9 + rnd() * 0.9;
+        wm.push(new THREE.Matrix4().compose(V(px, t.heightAt(px, pz) - 0.1, pz), new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), rnd() * 6), V(sc, sc, sc)));
+        phases.push(rnd() * 6);
+      }
+    });
+    const wormMat = waterMat({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.7 }, { swim: { mode: 4, amp: 0.05, speed: 1.2, freq: 3, len: 2 }, glow: { color: 0xff5040, intensity: 1.6, pulse: 1.1 } });
+    const wim = new THREE.InstancedMesh(wormGeo, wormMat, wm.length);
+    wm.forEach((mm, i) => wim.setMatrixAt(i, mm));
+    wim.geometry = wormGeo.clone();
+    wim.geometry.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(phases), 1));
+    wim.computeBoundingSphere();
+    this.group.add(wim);
+    // the survey drone Teo sent down, and its recorder
+    const dx = x + 9, dz = z + 9;
+    const ds = new Site(this, 'forgeDrone', V(dx, t.heightAt(dx, dz), dz), 0.9);
+    const drone = ds.mesh(droneGeometry(), waterMat({ vertexColors: true, roughness: 0.5, metalness: 0.2 }, { glow: { color: 0x5fe8ff, intensity: 1.5, pulse: 2 } }), 0, 0.15, 0);
+    drone.rotation.z = 1.3; drone.rotation.x = 0.15;
+    this.collision.sphere(ds.w(0, 0.2, 0), 0.5, 'vent');
+    this.addDatapad(ds, 'marchetti2', 1.1, 0.0, 0.4, 'recorder');
+    ds.scannable('surveyDrone', 0, 0.3, 0, 1.2);
+    this.scannables.push({ id: 'forge', pos: V(x, t.heightAt(x, z) + 6, z), radius: 14 });
+    // ferrite (iron sulfides) around the field
+    for (let k = 0; k < 7; k++) {
+      const a = k * 0.9 + 0.4, d = 9 + (k % 3) * 5;
+      this.resourceSpots.push({ type: 'ferrite', pos: V(x + Math.cos(a) * d, 0, z + Math.sin(a) * d) });
+    }
+    this.ventCenter = V(x, t.heightAt(x, z), z);
   }
 
   // ------------------------------------------------------------------ BEACON

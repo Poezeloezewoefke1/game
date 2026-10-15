@@ -526,3 +526,40 @@ export function shellbackHead() {
   }
   return mergeParts(parts);
 }
+
+// ------------------------------------------------------------------ EMBER SHRIMP
+// Vent shrimp, 1 unit long (instances scale it to ~0.12-0.18 m), head +z.
+// Translucent red-orange carapace, curled segmented abdomen, tail fan,
+// long antennae and a glowing dorsal organ that marks swarms in the dark.
+export function emberShrimp() {
+  const parts = [];
+  const shell = col(0.82, 0.32, 0.14), pale = col(0.95, 0.7, 0.5);
+  // cephalothorax with a rostrum
+  const cz0 = -0.02, cz1 = 0.42;
+  const CR = (t) => 0.1 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.2 + t * 0.85)), 0.6) + 0.006;
+  parts.push(finish(trunk({ z0: cz0, z1: cz1, segs: 10, radial: 10, section: (t, a) => ellipse(CR(t), { hx: 0.8, belly: 0.3, keel: 0.4, yo: 0.01 * t })(a) }), {
+    color: (x, y, z, c) => c.copy(shell).lerp(pale, smooth(0, -0.08, y) * 0.7),
+    glow: (x, y, z) => (y > 0.06 && z > 0.1 && z < 0.25 ? 1 : 0),
+  }));
+  parts.push(limb([[0, 0.04, 0.4], [0, 0.07, 0.55], [0, 0.09, 0.62]], 0.012, 0.003, { radial: 3, segs: 4, color: shell }));
+  // abdomen: six segments curling down toward the tail fan
+  for (let k = 0; k < 6; k++) {
+    const t = k / 6;
+    const z = -0.02 - t * 0.42, y = -0.04 * t * t * 4;
+    const r = 0.085 * (1 - t * 0.5);
+    parts.push(sphere(V3(0, y, z - 0.035), 1, { sx: r * 0.8, sy: r, sz: 0.06, w: 8, h: 6, color: k % 2 ? shell : shell.clone().multiplyScalar(0.85), fin: t * 0.6 }));
+  }
+  // tail fan
+  parts.push(fin((u, v) => { const s = u * 2 - 1; return V3(s * mix(0.02, 0.09, v), -0.17 - 0.02 * v, -0.48 - 0.1 * v); },
+    { nu: 4, nv: 2, thick: () => 0.004, color: (u, v, c) => c.copy(pale).multiplyScalar(0.9), fin: () => 1 }));
+  // eyes on stalks, antennae and walking legs
+  for (const s of [-1, 1]) {
+    parts.push(sphere(V3(s * 0.06, 0.06, 0.36), 0.022, { w: 6, h: 4, color: 0x050505 }));
+    parts.push(limb([[s * 0.03, 0.03, 0.4], [s * 0.15, 0.12, 0.7], [s * 0.3, 0.05, 1.0], [s * 0.42, -0.08, 1.25]], 0.006, 0.002, { radial: 3, segs: 8, color: shell, fin: (x, y, z) => smooth(0.5, 1.2, z) * 0.4 }));
+    for (let k = 0; k < 4; k++) {
+      const z = 0.3 - k * 0.07;
+      parts.push(limb([[s * 0.05, -0.05, z], [s * 0.13, -0.09, z + 0.02], [s * 0.16, -0.18, z - 0.02]], 0.007, 0.003, { radial: 3, segs: 3, color: pale, fin: 0.3 }));
+    }
+  }
+  return mergeParts(parts);
+}
