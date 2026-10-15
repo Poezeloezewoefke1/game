@@ -891,6 +891,28 @@ export class Structures {
         this.group.add(lod);
       }
     }
+    // fallen rubble and pebbles along the tunnel floor (low, no colliders)
+    if (this.detailed) {
+      const rubbleGeo = boulderGeometry(75, { detail: 3, cuts: 9, tone: [0.27, 0.28, 0.31], moss: 0.2 });
+      const rpos = [];
+      for (let d = 2; d < len; d += 2.2) {
+        const t = d / len;
+        const p = curve.getPointAt(Math.min(1, t));
+        const tan = curve.getTangentAt(Math.min(1, t));
+        const side = V(-tan.z, 0, tan.x).normalize();
+        for (let k = 0; k < 4; k++) {
+          const off = (rnd() < 0.5 ? -1 : 1) * (2.2 + rnd() * 3.8);
+          const q = p.clone().addScaledVector(side, off).addScaledVector(tan, (rnd() - 0.5) * 2);
+          q.y = this.terrain.heightAt(q.x, q.z);
+          const sc = 0.2 + rnd() ** 2 * 0.7;
+          rpos.push(new THREE.Matrix4().compose(q.setY(q.y - sc * 0.25), new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd() * 3, rnd() * 3, rnd() * 3)), V(sc * (1 + rnd() * 0.6), sc * 0.7, sc)));
+        }
+      }
+      const rim = new THREE.InstancedMesh(rubbleGeo, mat, rpos.length);
+      rpos.forEach((mm, i) => rim.setMatrixAt(i, mm));
+      rim.computeBoundingSphere();
+      this.group.add(rim);
+    }
     // crystals inside
     const crystalGeo = G.crystalClusterGeometry(14, 0x62e6ff);
     const cmat = waterMat({ vertexColors: true, roughness: 0.25 }, { glow: { color: 0x62e6ff, intensity: 2.8, pulse: 0.5 } });

@@ -184,18 +184,20 @@ export class Flora {
     const coralA = coralSet(4, 0xd8644a);
     const coralB = coralSet(9, 0xe0a040);
     const coralC = coralSet(15, 0xb04a8a);
-    const fanA = this.makeSet('fanCoral', G.fanCoralGeometry(2, 0x9a4fc0), fanMat, 200);
-    const fanB = this.makeSet('fanCoral', G.fanCoralGeometry(5, 0xc0506a), fanMat, 200);
+    // detailed sets swap to a light version past a short distance (tile-level LOD)
+    const lodSet = (name, hi, lo, mat, maxDist, dist = 25) => (C ? this.makeSet(name, lo(), mat, maxDist) : this.makeSet(name, hi(), mat, maxDist, { tile: 60, lod: { geometry: lo(true), dist } }));
+    const fanA = lodSet('fanCoral', () => P.fanCoralGeometry(2, 0x9a4fc0), (l) => (l ? P.fanCoralGeometry(2, 0x9a4fc0, { lod: 1 }) : G.fanCoralGeometry(2, 0x9a4fc0)), fanMat, 200);
+    const fanB = lodSet('fanCoral', () => P.fanCoralGeometry(5, 0xc0506a), (l) => (l ? P.fanCoralGeometry(5, 0xc0506a, { lod: 1 }) : G.fanCoralGeometry(5, 0xc0506a)), fanMat, 200);
     const brain = this.makeSet('brainCoral', G.brainCoralGeometry(3, 0xb8a46c), coralMat, 200);
     const brain2 = this.makeSet('brainCoral', G.brainCoralGeometry(8, 0x7fa070), coralMat, 200);
-    const sponge = this.makeSet('tubeSponge', G.tubeSpongeGeometry(3, 0xc48b3a), spongeMat, 220);
-    const sponge2 = this.makeSet('tubeSponge', G.tubeSpongeGeometry(11, 0x6a7fb0), spongeMat, 220);
-    const anemone = this.makeSet('anemone', G.anemoneGeometry(2, 0x5a3a7a), anemoneMat, 140);
+    const sponge = lodSet('tubeSponge', () => P.tubeSpongeGeometry(3, 0xc48b3a), (l) => (l ? P.tubeSpongeGeometry(3, 0xc48b3a, { lod: 1 }) : G.tubeSpongeGeometry(3, 0xc48b3a)), spongeMat, 220);
+    const sponge2 = lodSet('tubeSponge', () => P.tubeSpongeGeometry(11, 0x6a7fb0), (l) => (l ? P.tubeSpongeGeometry(11, 0x6a7fb0, { lod: 1 }) : G.tubeSpongeGeometry(11, 0x6a7fb0)), spongeMat, 220);
+    const anemone = lodSet('anemone', () => P.anemoneGeometry(2, 0x5a3a7a), (l) => (l ? P.anemoneGeometry(2, 0x5a3a7a, { lod: 1 }) : G.anemoneGeometry(2, 0x5a3a7a)), anemoneMat, 140, 20);
     const lantern = this.makeSet('lanternPlant', G.lanternPlantGeometry(4), lanternMat, 200);
     const lantern2 = this.makeSet('lanternPlant', G.lanternPlantGeometry(12), lanternMat, 200);
     const crystal = this.makeSet('crystal', G.crystalClusterGeometry(5, 0x8a6cff), crystalMat, 300);
     const crystalC = this.makeSet('crystal', G.crystalClusterGeometry(9, 0x50d8f0), crystalCyanMat, 300);
-    const worms = this.makeSet('tubeWorm', G.tubeWormGeometry(6), wormMat, 200);
+    const worms = lodSet('tubeWorm', () => P.tubeWormGeometry(6), (l) => (l ? P.tubeWormGeometry(6, { lod: 1 }) : G.tubeWormGeometry(6)), wormMat, 200);
     let rocks;
     if (this.classic) {
       const rockGeos = [G.rockGeometry(1), G.rockGeometry(2), G.rockGeometry(3, 2, 0.5)];

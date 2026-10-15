@@ -63,7 +63,7 @@ export function rawHeight(x, z) {
   const massif = 1 - smoothstep(10, 55, caveD);
   h += massif * (18 + ridge * 10);
   // carve the tunnel floor so the cave interior is navigable
-  const tunnel = 1 - smoothstep(4, 9, caveD);
+  const tunnel = 1 - smoothstep(6, 12, caveD); // the slope sits behind the wall rocks
   h = lerp(h, -57 + detail, tunnel);
 
   // Coral terraces: stepped descent toward the south.
