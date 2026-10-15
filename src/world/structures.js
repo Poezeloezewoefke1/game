@@ -8,6 +8,7 @@ import { fit, adaptMaterials } from './assets.js';
 import { buildStationExterior } from './stationModel.js';
 import { buildWreckHalf, containerGeometry } from './wreckModel.js';
 import { pillarGeometry, archBlocks, rubbleGeometry } from './ruinsModel.js';
+import { vertebraGeometry, ribGeometry, skullGeometry, mandibleGeometry, monolithGeometry, gateRingGeometry, gateDetails, plinthStones } from './sitesModel.js';
 import { Kit, roundedBox, place } from './shapes.js';
 import { surface } from './surfaces.js';
 import { SITES } from './layout.js';
@@ -445,10 +446,10 @@ export class Structures {
     const { x, z } = SITES.monolith;
     const gh = this.terrain.heightAt(x, z);
     const s = new Site(this, 'monolith', V(x, gh, z), 0.4);
-    const geo = new THREE.BoxGeometry(3.2, 15, 1.6, 1, 6, 1);
+    const geo = this.detailed ? monolithGeometry() : new THREE.BoxGeometry(3.2, 15, 1.6, 1, 6, 1);
     // slight taper
     const p = geo.attributes.position;
-    for (let i = 0; i < p.count; i++) {
+    for (let i = 0; i < (this.detailed ? 0 : p.count); i++) {
       const t = (p.getY(i) + 7.5) / 15;
       p.setX(i, p.getX(i) * (1 - t * 0.25));
       p.setZ(i, p.getZ(i) * (1 - t * 0.2));
@@ -459,7 +460,7 @@ export class Structures {
     this.monolithMat.customProgramCacheKey = this.M.stone.customProgramCacheKey;
     s.mesh(geo, this.monolithMat, 0, 6.5, 0);
     this.collision.box(V(x, gh + 6.5, z), V(1.6, 7.5, 0.8), 0.4, 'monolith');
-    const frag = s.mesh(new THREE.BoxGeometry(2, 1.2, 1.4), this.M.stonePlain, 4, 0.3, 2.5, 0.8);
+    const frag = s.mesh(this.detailed ? rubbleGeometry(9).scale(1.1, 0.7, 0.8) : new THREE.BoxGeometry(2, 1.2, 1.4), this.M.stonePlain, 4, 0.3, 2.5, 0.8);
     frag.rotation.z = 0.3;
     s.scannable('monolith', 0, 6, 0, 3.5);
     this.monolithPos = V(x, gh + 7, z);
@@ -640,7 +641,8 @@ export class Structures {
       curve.push(V(px, this.terrain.heightAt(px, pz) + 1.2 + Math.sin(t * Math.PI) * 1.5, pz));
     }
     // vertebrae
-    const vGeo = G.merge([
+    const D = this.detailed;
+    const vGeo = D ? vertebraGeometry(3) : G.merge([
       G.prep(new THREE.SphereGeometry(1.3, 12, 8).scale(1, 0.9, 1.2), 0xd6cfbf),
       G.prep(new THREE.ConeGeometry(0.35, 2.4, 6).translate(0, 1.8, 0), 0xd6cfbf),
       G.prep(new THREE.CylinderGeometry(0.25, 0.4, 3.6, 6).rotateX(Math.PI / 2), 0xd6cfbf),
@@ -673,7 +675,7 @@ export class Structures {
           V(p.x + 2, p.y + 3 * s, p.z + side * 11 * s),
           V(p.x + 2.5, ground - 0.5, p.z + side * 13 * s),
         ];
-        ribs.push(G.tubeAlong(pts, 0.35 * s, 0.18 * s, 5, 0xd6cfbf, null, 8));
+        ribs.push(D ? ribGeometry(pts, 0.38 * s, 0.16 * s, i + side, (i * 7 + side) % 5 === 0) : G.tubeAlong(pts, 0.35 * s, 0.18 * s, 5, 0xd6cfbf, null, 8));
         this.collision.capsule(pts[1], pts[2], 0.4 * s, 'bone');
       }
     }
@@ -681,15 +683,21 @@ export class Structures {
     this.group.add(ribMesh);
     // skull — opened
     const head = curve[34].clone().add(V(9, 1.5, 0));
-    const skullGeo = new THREE.SphereGeometry(1, 28, 16, 0.6, Math.PI * 2 - 1.2, 0.25, Math.PI * 0.75);
-    skullGeo.scale(11, 4.5, 5.5);
-    const skull = new THREE.Mesh(skullGeo, waterMat({ color: 0xd6cfbf, side: THREE.DoubleSide, roughness: 0.8 }, { detail: 0.5, surface: surface('bone') }));
+    let skull;
+    if (D) {
+      skull = new THREE.Mesh(skullGeometry(), waterMat({ vertexColors: true, roughness: 0.8 }, { detail: 0.5, surface: surface('bone') }));
+    } else {
+      const skullGeo = new THREE.SphereGeometry(1, 28, 16, 0.6, Math.PI * 2 - 1.2, 0.25, Math.PI * 0.75);
+      skullGeo.scale(11, 4.5, 5.5);
+      skull = new THREE.Mesh(skullGeo, waterMat({ color: 0xd6cfbf, side: THREE.DoubleSide, roughness: 0.8 }, { detail: 0.5, surface: surface('bone') }));
+    }
     skull.position.copy(head);
     skull.rotation.z = 0.12;
     this.group.add(skull);
-    const jaw = G.tubeAlong([head.clone().add(V(-6, -3, 3)), head.clone().add(V(4, -3.5, 3.5)), head.clone().add(V(11, -2.5, 1))], 0.6, 0.3, 6, 0xd6cfbf, null, 8);
-    const jaw2 = G.tubeAlong([head.clone().add(V(-6, -3, -3)), head.clone().add(V(4, -3.5, -3.5)), head.clone().add(V(11, -2.5, -1))], 0.6, 0.3, 6, 0xd6cfbf, null, 8);
-    this.group.add(new THREE.Mesh(G.merge([jaw, jaw2]), waterMat({ vertexColors: true, roughness: 0.85 })));
+    const jp = (sz) => [head.clone().add(V(-6, -3, 3 * sz)), head.clone().add(V(4, -3.5, 3.5 * sz)), head.clone().add(V(11, -2.5, 1 * sz))];
+    const jaw = D ? mandibleGeometry(...jp(1), 1) : G.tubeAlong(jp(1), 0.6, 0.3, 6, 0xd6cfbf, null, 8);
+    const jaw2 = D ? mandibleGeometry(...jp(-1), 2) : G.tubeAlong(jp(-1), 0.6, 0.3, 6, 0xd6cfbf, null, 8);
+    this.group.add(new THREE.Mesh(G.merge([jaw, jaw2]), waterMat({ vertexColors: true, roughness: 0.85 }, D ? { detail: 0.5, surface: surface('bone') } : {})));
     this.collision.capsule(head.clone().add(V(-6, -3, 3)), head.clone().add(V(11, -2.5, 1)), 0.7, 'bone');
     this.collision.capsule(head.clone().add(V(-6, -3, -3)), head.clone().add(V(11, -2.5, -1)), 0.7, 'bone');
     // shell of the skull: keep players outside except via the cut
@@ -1096,14 +1104,25 @@ export class Structures {
     const gh = this.terrain.heightAt(x, z);
     const s = new Site(this, 'threshold', V(x, gh, z), 0.6);
     this.gateSite = s;
-    s.mesh(new THREE.CylinderGeometry(16, 19, 6, 8), M.stonePlain, 0, 2, 0);
+    const D = this.detailed;
+    s.mesh(new THREE.CylinderGeometry(16, 19, 6, D ? 32 : 8), M.stonePlain, 0, 2, 0);
     this.collision.tube(V(x, 0, z), 0, 19, gh - 3, gh + 5, 'gate');
-    s.mesh(new THREE.CylinderGeometry(12, 16, 1.2, 8), M.stone, 0, 5.6, 0);
+    s.mesh(new THREE.CylinderGeometry(12, 16, 1.2, D ? 32 : 8), M.stone, 0, 5.6, 0);
+    if (D) {
+      const kit = new Kit();
+      for (const g of plinthStones([18.6, 15.6], [4.4, 6.0])) kit.add(M.stonePlain, g);
+      kit.build(s.group, 'gatePlinth');
+    }
     const baseTop = gh + 6.2;
     const ringR = 30, tube = 3.2;
     const cy = 6.2 + ringR + 2;
-    const ring = s.mesh(new THREE.TorusGeometry(ringR, tube, 16, 120), this.gateRingMat = waterMat({ map: this.glyphTex.map, emissiveMap: this.glyphTex.emissive, emissive: 0x8a6cff, emissiveIntensity: 1.2, roughness: 0.5, metalness: 0.3 }), 0, cy, 0);
+    const ring = s.mesh(D ? gateRingGeometry(ringR, tube) : new THREE.TorusGeometry(ringR, tube, 16, 120), this.gateRingMat = waterMat({ map: this.glyphTex.map, emissiveMap: this.glyphTex.emissive, emissive: 0x8a6cff, emissiveIntensity: 1.2, roughness: 0.5, metalness: 0.3 }), 0, cy, 0);
     this.gateRing = ring;
+    if (D) {
+      const fins = new Kit();
+      for (const g of gateDetails(ringR, tube)) fins.add(M.stone, g);
+      fins.build(ring, 'gateFins');
+    }
     for (let k = 0; k < 64; k++) {
       const a = (k / 64) * Math.PI * 2;
       this.collision.sphere(s.w(Math.cos(a) * ringR, cy + Math.sin(a) * ringR, 0), tube + 0.3, 'gate');
@@ -1133,8 +1152,15 @@ export class Structures {
     s.mesh(new THREE.CircleGeometry(ringR - tube, 64), this.gateFieldMat, 0, cy, 0);
     // flanking pylons
     for (const sx of [-1, 1]) {
-      s.capsule([sx * 44, -2, 0], [sx * 44, 52, 0], 3, M.stone, 8);
-      s.mesh(new THREE.ConeGeometry(3, 8, 8), M.stone, sx * 44, 56, 0);
+      if (D) {
+        // carved obelisk on the classic collider capsule
+        s.collideCapsule([sx * 44, -2, 0], [sx * 44, 52, 0], 3);
+        s.mesh(pillarGeometry(54, 3.6, 2.7, { seed: sx + 9 }), M.stone, sx * 44, 25, 0);
+        s.mesh(new THREE.ConeGeometry(3.6, 8, 4, 1).rotateY(Math.PI / 4), M.stone, sx * 44, 56, 0);
+      } else {
+        s.capsule([sx * 44, -2, 0], [sx * 44, 52, 0], 3, M.stone, 8);
+        s.mesh(new THREE.ConeGeometry(3, 8, 8), M.stone, sx * 44, 56, 0);
+      }
     }
     this.gateCenter = s.w(0, cy, 0);
     s.interact({ type: 'gate', fromSub: true }, 0, cy, 0, 48);
