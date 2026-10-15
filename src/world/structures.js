@@ -7,6 +7,7 @@ import { waterMat, U, patchMaterial } from './shading.js';
 import { fit, adaptMaterials } from './assets.js';
 import { buildStationExterior } from './stationModel.js';
 import { buildWreckHalf, containerGeometry } from './wreckModel.js';
+import { buildEchoLabExterior } from './labModel.js';
 import { pillarGeometry, archBlocks, rubbleGeometry } from './ruinsModel.js';
 import { vertebraGeometry, ribGeometry, skullGeometry, mandibleGeometry, monolithGeometry, gateRingGeometry, gateDetails, plinthStones } from './sitesModel.js';
 import { Kit, roundedBox, place } from './shapes.js';
@@ -478,7 +479,8 @@ export class Structures {
     this.echoSite = s;
     const H = 4.5, T = 0.35;
     // legs
-    for (const lx of [-7, 0, 7]) for (const lz of [-3.5, 3.5]) s.mesh(new THREE.CylinderGeometry(0.3, 0.4, 2, 8), M.hullDark, lx, -1, lz);
+    if (this.detailed) buildEchoLabExterior(s.group, M, H, (lx, lz) => { const w = s.w(lx, 0, lz); return this.terrain.heightAt(w.x, w.z) - s.origin.y; });
+    else for (const lx of [-7, 0, 7]) for (const lz of [-3.5, 3.5]) s.mesh(new THREE.CylinderGeometry(0.3, 0.4, 2, 8), M.hullDark, lx, -1, lz);
     // floor & roof (roof breach between x 1..4.5)
     s.box(16, 0.4, 8, 0, -0.2, 0, M.lab);
     s.box(9, 0.4, 8, -3.5, H + 0.2, 0, M.lab);
@@ -516,7 +518,7 @@ export class Structures {
       s.mesh(new THREE.PlaneGeometry(1.6, 0.8), labWin, -5 + i * 3.5, 2.6, -4.19).rotation.y = Math.PI;
     }
     // label
-    const lbl = s.mesh(new THREE.PlaneGeometry(6, 1.1), waterMat({ map: labelTexture('ECHO LAB', '#e8742c'), transparent: true }), -2, 3.4, 4.2);
+    const lbl = s.mesh(new THREE.PlaneGeometry(6, 1.1), waterMat({ map: labelTexture('ECHO LAB', '#e8742c'), transparent: true }), -2, 3.4, this.detailed ? 4.36 : 4.2);
     lbl.rotation.y = 0;
     // bent antenna
     s.capsule([6, H + 0.4, -2], [7.5, H + 6, -3.5], 0.08, M.hullDark);
