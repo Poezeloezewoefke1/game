@@ -58,6 +58,49 @@ async function playGame(a, b, game, expectItem) {
   await sleep(1500);
 }
 
+
+const inGame = (cmd) => `execute as ${cmd.who} at @s run ${cmd.run}`;
+const voidPlayer = (name) => rcon(inGame({ who: name, run: 'tp @s ~ 5 ~' }));
+const said = (bot, re) => bot.chatLog.some((m) => re.test(m));
+const clearLogs = (...bots) => bots.forEach((x) => { x.chatLog.length = 0; });
+
+async function startMatch(a, b, game) {
+  clearLogs(a, b);
+  a.chat(`/play ${game}`);
+  b.chat(`/play ${game}`);
+  await sleep(1500);
+  a.chat('/fc start');
+  const ok = await waitFor(() => /RUNNING/.test(rcon('fc list')), 25000, 1000);
+  await sleep(4000); // spawn protection runs out
+  return ok;
+}
+
+async function finishMatch(a, b) {
+  await waitFor(() => !/RUNNING|ENDING/.test(rcon('fc list')), 25000, 1000);
+  a.chat('/leave');
+  b.chat('/leave');
+  await sleep(2000);
+}
+
+/** Alice hits Bob until the game says he died. */
+async function fight(a, b, ms) {
+  const end = Date.now() + ms;
+  let hits = 0;
+  while (Date.now() < end && !said(a, /BotBob was killed by BotAlice/)) {
+    const target = a.players.BotBob && a.players.BotBob.entity;
+    if (!target || target.position.distanceTo(a.entity.position) > 3) {
+      rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+      await sleep(300);
+      continue;
+    }
+    await a.lookAt(target.position.offset(0, 1.5, 0), true);
+    a.attack(target);
+    hits++;
+    await sleep(650);
+  }
+  return hits;
+}
+
 (async () => {
   const a = await join('BotAlice');
   await sleep(5000); // Bukkit throttles connections from the same IP within 4 seconds
@@ -74,6 +117,67 @@ async function playGame(a, b, game, expectItem) {
   await playGame(a, b, 'spleef', 'diamond_shovel');
   await playGame(a, b, 'tntrun');
   await playGame(a, b, 'buildbattle');
+
+
+  console.log('\n--- PvP: a real fight to the death ---');
+  check(await startMatch(a, b, 'pvp'), 'pvp fight: match started');
+  a.setQuickBarSlot(0);
+  const hits = await fight(a, b, 45000);
+  check(said(a, /BotBob was killed by BotAlice/), `pvp fight: Alice killed Bob (${hits} hits)`);
+  check(await waitFor(() => said(a, /BotAlice won the game/), 5000), 'pvp fight: Alice won');
+  check(b.game.gameMode === 'spectator', `pvp fight: Bob spectates after dying (${b.game.gameMode})`);
+  check(said(a, /PLAY AGAIN/), 'pvp fight: Play Again button shown');
+  a.chat('/play pvp');
+  await sleep(1500);
+  check(/WAITING/.test(rcon('fc list')), 'play again: clicking it puts you back in the queue');
+  a.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- BedWars: void respawn, bed break, final kill ---');
+  check(await startMatch(a, b, 'bedwars'), 'bedwars deep: match started');
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /BotBob fell into the void/), 5000), 'bedwars: falling into the void kills you');
+  check(await waitFor(() => b.game.gameMode === 'survival' && b.entity.position.y > 60, 12000), 'bedwars: Bob respawned (his bed is still there)');
+  await sleep(1000);
+  check(hasItem(b, 'wooden_sword'), 'bedwars: respawn kit given');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  await sleep(1500);
+  const bed = a.findBlock({ matching: (blk) => blk.name.endsWith('_bed'), maxDistance: 16 });
+  check(!!bed, 'bedwars: Alice can see Bob\'s bed');
+  if (bed) {
+    rcon(inGame({ who: 'BotAlice', run: `tp @s ${bed.position.x + 0.5} ${bed.position.y + 1} ${bed.position.z + 2.5}` }));
+    await sleep(1000);
+    try {
+      await a.dig(a.blockAt(bed.position), true);
+    } catch (e) {
+      console.log('dig error', e.message);
+    }
+    check(await waitFor(() => said(a, /BED DESTRUCTION/), 5000), 'bedwars: Alice broke Bob\'s bed');
+  }
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /FINAL KILL/), 5000), 'bedwars: next death is a final kill');
+  check(await waitFor(() => said(a, /won the game/), 5000), 'bedwars: last team standing wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Build Battle: build time, voting, results ---');
+  check(await startMatch(a, b, 'buildbattle'), 'buildbattle deep: match started');
+  check(a.game.gameMode === 'creative', `buildbattle: builders are in creative (${a.game.gameMode})`);
+  a.chat('/fc skip');
+  check(await waitFor(() => hasItem(a, 'yellow_terracotta'), 8000), 'buildbattle: voting items handed out');
+  for (let round = 0; round < 2; round++) {
+    await sleep(1500);
+    for (const bot of [a, b]) {
+      bot.setQuickBarSlot(6);
+      await sleep(200);
+      bot.activateItem();
+      bot.deactivateItem();
+    }
+    await sleep(1000);
+    a.chat('/fc skip');
+  }
+  check(await waitFor(() => said(a, /Build Battle results/), 10000), 'buildbattle: results announced');
+  check(await waitFor(() => said(a, /won the game/), 5000), 'buildbattle: a winner was picked');
+  await finishMatch(a, b);
 
   console.log('\n--- duel with a kit ---');
   a.chat('/duel BotBob mace');

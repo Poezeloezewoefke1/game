@@ -7,6 +7,7 @@ import net.funcraft.games.util.Build;
 import net.funcraft.games.util.Explosives;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Theme;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -94,6 +95,7 @@ public final class BedWars extends Game {
     private int diamondTimer;
     private int emeraldTimer;
     private final Shop shop = new Shop(this);
+    private Theme theme;
 
     public BedWars(FunCraft plugin, int id) {
         super(plugin, id, GameType.BEDWARS);
@@ -112,6 +114,8 @@ public final class BedWars extends Game {
 
     @Override
     protected void buildMap() {
+        theme = Theme.random(random);
+        mapName = theme.displayName();
         List<Player> list = online();
         int teamCount = list.isEmpty() ? 4 : Math.max(2, Math.min(4, list.size()));
         // cardinal directions; with 2 teams use opposite sides
@@ -126,22 +130,23 @@ public final class BedWars extends Game {
         for (int[] d : diag) {
             int x = d[0] * DIAMOND_DISTANCE;
             int z = d[1] * DIAMOND_DISTANCE;
-            Build.island(world, x, Y, z, 4.5, Material.GRASS_BLOCK, random);
+            theme.island(world, x, Y, z, 4.5, random);
             Build.disc(world, x, Y, z, 1.5, Material.DIAMOND_BLOCK);
             diamondGens.add(new Generator(new Location(world, x + 0.5, Y + 1.2, z + 0.5), Material.DIAMOND,
                     label(new Location(world, x + 0.5, Y + 3.2, z + 0.5))));
         }
         // emerald centre
-        Build.island(world, 0, Y, 0, 11, Material.GRASS_BLOCK, random);
-        Build.disc(world, 0, Y, 0, 6.5, Material.POLISHED_ANDESITE);
-        Build.ring(world, 0, Y, 0, 5.5, 6.5, Material.STONE_BRICKS);
+        theme.island(world, 0, Y, 0, 11, random);
+        Build.disc(world, 0, Y, 0, 6.5, theme.path);
+        Build.ring(world, 0, Y, 0, 5.5, 6.5, theme.trim);
+        theme.plants(world, 0, Y, 0, 10, 12, random);
         for (int[] e : new int[][]{{3, 0}, {-3, 0}}) {
             Build.disc(world, e[0], Y, e[1], 1.2, Material.EMERALD_BLOCK);
             emeraldGens.add(new Generator(new Location(world, e[0] + 0.5, Y + 1.2, e[1] + 0.5), Material.EMERALD,
                     label(new Location(world, e[0] + 0.5, Y + 3.2, e[1] + 0.5))));
         }
-        Build.tree(world, 0, Y + 1, 8, random);
-        Build.tree(world, 0, Y + 1, -8, random);
+        theme.tree(world, 0, Y + 1, 8, random);
+        theme.tree(world, 0, Y + 1, -8, random);
         diamondTimer = diamondInterval();
         emeraldTimer = emeraldInterval();
         timeline.add(new TimedEvent(6 * 60, "Diamond II", () -> diamondTier = 2));
@@ -159,7 +164,7 @@ public final class BedWars extends Game {
         // perpendicular axis
         int vx = -uz;
         int vz = ux;
-        Build.island(world, cx, Y, cz, 9.5, Material.GRASS_BLOCK, random);
+        theme.island(world, cx, Y, cz, 9.5, random);
         Build.disc(world, cx, Y, cz, 4.5, team.color.concrete);
         Build.disc(world, cx, Y, cz, 3.5, Material.SMOOTH_STONE);
         // generator at the back

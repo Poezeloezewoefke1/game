@@ -260,6 +260,15 @@ public final class BuildBattle extends Game {
         end(String.join(" & ", names), winners);
     }
 
+    @Override
+    protected boolean onSkip() {
+        if (phase == Phase.RESULTS) {
+            return false;
+        }
+        phaseTimer = 1;
+        return true;
+    }
+
     // ------------------------------------------------------------- events
 
     @Override

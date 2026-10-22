@@ -6,6 +6,7 @@ import net.funcraft.games.util.Gui;
 import net.funcraft.games.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -32,8 +33,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.util.Vector;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -222,10 +225,44 @@ public final class HubListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (event.getTo().getY() < 35 && inHub(event.getPlayer())) {
-            event.getPlayer().teleport(plugin.hub().spawn());
-            event.getPlayer().setFallDistance(0);
+        Player p = event.getPlayer();
+        if (!inHub(p)) {
+            return;
         }
+        if (event.getTo().getY() < 35) {
+            p.teleport(plugin.hub().spawn());
+            p.setFallDistance(0);
+        } else if (p.getGameMode() == GameMode.ADVENTURE && !p.getAllowFlight() && ((org.bukkit.entity.Entity) p).isOnGround()) {
+            p.setAllowFlight(true); // recharge double jump on landing
+        }
+    }
+
+    /** Double jump in the hub: pressing jump twice launches you instead of flying. */
+    @EventHandler
+    public void onDoubleJump(PlayerToggleFlightEvent event) {
+        Player p = event.getPlayer();
+        if (!inHub(p) || p.getGameMode() != GameMode.ADVENTURE) {
+            return;
+        }
+        event.setCancelled(true);
+        p.setAllowFlight(false);
+        p.setFlying(false);
+        p.setVelocity(p.getLocation().getDirection().setY(0).normalize().multiply(1.1).setY(0.9));
+        Msg.sound(p, "entity.bat.takeoff", 1.3f);
+    }
+
+    /** Launch pads (heavy pressure plates) fling you up and back towards the spawn. */
+    @EventHandler
+    public void onLaunchPad(PlayerInteractEvent event) {
+        if (event.getAction() != Action.PHYSICAL || event.getClickedBlock() == null
+                || event.getClickedBlock().getType() != Material.HEAVY_WEIGHTED_PRESSURE_PLATE || !inHub(event.getPlayer())) {
+            return;
+        }
+        Player p = event.getPlayer();
+        Vector toSpawn = plugin.hub().spawn().toVector().subtract(p.getLocation().toVector()).setY(0);
+        p.setVelocity(toSpawn.normalize().multiply(1.6).setY(1.4));
+        p.setFallDistance(0);
+        Msg.sound(p, "entity.firework_rocket.launch", 1f);
     }
 
     // ------------------------------------------------- plugin world rules

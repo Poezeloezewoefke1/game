@@ -120,6 +120,14 @@ public final class Hub {
             Build.disc(world, pad.getBlockX(), 64, pad.getBlockZ(), 2.2, pads[i % pads.length]);
             Build.set(world, pad.getBlockX(), 64, pad.getBlockZ(), Material.GLOWSTONE);
         }
+        // launch pads that fling you back towards the spawn
+        for (int i = 0; i < 4; i++) {
+            double a = Math.toRadians(i * 90 + 45);
+            int x = (int) Math.round(Math.cos(a) * 17.5);
+            int z = (int) Math.round(Math.sin(a) * 17.5);
+            Build.set(world, x, 64, z, Material.SLIME_BLOCK);
+            Build.set(world, x, 65, z, Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
+        }
         // trees and flowers on the grass ring
         Material[] flowers = {Material.POPPY, Material.DANDELION, Material.CORNFLOWER, Material.OXEYE_DAISY, Material.ALLIUM};
         for (int i = 0; i < 400; i++) {
@@ -245,6 +253,7 @@ public final class Hub {
     public void send(Player player) {
         plugin.games().prepare(player, GameMode.ADVENTURE);
         player.teleport(spawn());
+        player.setAllowFlight(true); // double jump, see HubListener
         giveHubItems(player);
         plugin.sidebars().reset(player);
     }

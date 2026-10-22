@@ -67,7 +67,10 @@ public abstract class Game {
     protected final Map<UUID, Integer> kills = new HashMap<>();
     private final Map<UUID, UUID> lastAttacker = new HashMap<>();
     private final Map<UUID, Long> lastAttackTime = new HashMap<>();
+    private final Map<UUID, Integer> streaks = new HashMap<>();
 
+    /** Shown to players when the match starts, e.g. "Desert Isles". */
+    protected String mapName;
     protected int countdown;
     protected int elapsed;
     protected int startingPlayers;
@@ -254,6 +257,21 @@ public abstract class Game {
         }
     }
 
+    /** Admin shortcut: ends the countdown or the current phase of the match. Returns false if nothing to skip. */
+    public boolean skip() {
+        if (state == State.WAITING || state == State.STARTING) {
+            forceStart();
+            countdown = Math.min(countdown, 1);
+            return true;
+        }
+        return state == State.RUNNING && onSkip();
+    }
+
+    /** Skip the current phase (e.g. Build Battle build time). */
+    protected boolean onSkip() {
+        return false;
+    }
+
     /** Starts the countdown immediately, even below the minimum player count. */
     public void forceStart() {
         if (state == State.WAITING || state == State.STARTING) {
@@ -419,6 +437,9 @@ public abstract class Game {
             plugin.games().prepare(p, GameMode.SURVIVAL);
         }
         onStart(list);
+        if (mapName != null) {
+            Msg.all(list, "<gray>Map: <white>" + mapName);
+        }
         Msg.sound(list, "entity.ender_dragon.growl", 1.2f);
         if (wantsTicks()) {
             tickTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -481,6 +502,13 @@ public abstract class Game {
             }
         }
         Msg.all(online, "<gray>Returning to the hub in 10 seconds...");
+        if (!privateMatch) {
+            for (Player p : online) {
+                Msg.raw(p, "<click:run_command:'/play " + type.key() + "'><hover:show_text:'<gray>Queue for another round'>"
+                        + "<green><bold>[PLAY AGAIN]</bold></green></hover></click>  "
+                        + "<click:run_command:'/games'><hover:show_text:'<gray>Pick another game'><aqua><bold>[OTHER GAMES]</bold></aqua></hover></click>");
+            }
+        }
         if (tickTask != null) {
             tickTask.cancel();
             tickTask = null;
@@ -582,6 +610,8 @@ public abstract class Game {
         if (attacker != null && !attacker.equals(victim)) {
             lastAttacker.put(victim.getUniqueId(), attacker.getUniqueId());
             lastAttackTime.put(victim.getUniqueId(), System.currentTimeMillis());
+            Player hitter = attacker;
+            Bukkit.getScheduler().runTask(plugin, () -> showHealth(hitter, victim));
         }
         if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
             event.setCancelled(true);
@@ -643,16 +673,48 @@ public abstract class Game {
             }
         }
         lastAttacker.remove(victim.getUniqueId());
+        Integer lostStreak = streaks.remove(victim.getUniqueId());
+        if (lostStreak != null && lostStreak >= 3 && killer != null && !killer.equals(victim)) {
+            Msg.all(online(), "<gold>" + killer.getName() + " <yellow>ended <gold>" + victim.getName() + "</gold>'s " + lostStreak + " kill streak!");
+        }
         if (killer != null && !killer.equals(victim)) {
             kills.merge(killer.getUniqueId(), 1, Integer::sum);
+            int streak = streaks.merge(killer.getUniqueId(), 1, Integer::sum);
             plugin.stats().addKill(killer, type);
             Msg.sound(killer, "entity.experience_orb.pickup", 1f);
+            Msg.actionBar(killer, "<green><bold>+1 Kill</bold> <gray>killed <white>" + victim.getName()
+                    + (streak > 1 ? " <dark_gray>| <gold>" + streak + " streak" : ""));
+            String streakName = switch (streak) {
+                case 3 -> "<yellow>is on a <gold>3 kill streak<yellow>!";
+                case 5 -> "<gold>is <bold>UNSTOPPABLE</bold> <yellow>(5 kills)!";
+                case 7 -> "<red>is <bold>GODLIKE</bold> <yellow>(7 kills)!";
+                case 10 -> "<dark_red><bold>is LEGENDARY</bold> <yellow>(10 kills)!";
+                default -> null;
+            };
+            if (streakName != null) {
+                Msg.all(online(), "<white>" + killer.getName() + " " + streakName);
+                Msg.sound(online(), "entity.ender_dragon.ambient", 1.6f);
+            }
         }
+        Msg.sound(victim, "entity.player.hurt", 0.8f);
         plugin.stats().addDeath(victim, type);
         victim.setFireTicks(0);
         victim.setFallDistance(0);
         victim.setHealth(20);
         onDeath(victim, killer != null && killer.equals(victim) ? null : killer);
+    }
+
+    /** Shows the attacker how much health their target has left. */
+    private void showHealth(Player attacker, Player victim) {
+        if (!attacker.isOnline() || !victim.isOnline() || !isAlive(victim) || victim.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
+        double hp = Math.max(0, victim.getHealth());
+        int full = (int) Math.round(hp / 2);
+        StringBuilder bar = new StringBuilder("<white>" + victim.getName() + " <red>");
+        bar.append("❤".repeat(Math.max(0, full))).append("<dark_gray>").append("❤".repeat(Math.max(0, 10 - full)));
+        bar.append(" <white>").append(String.format("%.1f", hp));
+        Msg.actionBar(attacker, bar.toString());
     }
 
     protected void deathMessage(Player victim, Player killer, String suffix) {

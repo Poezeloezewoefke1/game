@@ -157,6 +157,16 @@ public final class Commands implements TabExecutor {
                 game.forceStart();
                 Msg.send(sender, "<green>Starting " + game.name() + ".");
             }
+            case "skip" -> {
+                Game game = args.length > 1 ? byId(args[1]) : sender instanceof Player p ? plugin.games().gameOf(p) : null;
+                if (game == null) {
+                    Msg.send(sender, "<red>Unknown game.");
+                } else if (game.skip()) {
+                    Msg.send(sender, "<green>Skipped ahead in " + game.name() + ".");
+                } else {
+                    Msg.send(sender, "<gray>Nothing to skip in " + game.name() + ".");
+                }
+            }
             case "stop" -> {
                 Game game = args.length > 1 ? byId(args[1]) : sender instanceof Player p ? plugin.games().gameOf(p) : null;
                 if (game == null) {
@@ -204,6 +214,7 @@ public final class Commands implements TabExecutor {
                 Msg.raw(sender, "<yellow>/fc ffa cancel <gray>- cancel the running kit vote");
                 Msg.raw(sender, "<yellow>/fc list <gray>- show running games");
                 Msg.raw(sender, "<yellow>/fc start [id] <gray>- force start a queue (works solo too)");
+                Msg.raw(sender, "<yellow>/fc skip [id] <gray>- skip the countdown or the current phase (e.g. Build Battle build time)");
                 Msg.raw(sender, "<yellow>/fc stop [id] <gray>- end a game");
                 Msg.raw(sender, "<yellow>/fc build <gray>- toggle building in the hub");
                 Msg.raw(sender, "<yellow>/fc rebuildhub <gray>- regenerate the hub island");
@@ -282,7 +293,7 @@ public final class Commands implements TabExecutor {
                     Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 }
                 case "stats" -> Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
-                case "fc" -> options.addAll(List.of("ffa", "list", "start", "stop", "build", "rebuildhub", "reload", "selftest"));
+                case "fc" -> options.addAll(List.of("ffa", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
                 default -> {
                 }
             }

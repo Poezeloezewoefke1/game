@@ -29,6 +29,48 @@ import java.util.Set;
 public final class PvpArena extends LastStanding {
 
     private static final int FLOOR_Y = 64;
+
+    /** Visual styles for the arena; one is picked at random per match. */
+    private enum Style {
+        COLOSSEUM("Colosseum", new Material[]{Material.STONE_BRICKS, Material.STONE_BRICKS, Material.CRACKED_STONE_BRICKS,
+                Material.MOSSY_STONE_BRICKS, Material.ANDESITE, Material.POLISHED_ANDESITE},
+                Material.STONE_BRICKS, Material.CHISELED_STONE_BRICKS, Material.SMOOTH_STONE,
+                Material.POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS),
+        DESERT("Desert Temple", new Material[]{Material.SANDSTONE, Material.SMOOTH_SANDSTONE, Material.CUT_SANDSTONE,
+                Material.SANDSTONE, Material.CHISELED_SANDSTONE},
+                Material.SMOOTH_SANDSTONE, Material.CHISELED_SANDSTONE, Material.SANDSTONE,
+                Material.ORANGE_TERRACOTTA, Material.CUT_RED_SANDSTONE),
+        NETHER("Nether Fortress", new Material[]{Material.NETHER_BRICKS, Material.NETHER_BRICKS, Material.RED_NETHER_BRICKS,
+                Material.CRACKED_NETHER_BRICKS, Material.BLACKSTONE},
+                Material.NETHER_BRICKS, Material.CHISELED_NETHER_BRICKS, Material.POLISHED_BLACKSTONE,
+                Material.GILDED_BLACKSTONE, Material.RED_NETHER_BRICKS),
+        OCEAN("Ocean Monument", new Material[]{Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE,
+                Material.PRISMARINE_BRICKS},
+                Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE, Material.PRISMARINE,
+                Material.DARK_PRISMARINE, Material.PRISMARINE_BRICKS),
+        DEEP_DARK("Deep Dark", new Material[]{Material.DEEPSLATE_TILES, Material.DEEPSLATE_BRICKS, Material.COBBLED_DEEPSLATE,
+                Material.POLISHED_DEEPSLATE, Material.CRACKED_DEEPSLATE_TILES},
+                Material.DEEPSLATE_BRICKS, Material.CHISELED_DEEPSLATE, Material.POLISHED_DEEPSLATE,
+                Material.SCULK, Material.DEEPSLATE_TILES);
+
+        final String displayName;
+        final Material[] floor;
+        final Material wall;
+        final Material top;
+        final Material stands;
+        final Material ring;
+        final Material pillar;
+
+        Style(String displayName, Material[] floor, Material wall, Material top, Material stands, Material ring, Material pillar) {
+            this.displayName = displayName;
+            this.floor = floor;
+            this.wall = wall;
+            this.top = top;
+            this.stands = stands;
+            this.ring = ring;
+            this.pillar = pillar;
+        }
+    }
     private static final int BUILD_HEIGHT = 30;
     private int radius;
     private Kits.Kit kit;
@@ -82,8 +124,9 @@ public final class PvpArena extends LastStanding {
         int players = online().size();
         radius = arenaRadius();
         center = new Location(world, 0.5, FLOOR_Y + 1, 0.5);
-        Material[] floor = {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.CRACKED_STONE_BRICKS,
-                Material.MOSSY_STONE_BRICKS, Material.ANDESITE, Material.POLISHED_ANDESITE};
+        Style style = Style.values()[random.nextInt(Style.values().length)];
+        mapName = style.displayName;
+        Material[] floor = style.floor;
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 if (x * x + z * z <= radius * radius) {
@@ -92,14 +135,14 @@ public final class PvpArena extends LastStanding {
                 }
             }
         }
-        Build.ring(world, 0, FLOOR_Y, 0, radius * 0.45, radius * 0.45 + 1, Material.POLISHED_BLACKSTONE_BRICKS);
-        Build.disc(world, 0, FLOOR_Y, 0, 2.5, Material.CHISELED_STONE_BRICKS);
+        Build.ring(world, 0, FLOOR_Y, 0, radius * 0.45, radius * 0.45 + 1, style.ring);
+        Build.disc(world, 0, FLOOR_Y, 0, 2.5, style.top);
         // walls and stands
         for (int y = FLOOR_Y; y <= FLOOR_Y + 6; y++) {
-            Build.ring(world, 0, y, 0, radius, radius + 2, y == FLOOR_Y + 6 ? Material.CHISELED_STONE_BRICKS : Material.STONE_BRICKS);
+            Build.ring(world, 0, y, 0, radius, radius + 2, y == FLOOR_Y + 6 ? style.top : style.wall);
         }
         for (int i = 0; i < 4; i++) {
-            Build.ring(world, 0, FLOOR_Y + 6 + i, 0, radius + 2 + i * 2, radius + 4 + i * 2, Material.SMOOTH_STONE);
+            Build.ring(world, 0, FLOOR_Y + 6 + i, 0, radius + 2 + i * 2, radius + 4 + i * 2, style.stands);
         }
         // lights in the wall
         for (int i = 0; i < 16; i++) {
@@ -114,7 +157,7 @@ public final class PvpArena extends LastStanding {
                 double a = Math.toRadians(i * 90 + 45);
                 int x = (int) Math.round(Math.cos(a) * radius * 0.6);
                 int z = (int) Math.round(Math.sin(a) * radius * 0.6);
-                Build.fill(world, x, FLOOR_Y + 1, z, x + 1, FLOOR_Y + 4, z + 1, Material.POLISHED_BLACKSTONE_BRICKS);
+                Build.fill(world, x, FLOOR_Y + 1, z, x + 1, FLOOR_Y + 4, z + 1, style.pillar);
                 Build.fill(world, x, FLOOR_Y + 5, z, x + 1, FLOOR_Y + 5, z + 1, Material.GLOWSTONE);
             }
         }

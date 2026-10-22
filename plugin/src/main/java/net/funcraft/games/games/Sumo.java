@@ -34,8 +34,12 @@ public final class Sumo extends LastStanding {
         radius = Math.min(11, 5 + players);
         center = new Location(world, 0.5, FLOOR_Y + 1, 0.5);
         Build.disc(world, 0, FLOOR_Y - 1, 0, radius, Material.STRIPPED_OAK_WOOD);
-        Build.disc(world, 0, FLOOR_Y, 0, radius, Material.WHITE_CONCRETE);
-        Build.ring(world, 0, FLOOR_Y, 0, radius - 1, radius, Material.RED_CONCRETE);
+        Material[][] styles = {{Material.WHITE_CONCRETE, Material.RED_CONCRETE}, {Material.SAND, Material.SMOOTH_SANDSTONE},
+                {Material.LIGHT_BLUE_CONCRETE, Material.BLUE_ICE}, {Material.MOSS_BLOCK, Material.OAK_PLANKS},
+                {Material.QUARTZ_BLOCK, Material.GOLD_BLOCK}};
+        Material[] style = styles[random.nextInt(styles.length)];
+        Build.disc(world, 0, FLOOR_Y, 0, radius, style[0]);
+        Build.ring(world, 0, FLOOR_Y, 0, radius - 1, radius, style[1]);
         Build.ring(world, 0, FLOOR_Y, 0, 1, 2, Material.BLACK_CONCRETE);
         Build.island(world, 0, FLOOR_Y - 2, 0, radius - 1, Material.STONE, random);
         spawnRing(FLOOR_Y + 1, radius - 2.5, Math.max(2, online().isEmpty() ? 8 : online().size()));

@@ -20,6 +20,10 @@ Plus:
 - **FFA event for ops:** `/fc ffa` starts a kit vote for everyone online. When the vote ends, **everyone online is put in one big FFA**. If you die you spectate, and the last one alive wins.
 - **16 PvP kits:** Classic, Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP, Crystal, Bed Fight, Bridge, Creeper PvP, Dia SMP, Fireball Fight, Spear Elytra and Spear Mace. They're used by the FFA event, the PvP Arena and duels. Fire charges throw fireballs and TNT lights itself.
 - **Stats:** wins, kills, deaths, games and K/D per game (`/stats`), shown in the sidebar.
+- **Random map themes:** SkyWars and BedWars islands come in Plains, Desert, Snowy, Nether, The End, Mushroom or Cherry Blossom. Arenas can be a Colosseum, Desert Temple, Nether Fortress, Ocean Monument or Deep Dark. TNT Run and Sumo get random colours.
+- **Combat feedback:** your target's health on your action bar when you hit them, a +1 Kill notice, and killstreak announcements (3 / UNSTOPPABLE 5 / GODLIKE 7 / LEGENDARY 10, plus "X ended Y's streak").
+- **[PLAY AGAIN]** button when a game ends puts you straight back in the queue.
+- **Hub:** double jump (press jump twice) and launch pads while you wait.
 - Sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
 
 ## Commands
@@ -40,6 +44,7 @@ Plus:
 | `/fc ffa <kit>` | Skip the vote and start the FFA with that kit (e.g. `/fc ffa mace`) |
 | `/fc ffa cancel` | Cancel the vote |
 | `/fc start [id]` | Force-start a queue now. Works with 1 player, so you can look at the maps alone |
+| `/fc skip [id]` | Skip the countdown or the current phase (e.g. Build Battle build time) |
 | `/fc stop [id]` | End a game |
 | `/fc list` | Running games |
 | `/fc build` | Toggle building in the hub (needs creative) |
@@ -112,7 +117,7 @@ server/              start scripts without Docker
 test/                bot test used by CI (two bots join and play every game)
 ```
 
-CI (`.github/workflows/build.yml`) builds the plugin and starts a real Paper server for 1.21.11 and the newest version. It generates every map with `/fc selftest` and, on 1.21.11, has two bots join and play through all games, a kit duel and the FFA event.
+CI (`.github/workflows/build.yml`) builds the plugin and starts a real Paper server for 1.21.11 and the newest version. It generates every map with `/fc selftest` and, on 1.21.11, has two bots join and play: every game, a real PvP fight to the death, BedWars void deaths, respawns, bed breaking and final kills, Build Battle voting, kit duels and the FFA event.
 
 ## Credits
 

@@ -25,10 +25,11 @@ import java.util.UUID;
 public final class TntRun extends LastStanding {
 
     private static final int[] LAYERS = {84, 74, 64};
-    private static final Material[][] COLORS = {
-            {Material.RED_WOOL, Material.ORANGE_WOOL},
-            {Material.YELLOW_WOOL, Material.LIME_WOOL},
-            {Material.LIGHT_BLUE_WOOL, Material.MAGENTA_WOOL}};
+    private static final Material[][] PALETTE = {
+            {Material.RED_WOOL, Material.ORANGE_WOOL}, {Material.YELLOW_WOOL, Material.LIME_WOOL},
+            {Material.LIGHT_BLUE_WOOL, Material.MAGENTA_WOOL}, {Material.PINK_WOOL, Material.WHITE_WOOL},
+            {Material.CYAN_WOOL, Material.BLUE_WOOL}, {Material.PURPLE_WOOL, Material.BLACK_WOOL},
+            {Material.GREEN_WOOL, Material.BROWN_WOOL}, {Material.LIGHT_GRAY_WOOL, Material.GRAY_WOOL}};
     private static final int RADIUS = 15;
     private static final int REMOVE_DELAY = 7;
     private static final int GRACE_SECONDS = 3;
@@ -50,13 +51,16 @@ public final class TntRun extends LastStanding {
     @Override
     protected void buildMap() {
         center = new Location(world, 0.5, LAYERS[0] + 1, 0.5);
+        List<Material[]> palette = new ArrayList<>(List.of(PALETTE));
+        java.util.Collections.shuffle(palette, random);
+        Material[][] colors = {palette.get(0), palette.get(1), palette.get(2)};
         for (int i = 0; i < LAYERS.length; i++) {
             int y = LAYERS[i];
             for (int x = -RADIUS; x <= RADIUS; x++) {
                 for (int z = -RADIUS; z <= RADIUS; z++) {
                     if (x * x + z * z <= RADIUS * RADIUS) {
                         boolean checker = ((x >> 1) + (z >> 1)) % 2 == 0;
-                        Build.set(world, x, y, z, COLORS[i][checker ? 0 : 1]);
+                        Build.set(world, x, y, z, colors[i][checker ? 0 : 1]);
                     }
                 }
             }

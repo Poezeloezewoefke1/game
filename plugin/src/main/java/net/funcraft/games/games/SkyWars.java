@@ -6,6 +6,7 @@ import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Theme;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -40,6 +41,7 @@ public final class SkyWars extends Game {
     private final List<Block> islandChests = new ArrayList<>();
     private final List<Block> centerChests = new ArrayList<>();
     private boolean cagesOpen;
+    private Theme theme;
 
     public SkyWars(FunCraft plugin, int id) {
         super(plugin, id, GameType.SKYWARS);
@@ -54,11 +56,15 @@ public final class SkyWars extends Game {
     protected void buildMap() {
         int n = online().isEmpty() ? 8 : Math.max(2, Math.min(8, online().size()));
         // centre island
-        Build.island(world, 0, Y, 0, 11, Material.GRASS_BLOCK, random);
-        Build.disc(world, 0, Y, 0, 4.5, Material.STONE_BRICKS);
-        Build.disc(world, 0, Y, 0, 1.5, Material.CHISELED_STONE_BRICKS);
-        Build.tree(world, 7, Y + 1, 2, random);
-        Build.tree(world, -6, Y + 1, -5, random);
+        theme = Theme.random(random);
+        mapName = theme.displayName() + " Isles";
+        theme.island(world, 0, Y, 0, 11, random);
+        Build.disc(world, 0, Y, 0, 4.5, theme.path);
+        Build.ring(world, 0, Y, 0, 3.5, 4.5, theme.trim);
+        Build.disc(world, 0, Y, 0, 1.5, theme.accent);
+        theme.tree(world, 7, Y + 1, 2, random);
+        theme.tree(world, -6, Y + 1, -5, random);
+        theme.plants(world, 0, Y, 0, 10, 14, random);
         int[][] mid = {{3, 0}, {-3, 0}, {0, 3}, {0, -3}};
         BlockFace[] faces = {BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH, BlockFace.NORTH};
         for (int i = 0; i < mid.length; i++) {
@@ -70,7 +76,7 @@ public final class SkyWars extends Game {
             double a = Math.toRadians(i * 360.0 / n + 180.0 / n);
             int x = (int) Math.round(Math.cos(a) * 20);
             int z = (int) Math.round(Math.sin(a) * 20);
-            Build.island(world, x, Y - 2, z, 3.5, Material.GRASS_BLOCK, random);
+            theme.island(world, x, Y - 2, z, 3.5, random);
             Build.directional(world, x, Y - 1, z, Material.CHEST, BlockFace.NORTH);
             islandChests.add(world.getBlockAt(x, Y - 1, z));
         }
@@ -79,7 +85,8 @@ public final class SkyWars extends Game {
             double a = Math.toRadians(i * 360.0 / n);
             int x = (int) Math.round(Math.cos(a) * RING);
             int z = (int) Math.round(Math.sin(a) * RING);
-            Build.island(world, x, Y, z, 5.5, Material.GRASS_BLOCK, random);
+            theme.island(world, x, Y, z, 5.5, random);
+            theme.plants(world, x, Y, z, 4.5, 4, random);
             Build.set(world, x, Y - 1, z, Material.IRON_ORE);
             int ox = (int) Math.round(Math.cos(a) * 3);
             int oz = (int) Math.round(Math.sin(a) * 3);

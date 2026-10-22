@@ -34,6 +34,12 @@ public final class GameManager {
             return;
         }
         Game current = byPlayer.get(player.getUniqueId());
+        if (current != null && current.state() == Game.State.ENDING) {
+            // "Play again" while the previous match is still showing its results
+            current.removePlayer(player);
+            plugin.hub().send(player);
+            current = null;
+        }
         if (current != null) {
             if (current.type() == type && current.state() != Game.State.RUNNING) {
                 Msg.send(player, "<gray>You are already in the " + type.displayName() + " queue.");
