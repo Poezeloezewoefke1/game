@@ -166,6 +166,24 @@ public final class PvpArena extends LastStanding {
     }
 
     @Override
+    protected String playAgainCommand(Player player) {
+        if (!duel()) {
+            return super.playAgainCommand(player);
+        }
+        for (Player other : online()) {
+            if (!other.equals(player)) {
+                return "/duel " + other.getName() + " " + kit().id();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String playAgainLabel() {
+        return duel() ? "REMATCH" : super.playAgainLabel();
+    }
+
+    @Override
     protected void onStart(List<Player> list) {
         super.onStart(list);
         Msg.all(list, "<gray>Kit: " + kit().name() + (event ? " <dark_gray>| <gold>FFA event - if you die you spectate!" : ""));

@@ -85,15 +85,20 @@ public final class Duels {
         }
     }
 
+    /** In a match that is still being played (a finished one showing results doesn't count). */
     private boolean busy(Player player) {
         Game game = plugin.games().gameOf(player);
-        return game != null && game.state() != Game.State.WAITING && game.state() != Game.State.STARTING;
+        return game != null && (game.state() == Game.State.RUNNING || game.isLoading());
     }
 
     private void leaveQueue(Player player) {
         Game game = plugin.games().gameOf(player);
         if (game != null) {
+            boolean ended = game.state() == Game.State.ENDING;
             game.removePlayer(player);
+            if (ended) {
+                plugin.hub().send(player);
+            }
         }
     }
 

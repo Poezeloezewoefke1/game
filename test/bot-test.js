@@ -86,7 +86,7 @@ async function finishMatch(a, b) {
 async function fight(a, b, ms) {
   const end = Date.now() + ms;
   let hits = 0;
-  while (Date.now() < end && !said(a, /BotBob was killed by BotAlice/)) {
+  while (Date.now() < end && !said(a, /BotBob .*BotAlice/)) {
     const target = a.players.BotBob && a.players.BotBob.entity;
     if (!target || target.position.distanceTo(a.entity.position) > 3) {
       rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
@@ -143,7 +143,7 @@ async function fight(a, b, ms) {
   check(await startMatch(a, b, 'pvp'), 'pvp fight: match started');
   a.setQuickBarSlot(0);
   const hits = await fight(a, b, 45000);
-  check(said(a, /BotBob was killed by BotAlice/), `pvp fight: Alice killed Bob (${hits} hits)`);
+  check(said(a, /BotBob .*BotAlice/), `pvp fight: Alice killed Bob (${hits} hits)`);
   check(await waitFor(() => said(a, /BotAlice won the game/), 5000), 'pvp fight: Alice won');
   check(b.game.gameMode === 'spectator', `pvp fight: Bob spectates after dying (${b.game.gameMode})`);
   check(said(a, /PLAY AGAIN/), 'pvp fight: Play Again button shown');
@@ -199,6 +199,18 @@ async function fight(a, b, ms) {
   check(await waitFor(() => said(a, /won the game/), 5000), 'buildbattle: a winner was picked');
   await finishMatch(a, b);
 
+  console.log('\n--- Sumo: three lives ---');
+  check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /BotBob .*2 lives left/), 6000), 'sumo: first fall costs a life');
+  await sleep(1500);
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /BotBob .*1 life left/), 6000), 'sumo: second fall costs a life');
+  await sleep(1500);
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'sumo: out of lives means out');
+  await finishMatch(a, b);
+
   console.log('\n--- duel with a kit ---');
   a.chat('/duel BotBob mace');
   await sleep(1500);
@@ -207,7 +219,9 @@ async function fight(a, b, ms) {
   check(duel, 'duel: match started');
   await sleep(4000);
   check(hasItem(a, 'mace') && hasItem(b, 'mace'), 'duel: both players got the mace kit');
+  clearLogs(a);
   b.chat('/leave');
+  check(await waitFor(() => said(a, /REMATCH/), 5000), 'duel: rematch button shown to the winner');
   await waitFor(() => !/RUNNING|ENDING/.test(rcon('fc list')), 20000, 1000);
   a.chat('/leave');
   await sleep(2000);

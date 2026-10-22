@@ -532,10 +532,11 @@ public abstract class Game {
             }
         }
         Msg.all(online, "<gray>Returning to the hub in 10 seconds...");
-        if (!privateMatch) {
-            for (Player p : online) {
-                Msg.raw(p, "<click:run_command:'/play " + type.key() + "'><hover:show_text:'<gray>Queue for another round'>"
-                        + "<green><bold>[PLAY AGAIN]</bold></green></hover></click>  "
+        for (Player p : online) {
+            String again = playAgainCommand(p);
+            if (again != null) {
+                Msg.raw(p, "<click:run_command:'" + again + "'><hover:show_text:'<gray>Go again!'>"
+                        + "<green><bold>[" + playAgainLabel() + "]</bold></green></hover></click>  "
                         + "<click:run_command:'/games'><hover:show_text:'<gray>Pick another game'><aqua><bold>[OTHER GAMES]</bold></aqua></hover></click>");
             }
         }
@@ -565,6 +566,15 @@ public abstract class Game {
             world = null;
         }
         plugin.games().remove(this);
+    }
+
+    /** Command behind the end-of-game button, or null for none. */
+    protected String playAgainCommand(Player player) {
+        return privateMatch ? null : "/play " + type.key();
+    }
+
+    protected String playAgainLabel() {
+        return "PLAY AGAIN";
     }
 
     /** Hook for subclasses to cancel their own tasks. */
@@ -747,11 +757,18 @@ public abstract class Game {
         Msg.actionBar(attacker, bar.toString());
     }
 
+    private static final String[] KILL_VERBS = {"was slain by", "was destroyed by", "got outplayed by",
+            "was sent to the shadow realm by", "was no match for", "got clapped by", "was eliminated by"};
+    private static final String[] VOID_VERBS = {"was knocked into the void by", "was thrown off the map by",
+            "took a long fall thanks to"};
+
     protected void deathMessage(Player victim, Player killer, String suffix) {
         String msg;
+        boolean fell = victim.getLocation().getY() < voidLevel() + 5;
         if (killer != null) {
-            msg = "<red>" + victim.getName() + " <gray>was killed by <green>" + killer.getName();
-        } else if (victim.getLocation().getY() < voidLevel() + 5) {
+            String[] verbs = fell ? VOID_VERBS : KILL_VERBS;
+            msg = "<red>" + victim.getName() + " <gray>" + verbs[random.nextInt(verbs.length)] + " <green>" + killer.getName();
+        } else if (fell) {
             msg = "<red>" + victim.getName() + " <gray>fell into the void";
         } else {
             msg = "<red>" + victim.getName() + " <gray>died";
@@ -762,6 +779,9 @@ public abstract class Game {
     /** Turns a player into a spectator of this match. */
     protected void eliminate(Player player, boolean announce) {
         alive.remove(player.getUniqueId());
+        if (announce && player.getLocation().getY() > voidLevel()) {
+            player.getWorld().strikeLightningEffect(player.getLocation());
+        }
         makeSpectator(player);
         if (announce) {
             Msg.title(player, "<red><bold>ELIMINATED", "<gray>You can spectate or type <yellow>/leave", 5, 50, 10);

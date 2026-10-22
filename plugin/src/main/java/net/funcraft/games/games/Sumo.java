@@ -17,7 +17,9 @@ import java.util.List;
 public final class Sumo extends LastStanding {
 
     private static final int FLOOR_Y = 64;
+    private static final int LIVES = 3;
     private double radius;
+    private final java.util.Map<java.util.UUID, Integer> lives = new java.util.HashMap<>();
 
     public Sumo(FunCraft plugin, int id) {
         super(plugin, id, GameType.SUMO);
@@ -63,7 +65,31 @@ public final class Sumo extends LastStanding {
     @Override
     protected void onStart(List<Player> list) {
         super.onStart(list);
-        Msg.all(list, "<gray>No weapons, no damage - just push them off!");
+        for (Player p : list) {
+            lives.put(p.getUniqueId(), LIVES);
+        }
+        Msg.all(list, "<gray>No weapons, no damage - just push them off! Everyone has <red>" + LIVES + " lives</red>.");
+    }
+
+    @Override
+    protected void onDeath(Player victim, Player killer) {
+        int left = lives.getOrDefault(victim.getUniqueId(), 1) - 1;
+        lives.put(victim.getUniqueId(), left);
+        if (left <= 0) {
+            super.onDeath(victim, killer);
+            return;
+        }
+        deathMessage(victim, killer, "<gray>(" + left + (left == 1 ? " life" : " lives") + " left)");
+        victim.teleport(spawns.get(random.nextInt(spawns.size())));
+        victim.setVelocity(new org.bukkit.util.Vector());
+        victim.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 40, 4, false, false));
+        Msg.title(victim, "<red>" + "❤".repeat(left), "<gray>" + left + (left == 1 ? " life" : " lives") + " left", 0, 30, 10);
+    }
+
+    @Override
+    protected List<String> extraSidebar(Player player) {
+        int left = lives.getOrDefault(player.getUniqueId(), 0);
+        return List.of("<white>Lives: <red>" + (left > 0 ? "❤".repeat(left) : "<gray>out"));
     }
 
     @Override

@@ -13,7 +13,7 @@ automatically, so there's nothing to build or set up in-game.
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
 | **Spleef** | Two snow floors over the void. Dig out the snow under the others, and use snowballs too. | 2–12 |
 | **TNT Run** | The floor vanishes behind you. Three layers and three double jumps. | 2–12 |
-| **Sumo** | Knock everyone off the platform with your fists. | 2–8 |
+| **Sumo** | Knock everyone off the platform with your fists. Everyone has 3 lives. | 2–8 |
 
 Plus:
 - **Hub island** with an NPC for every game, a game-selector compass, a live player count and a top-wins leaderboard.
@@ -22,7 +22,8 @@ Plus:
 - **Stats:** wins, kills, deaths, games and K/D per game (`/stats`), shown in the sidebar.
 - **Random map themes:** SkyWars and BedWars islands come in Plains, Desert, Snowy, Nether, The End, Mushroom or Cherry Blossom. Arenas can be a Colosseum, Desert Temple, Nether Fortress, Ocean Monument or Deep Dark. TNT Run and Sumo get random colours.
 - **Combat feedback:** your target's health on your action bar when you hit them, a +1 Kill notice, and killstreak announcements (3 / UNSTOPPABLE 5 / GODLIKE 7 / LEGENDARY 10, plus "X ended Y's streak").
-- **[PLAY AGAIN]** button when a game ends puts you straight back in the queue.
+- **[PLAY AGAIN]** button when a game ends puts you straight back in the queue; after a duel it's **[REMATCH]** with the same kit.
+- Varied death messages ("was knocked into the void by", "was sent to the shadow realm by", ...) and a lightning strike when someone is eliminated.
 - **Hub:** double jump (press jump twice), launch pads, and a **parkour course** around the island with checkpoints, a timer and a best-times leaderboard.
 - **BedWars team picker:** choose your team while you're in the queue, so you can team up with friends (teams stay balanced).
 - **Spectate:** `/spectate <player>` lets you watch a friend's game.
