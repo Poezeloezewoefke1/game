@@ -14,7 +14,7 @@ automatically, so there's nothing to build or set up in-game.
 | **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode (with a floor changer), then votes on every build from *Super Poop* to *Legendary*. Plots are walled in while you build, so nobody can peek or copy. | 2–12 |
 | **PvP Arena** | Free-for-all in a gladiator arena with a kit. Last one alive wins. | 2–12 |
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
-| **Spleef** | Two snow floors over the void. Dig out the snow under the others, and use snowballs too. | 2–12 |
+| **Spleef** | Two snow floors over the void. Dig out the snow under the others; snowballs break snow and knock players back. | 2–12 |
 | **TNT Run** | The floor vanishes behind you. Three layers and three double jumps. | 2–12 |
 | **Block Party** | A colour is called; stand on it before every other colour vanishes. The floor and timer get faster every round. | 2–16 |
 | **One in the Chamber** | A sword, a bow and one arrow. Arrows kill in one hit and every kill gives you another. You respawn; first to 15 kills wins. | 2–12 |
