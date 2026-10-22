@@ -3,6 +3,7 @@ package net.funcraft.games.game;
 import net.funcraft.games.FunCraft;
 import net.funcraft.games.util.Msg;
 import net.funcraft.games.util.Worlds;
+import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
@@ -81,6 +82,7 @@ public abstract class Game {
     /** Force-started by an admin: keep counting down even below the minimum players. */
     private boolean forced;
     private BukkitTask tickTask;
+    private BossBar bossBar;
 
     protected Game(FunCraft plugin, int id, GameType type) {
         this.plugin = plugin;
@@ -256,6 +258,9 @@ public abstract class Game {
         players.remove(id);
         alive.remove(id);
         plugin.games().untrack(player);
+        if (bossBar != null) {
+            player.hideBossBar(bossBar);
+        }
         if (state == State.WAITING || state == State.STARTING) {
             Msg.all(online(), "<yellow>" + player.getName() + " <gray>left the queue.");
             updateCountdown();
@@ -555,6 +560,9 @@ public abstract class Game {
         state = State.ENDING;
         for (Player p : online()) {
             plugin.games().untrack(p);
+            if (bossBar != null) {
+                p.hideBossBar(bossBar);
+            }
             p.setInvulnerable(false);
             plugin.hub().send(p);
         }
@@ -575,6 +583,21 @@ public abstract class Game {
 
     protected String playAgainLabel() {
         return "PLAY AGAIN";
+    }
+
+    /** Shows (or updates) the match's boss bar for everyone in it. */
+    protected void bossBar(String text, float progress, BossBar.Color color) {
+        float p = Math.max(0f, Math.min(1f, progress));
+        if (bossBar == null) {
+            bossBar = BossBar.bossBar(Msg.mm(text), p, color, BossBar.Overlay.PROGRESS);
+        } else {
+            bossBar.name(Msg.mm(text));
+            bossBar.progress(p);
+            bossBar.color(color);
+        }
+        for (Player player : online()) {
+            player.showBossBar(bossBar);
+        }
     }
 
     /** Hook for subclasses to cancel their own tasks. */

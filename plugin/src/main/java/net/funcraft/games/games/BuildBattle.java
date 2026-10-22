@@ -141,6 +141,8 @@ public final class BuildBattle extends Game {
             p.setGameMode(GameMode.CREATIVE);
             p.teleport(plotSpawn(plot));
             p.setAllowFlight(true);
+            p.getInventory().setItem(8, plugin.hub().tag(ItemBuilder.of(Material.GRASS_BLOCK)
+                    .name("<green><bold>Change Floor</bold> <gray>(right click)").build(), "bb_floor"));
             Msg.title(p, "<light_purple><bold>" + Msg.escape(theme), "<gray>You have " + Msg.time(phaseTimer) + " to build it!", 10, 70, 20);
         }
         Msg.all(list, "<white>The theme is <light_purple><bold>" + Msg.escape(theme) + "</bold><white>! Build it on your plot.");
@@ -156,17 +158,15 @@ public final class BuildBattle extends Game {
                     Msg.all(online(), "<yellow>" + phaseTimer + " seconds of building left!");
                     Msg.sound(online(), "block.note_block.pling", 1f);
                 }
-                for (Player p : alivePlayers()) {
-                    Msg.actionBar(p, "<white>Theme: <light_purple>" + Msg.escape(theme) + " <dark_gray>| <white>Time: <yellow>" + Msg.time(phaseTimer));
-                }
+                bossBar("<white>Theme: <light_purple><bold>" + Msg.escape(theme) + "</bold> <dark_gray>| <white>" + Msg.time(phaseTimer) + " left",
+                        (float) phaseTimer / buildSeconds(), net.kyori.adventure.bossbar.BossBar.Color.PURPLE);
                 if (phaseTimer <= 0) {
                     startVoting();
                 }
             }
             case VOTING -> {
-                for (Player p : online()) {
-                    Msg.actionBar(p, "<white>Theme: <light_purple>" + Msg.escape(theme) + " <dark_gray>| <white>Vote with the blocks in your hotbar! <yellow>" + phaseTimer + "s");
-                }
+                bossBar("<white>Build " + (voteIndex + 1) + "/" + voteOrder.size() + " <dark_gray>| <white>Vote with your hotbar! <yellow>" + phaseTimer + "s",
+                        (float) phaseTimer / voteSeconds(), net.kyori.adventure.bossbar.BossBar.Color.PURPLE);
                 if (phaseTimer <= 0) {
                     finishPlotVote();
                     nextPlot();
@@ -275,6 +275,13 @@ public final class BuildBattle extends Game {
     public void onInteract(PlayerInteractEvent event) {
         if (phase == Phase.BUILDING) {
             ItemStack item = event.getItem();
+            if ("bb_floor".equals(plugin.hub().hubItem(item))) {
+                event.setCancelled(true);
+                if (event.getAction() != Action.PHYSICAL) {
+                    openFloorMenu(event.getPlayer());
+                }
+                return;
+            }
             if (item != null) {
                 String n = item.getType().name();
                 if (n.equals("WITHER_SPAWN_EGG") || n.equals("ENDER_DRAGON_SPAWN_EGG") || n.endsWith("_MINECART")
@@ -306,6 +313,34 @@ public final class BuildBattle extends Game {
         currentVotes.put(p.getUniqueId(), vote + 1);
         Msg.actionBar(p, "<white>You voted " + VOTE_NAMES[vote]);
         Msg.sound(p, "block.note_block.bell", 0.6f + vote * 0.2f);
+    }
+
+    private static final Material[] FLOORS = {Material.GRASS_BLOCK, Material.DIRT_PATH, Material.SAND, Material.RED_SAND,
+            Material.SNOW_BLOCK, Material.STONE, Material.COBBLESTONE, Material.STONE_BRICKS, Material.OAK_PLANKS,
+            Material.SPRUCE_PLANKS, Material.DARK_OAK_PLANKS, Material.QUARTZ_BLOCK, Material.WHITE_CONCRETE,
+            Material.BLACK_CONCRETE, Material.LIGHT_BLUE_CONCRETE, Material.PINK_CONCRETE, Material.WATER_BUCKET,
+            Material.LAVA_BUCKET, Material.NETHERRACK, Material.END_STONE, Material.MOSS_BLOCK, Material.PACKED_ICE,
+            Material.DEEPSLATE_TILES, Material.TERRACOTTA, Material.PRISMARINE, Material.GOLD_BLOCK, Material.OBSIDIAN};
+
+    private void openFloorMenu(Player player) {
+        Plot plot = plots.get(player.getUniqueId());
+        if (plot == null) {
+            return;
+        }
+        net.funcraft.games.util.Gui gui = new net.funcraft.games.util.Gui(3, "<dark_gray>Choose your floor");
+        for (int i = 0; i < FLOORS.length; i++) {
+            Material icon = FLOORS[i];
+            Material floor = icon == Material.WATER_BUCKET ? Material.WATER : icon == Material.LAVA_BUCKET ? Material.LAVA : icon;
+            gui.set(i, ItemBuilder.of(icon).name("<yellow>" + icon.name().toLowerCase().replace("_bucket", "").replace('_', ' ')).build(), (p, click) -> {
+                if (phase != Phase.BUILDING) {
+                    return;
+                }
+                Build.fill(world, plot.x0(), FLOOR_Y, plot.z0(), plot.x0() + SIZE - 1, FLOOR_Y, plot.z0() + SIZE - 1, floor);
+                Msg.sound(p, "block.note_block.pling", 1.4f);
+                p.closeInventory();
+            });
+        }
+        gui.open(player);
     }
 
     @Override

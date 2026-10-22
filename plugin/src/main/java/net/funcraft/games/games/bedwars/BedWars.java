@@ -496,6 +496,34 @@ public final class BedWars extends Game {
         for (Generator g : emeraldGens) {
             g.label().text(Msg.mm("<green><bold>Emerald</bold>\n<yellow>Tier " + eroman + "\n<gray>Spawns in <red>" + emeraldTimer + "s"));
         }
+        // traps
+        for (Team team : teams) {
+            if (!team.trap) {
+                continue;
+            }
+            for (Player enemy : alivePlayers()) {
+                if (team(enemy) != team && enemy.getGameMode() == GameMode.SURVIVAL && enemy.getWorld() == world
+                        && enemy.getLocation().distanceSquared(team.islandCenter) < 11 * 11) {
+                    team.trap = false;
+                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20 * 4, 0));
+                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20 * 4, 1));
+                    Msg.title(enemy, "<red><bold>IT'S A TRAP!", "<gray>You walked into " + team.colored() + "<gray>'s trap", 0, 40, 10);
+                    for (Player member : members(team)) {
+                        Msg.title(member, "<red><bold>TRAP TRIGGERED", "<gray>" + enemy.getName() + " is in your base!", 0, 40, 10);
+                        Msg.sound(member, "block.note_block.pling", 0.5f);
+                    }
+                    break;
+                }
+            }
+        }
+        // boss bar: next event
+        for (TimedEvent e : timeline) {
+            if (e.at() > elapsed) {
+                bossBar("<white>" + e.name() + " in <green>" + Msg.time(e.at() - elapsed),
+                        1f - (float) (e.at() - elapsed) / 360f, net.kyori.adventure.bossbar.BossBar.Color.BLUE);
+                break;
+            }
+        }
         // respawns
         for (Map.Entry<UUID, Integer> e : new ArrayList<>(respawning.entrySet())) {
             Player p = Bukkit.getPlayer(e.getKey());

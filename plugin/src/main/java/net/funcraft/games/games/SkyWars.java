@@ -296,6 +296,11 @@ public final class SkyWars extends Game {
             return;
         }
         int t = elapsed;
+        int nextAt = t < REFILL_AT ? REFILL_AT : t < DEATHMATCH_AT ? DEATHMATCH_AT : END_AT;
+        String nextName = t < REFILL_AT ? "Chest refill" : t < DEATHMATCH_AT ? "Deathmatch" : "Game end";
+        int prevAt = t < REFILL_AT ? 0 : t < DEATHMATCH_AT ? REFILL_AT : DEATHMATCH_AT;
+        bossBar("<white>" + nextName + " in <aqua>" + Msg.time(nextAt - t) + " <dark_gray>| <green>" + alive.size() + " alive",
+                1f - (float) (t - prevAt) / (nextAt - prevAt), net.kyori.adventure.bossbar.BossBar.Color.BLUE);
         if (t == REFILL_AT) {
             fillChests();
             Msg.all(online(), "<gold>All chests have been refilled!");

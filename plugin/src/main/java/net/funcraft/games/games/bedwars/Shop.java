@@ -320,6 +320,8 @@ final class Shop {
                 (p, c) -> buyUpgrade(p, team, 3));
         gui.set(14, upgradeIcon(Material.BEACON, "Heal Pool", "Regeneration near your island",
                 team.healPool ? -1 : 1), (p, c) -> buyUpgrade(p, team, 4));
+        gui.set(15, upgradeIcon(Material.TRIPWIRE_HOOK, "It's a Trap!", "Blinds + slows the next enemy in your base",
+                team.trap ? -1 : 1), (p, c) -> buyUpgrade(p, team, 5));
         gui.set(16, ItemBuilder.of(Material.DIAMOND).name("<aqua>You have " + count(player, Material.DIAMOND) + " diamonds").build());
         gui.fill(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE).name(" ").build());
         gui.open(player);
@@ -348,6 +350,7 @@ final class Shop {
             case 1 -> team.protection >= 4 ? -1 : 2 << team.protection;
             case 2 -> team.haste >= 2 ? -1 : 2 + team.haste * 2;
             case 3 -> team.forge >= 3 ? -1 : 2 + team.forge * 2;
+            case 5 -> team.trap ? -1 : 1;
             default -> team.healPool ? -1 : 1;
         };
         if (price < 0) {
@@ -377,6 +380,10 @@ final class Shop {
             case 3 -> {
                 team.forge++;
                 name = "Iron Forge " + roman(team.forge);
+            }
+            case 5 -> {
+                team.trap = true;
+                name = "It's a Trap!";
             }
             default -> {
                 team.healPool = true;

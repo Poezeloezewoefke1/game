@@ -182,6 +182,18 @@ async function fight(a, b, ms) {
   console.log('\n--- Build Battle: build time, voting, results ---');
   check(await startMatch(a, b, 'buildbattle'), 'buildbattle deep: match started');
   check(a.game.gameMode === 'creative', `buildbattle: builders are in creative (${a.game.gameMode})`);
+  a.setQuickBarSlot(8);
+  await sleep(300);
+  const floorMenu = new Promise((resolve) => a.once('windowOpen', resolve));
+  a.activateItem();
+  const floorWin = await Promise.race([floorMenu, sleep(5000).then(() => null)]);
+  check(!!floorWin, 'buildbattle: floor menu opens');
+  if (floorWin) {
+    await a.clickWindow(4, 0, 0); // snow block
+    await sleep(1500);
+    const under = a.blockAt(a.entity.position.offset(0, -1, 0));
+    check(under && under.name === 'snow_block', `buildbattle: floor changed (${under && under.name})`);
+  }
   a.chat('/fc skip');
   check(await waitFor(() => hasItem(a, 'yellow_terracotta'), 8000), 'buildbattle: voting items handed out');
   for (let round = 0; round < 2; round++) {
@@ -204,6 +216,12 @@ async function fight(a, b, ms) {
   check(await waitFor(() => hasItem(a, 'stone_sword'), 8000), 'skywars: default Fighter kit given when cages open');
   b.chat('/leave');
   check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'skywars: last player standing wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Block Party: dance until someone falls ---');
+  check(await startMatch(a, b, 'blockparty'), 'blockparty: match started');
+  check(await waitFor(() => a.inventory.items().some((i) => i.name.endsWith('_concrete')), 15000), 'blockparty: a colour gets called');
+  check(await waitFor(() => said(a, /won the game|ended in a draw/), 150000, 1000), 'blockparty: the floor drops until the game ends');
   await finishMatch(a, b);
 
   console.log('\n--- Sumo: three lives ---');

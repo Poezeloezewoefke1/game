@@ -24,7 +24,7 @@ public abstract class LastStanding extends Game {
     /** Give the player their kit; called after teleporting. */
     protected abstract void equip(Player player);
 
-    /** Seconds until the match ends in a draw. */
+    /** Seconds until the match ends in a draw; 0 for no limit. */
     protected int timeLimit() {
         return 600;
     }
@@ -55,7 +55,12 @@ public abstract class LastStanding extends Game {
 
     @Override
     protected void onSecond() {
+        if (timeLimit() <= 0) {
+            return;
+        }
         int left = timeLimit() - elapsed;
+        bossBar("<yellow>Time left: <white>" + Msg.time(left) + " <dark_gray>| <green>" + alive.size() + " alive",
+                (float) left / timeLimit(), net.kyori.adventure.bossbar.BossBar.Color.YELLOW);
         if (left == 60 || left == 30 || left == 10) {
             Msg.all(online(), "<yellow>" + left + " seconds left!");
         }
@@ -80,7 +85,9 @@ public abstract class LastStanding extends Game {
         lines.add("<dark_gray>#" + id);
         lines.add(" ");
         lines.add("<white>Alive: <green>" + alive.size() + "/" + startingPlayers);
-        lines.add("<white>Time left: <yellow>" + Msg.time(timeLimit() - elapsed));
+        if (timeLimit() > 0) {
+            lines.add("<white>Time left: <yellow>" + Msg.time(timeLimit() - elapsed));
+        }
         lines.add("  ");
         lines.add("<white>Your kills: <red>" + kills.getOrDefault(player.getUniqueId(), 0));
         lines.addAll(extraSidebar(player));

@@ -2,6 +2,7 @@ package net.funcraft.games.game;
 
 import net.funcraft.games.FunCraft;
 import net.funcraft.games.games.bedwars.BedWars;
+import net.funcraft.games.games.BlockParty;
 import net.funcraft.games.games.BuildBattle;
 import net.funcraft.games.games.PvpArena;
 import net.funcraft.games.games.SkyWars;
@@ -41,6 +42,10 @@ public enum GameType {
     TNT_RUN("TNT Run", "<dark_red>", Material.TNT, 2, 12, TntRun::new,
             "The floor disappears behind you. Keep",
             "running and use your double jumps wisely!"),
+    BLOCK_PARTY("Block Party", "<light_purple>", Material.JUKEBOX, 2, 16, BlockParty::new,
+            "A colour gets called - stand on it before",
+            "every other colour disappears! Each round",
+            "is faster. Last dancer standing wins."),
     SUMO("Sumo", "<green>", Material.SLIME_BALL, 2, 8, Sumo::new,
             "Knock everyone off the platform with",
             "your fists. Last one standing wins.");
@@ -122,6 +127,7 @@ public enum GameType {
             case "arena", "ffa" -> PVP;
             case "duel", "1v1" -> DUELS;
             case "tnt", "tntrun" -> TNT_RUN;
+            case "party", "bp", "blockparty", "disco" -> BLOCK_PARTY;
             default -> null;
         };
     }

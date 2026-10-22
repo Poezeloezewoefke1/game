@@ -68,7 +68,7 @@ jobs:
             sleep 2
           done
           docker logs mc 2>&1 | grep -E 'SELFTEST RESULT|Selftest failed'
-          docker logs mc 2>&1 | grep -q 'SELFTEST RESULT 8/8'
+          docker logs mc 2>&1 | grep -qE 'SELFTEST RESULT ([0-9]+)/\1([^0-9]|$)'
       - name: Bot play-through
         if: matrix.bots != 'none'
         env:

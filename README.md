@@ -1,18 +1,19 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**8 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**9 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
 |------|------------|---------|
-| **BedWars** | Up to 4 teams with beds, iron/gold generators, diamond and emerald islands, an item shop and team upgrades. Fireballs, TNT and permanent armor are in. | 2–8 |
+| **BedWars** | Up to 4 teams with beds, iron/gold generators, diamond and emerald islands, an item shop and team upgrades. Fireballs, TNT, permanent armor and an "It's a Trap!" upgrade are in. | 2–8 |
 | **SkyWars** | Each player starts in a cage on their own island. Loot the chests, bridge to the middle (better loot) and be the last one alive. Chests refill at 4:00. Pick a starter kit (Fighter, Archer, Builder, Enderman, Healer, Bomber) in the queue. | 2–8 |
-| **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode, then votes on every build from *Super Poop* to *Legendary*. | 2–12 |
+| **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode (with a floor changer), then votes on every build from *Super Poop* to *Legendary*. | 2–12 |
 | **PvP Arena** | Free-for-all in a gladiator arena with a kit. Last one alive wins. | 2–12 |
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
 | **Spleef** | Two snow floors over the void. Dig out the snow under the others, and use snowballs too. | 2–12 |
 | **TNT Run** | The floor vanishes behind you. Three layers and three double jumps. | 2–12 |
+| **Block Party** | A colour is called; stand on it before every other colour vanishes. The floor and timer get faster every round. | 2–16 |
 | **Sumo** | Knock everyone off the platform with your fists. Everyone has 3 lives. | 2–8 |
 
 Plus:
@@ -27,13 +28,13 @@ Plus:
 - **Hub:** double jump (press jump twice), launch pads, and a **parkour course** around the island with checkpoints, a timer and a best-times leaderboard.
 - **BedWars team picker:** choose your team while you're in the queue, so you can team up with friends (teams stay balanced).
 - **Spectate:** `/spectate <player>` lets you watch a friend's game.
-- Sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
+- Boss bar timers (next BedWars/SkyWars event, build time, time left), sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
 
 ## Commands
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun sumo` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty sumo` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |

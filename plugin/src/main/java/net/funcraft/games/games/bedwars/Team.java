@@ -55,6 +55,8 @@ public final class Team {
     int haste;
     int forge;
     boolean healPool;
+    /** One-shot trap armed in the base. */
+    boolean trap;
 
     double ironProgress;
     double goldProgress;
