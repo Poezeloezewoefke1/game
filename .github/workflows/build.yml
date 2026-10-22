@@ -48,7 +48,7 @@ jobs:
         run: |
           docker run -d --name mc -p 25565:25565 \
             -e EULA=TRUE -e TYPE=PAPER -e VERSION=${{ matrix.version }} -e MEMORY=3G \
-            -e ONLINE_MODE=FALSE -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=FALSE \
+            -e ONLINE_MODE=FALSE -e GENERATE_STRUCTURES=FALSE \
             -v "$PWD/plugins:/plugins:ro" itzg/minecraft-server:latest
       - name: Wait for startup
         run: |
@@ -63,8 +63,11 @@ jobs:
       - name: Generate every map (/fc selftest)
         run: |
           docker exec mc rcon-cli fc selftest
-          sleep 5
-          docker logs mc 2>&1 | grep 'SELFTEST RESULT'
+          for i in $(seq 1 60); do
+            docker logs mc 2>&1 | grep -q 'SELFTEST RESULT' && break
+            sleep 2
+          done
+          docker logs mc 2>&1 | grep -E 'SELFTEST RESULT|Selftest failed'
           docker logs mc 2>&1 | grep -q 'SELFTEST RESULT 8/8'
       - name: Bot play-through
         if: matrix.bots != 'none'

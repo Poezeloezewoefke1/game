@@ -17,7 +17,6 @@ gamemode=adventure
 spawn-protection=0
 allow-nether=false
 allow-flight=true
-level-type=minecraft\:flat
 generate-structures=false
 max-players=30
 PROPS

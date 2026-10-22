@@ -60,6 +60,7 @@ async function playGame(a, b, game, expectItem) {
 
 (async () => {
   const a = await join('BotAlice');
+  await sleep(5000); // Bukkit throttles connections from the same IP within 4 seconds
   const b = await join('BotBob');
   console.log(rcon('op BotAlice'));
   await sleep(3000);

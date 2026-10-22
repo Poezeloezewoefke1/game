@@ -18,7 +18,6 @@ if not exist server.properties (
     echo spawn-protection=0
     echo allow-nether=false
     echo allow-flight=true
-    echo level-type=minecraft\:flat
     echo generate-structures=false
     echo max-players=30
   ) > server.properties

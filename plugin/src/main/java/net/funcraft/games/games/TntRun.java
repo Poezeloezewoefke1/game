@@ -43,6 +43,11 @@ public final class TntRun extends LastStanding {
     }
 
     @Override
+    protected int[] mapArea() {
+        return new int[]{-24, -24, 24, 24};
+    }
+
+    @Override
     protected void buildMap() {
         center = new Location(world, 0.5, LAYERS[0] + 1, 0.5);
         for (int i = 0; i < LAYERS.length; i++) {

@@ -24,6 +24,11 @@ public final class Sumo extends LastStanding {
     }
 
     @Override
+    protected int[] mapArea() {
+        return new int[]{-16, -16, 16, 16};
+    }
+
+    @Override
     protected void buildMap() {
         int players = Math.max(2, online().size());
         radius = Math.min(11, 5 + players);

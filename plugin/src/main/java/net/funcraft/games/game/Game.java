@@ -4,6 +4,7 @@ import net.funcraft.games.FunCraft;
 import net.funcraft.games.util.Msg;
 import net.funcraft.games.util.Worlds;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.GameMode;
@@ -40,6 +41,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
@@ -72,6 +74,7 @@ public abstract class Game {
     private int endTimer;
     private boolean privateMatch;
     private int maxOverride;
+    private boolean loading;
     private BukkitTask tickTask;
 
     protected Game(FunCraft plugin, int id, GameType type) {
@@ -84,6 +87,14 @@ public abstract class Game {
 
     /** Generate the map into the freshly created void world. */
     protected abstract void buildMap();
+
+    /**
+     * Block area {minX, minZ, maxX, maxZ} the map will cover. Its chunks are loaded
+     * asynchronously before {@link #buildMap()} runs so starting a game never freezes the server.
+     */
+    protected int[] mapArea() {
+        return new int[]{-48, -48, 48, 48};
+    }
 
     /** Teleport and equip players; the map exists at this point. */
     protected abstract void onStart(List<Player> players);
@@ -190,7 +201,7 @@ public abstract class Game {
     // --------------------------------------------------------------- queueing
 
     public boolean addPlayer(Player player) {
-        if (state != State.WAITING && state != State.STARTING) {
+        if (state != State.WAITING && state != State.STARTING || loading) {
             return false;
         }
         if (players.size() >= maxPlayers()) {
@@ -282,6 +293,12 @@ public abstract class Game {
                     }
                 }
                 case STARTING -> {
+                    if (loading) {
+                        for (Player p : online()) {
+                            Msg.actionBar(p, "<yellow>Generating the map...");
+                        }
+                        return;
+                    }
                     if (countdown <= 0) {
                         begin();
                         return;
@@ -320,6 +337,7 @@ public abstract class Game {
         }
     }
 
+    /** Creates the world and loads the map's chunks off the main thread, then calls {@link #launch()}. */
     private void begin() {
         List<Player> list = online();
         if (list.isEmpty()) {
@@ -327,14 +345,69 @@ public abstract class Game {
             return;
         }
         Msg.all(list, "<gray>Generating the map...");
+        loading = true;
         try {
             world = Worlds.createVoid(Worlds.GAME_WORLD_PREFIX + type.key() + "_" + id);
+        } catch (Exception e) {
+            loading = false;
+            failStart(e);
+            return;
+        }
+        preload().whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            loading = false;
+            if (error != null) {
+                failStart(error);
+            } else {
+                launch();
+            }
+        }));
+    }
+
+    /** Loads every chunk of {@link #mapArea()} asynchronously. */
+    private CompletableFuture<Void> preload() {
+        int[] area = mapArea();
+        List<CompletableFuture<Chunk>> futures = new ArrayList<>();
+        for (int cx = area[0] >> 4; cx <= area[2] >> 4; cx++) {
+            for (int cz = area[1] >> 4; cz <= area[3] >> 4; cz++) {
+                futures.add(world.getChunkAtAsync(cx, cz, true));
+            }
+        }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    /** Keeps the (already loaded) map chunks loaded until the world is deleted. Main thread only. */
+    private void ticketArea() {
+        int[] area = mapArea();
+        for (int cx = area[0] >> 4; cx <= area[2] >> 4; cx++) {
+            for (int cz = area[1] >> 4; cz <= area[3] >> 4; cz++) {
+                world.getChunkAt(cx, cz).addPluginChunkTicket(plugin);
+            }
+        }
+    }
+
+    private void failStart(Throwable e) {
+        plugin.getLogger().log(Level.SEVERE, "Could not build map for " + name(), e);
+        Msg.all(online(), "<red>Something went wrong while building the map, sorry!");
+        state = State.ENDING;
+        finish();
+    }
+
+    private void launch() {
+        List<Player> list = online();
+        if (state != State.STARTING || list.isEmpty()) {
+            // everybody left (or the countdown was cancelled) while the map was loading
+            Worlds.delete(plugin, world);
+            world = null;
+            if (players.isEmpty()) {
+                plugin.games().remove(this);
+            }
+            return;
+        }
+        try {
+            ticketArea();
             buildMap();
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Could not build map for " + name(), e);
-            Msg.all(list, "<red>Something went wrong while building the map, sorry!");
-            state = State.ENDING;
-            finish();
+            failStart(e);
             return;
         }
         state = State.RUNNING;
@@ -441,9 +514,26 @@ public abstract class Game {
     }
 
     /** Builds the map and runs a few seconds of game logic without players, then deletes it. */
-    public void selfTest() {
+    public CompletableFuture<Void> selfTest() {
         world = Worlds.createVoid(Worlds.GAME_WORLD_PREFIX + "test_" + type.key() + "_" + System.currentTimeMillis());
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        preload().whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                if (error != null) {
+                    throw new IllegalStateException("Chunk loading failed", error);
+                }
+                runSelfTest();
+                result.complete(null);
+            } catch (Throwable t) {
+                result.completeExceptionally(t);
+            }
+        }));
+        return result;
+    }
+
+    private void runSelfTest() {
         try {
+            ticketArea();
             buildMap();
             state = State.RUNNING;
             onStart(List.of());
@@ -682,6 +772,10 @@ public abstract class Game {
 
     public Set<UUID> players() {
         return players;
+    }
+
+    public boolean isLoading() {
+        return loading;
     }
 
     public boolean allowsHunger() {

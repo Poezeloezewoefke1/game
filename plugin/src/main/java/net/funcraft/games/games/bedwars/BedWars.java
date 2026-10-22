@@ -108,6 +108,11 @@ public final class BedWars extends Game {
     // ------------------------------------------------------------------ map
 
     @Override
+    protected int[] mapArea() {
+        return new int[]{-56, -56, 56, 56};
+    }
+
+    @Override
     protected void buildMap() {
         List<Player> list = online();
         int teamCount = list.isEmpty() ? 4 : Math.max(2, Math.min(4, list.size()));

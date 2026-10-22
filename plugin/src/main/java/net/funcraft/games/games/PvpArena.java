@@ -64,10 +64,20 @@ public final class PvpArena extends LastStanding {
         return kit;
     }
 
+    private int arenaRadius() {
+        return duel() ? 14 : (int) Math.max(22, 12 + online().size() * 1.5);
+    }
+
+    @Override
+    protected int[] mapArea() {
+        int r = arenaRadius() + 12;
+        return new int[]{-r, -r, r, r};
+    }
+
     @Override
     protected void buildMap() {
         int players = online().size();
-        radius = duel() ? 14 : (int) Math.max(22, 12 + players * 1.5);
+        radius = arenaRadius();
         center = new Location(world, 0.5, FLOOR_Y + 1, 0.5);
         Material[] floor = {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.CRACKED_STONE_BRICKS,
                 Material.MOSSY_STONE_BRICKS, Material.ANDESITE, Material.POLISHED_ANDESITE};

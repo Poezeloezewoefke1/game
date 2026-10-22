@@ -47,7 +47,7 @@ public final class GameManager {
         }
         Game target = null;
         for (Game game : games) {
-            if (game.type() == type && !game.isPrivate()
+            if (game.type() == type && !game.isPrivate() && !game.isLoading()
                     && (game.state() == Game.State.WAITING || game.state() == Game.State.STARTING)
                     && game.players().size() < type.maxPlayers(plugin)) {
                 target = game;

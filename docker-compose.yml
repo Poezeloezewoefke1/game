@@ -27,7 +27,6 @@ services:
       SPAWN_PROTECTION: "0"
       ALLOW_NETHER: "FALSE"
       ALLOW_FLIGHT: "TRUE"
-      LEVEL_TYPE: "minecraft:flat"
       GENERATE_STRUCTURES: "FALSE"
       VIEW_DISTANCE: "10"
       SIMULATION_DISTANCE: "8"

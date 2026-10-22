@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /** All plugin commands: /play, /leave, /games, /duel, /stats and the admin command /fc. */
@@ -212,22 +213,35 @@ public final class Commands implements TabExecutor {
         }
     }
 
+    /** Generates every map one after another (chunks load asynchronously, so the server keeps running). */
     private void selftest(CommandSender sender) {
-        int ok = 0;
-        for (GameType type : GameType.values()) {
-            Game game = type.create(plugin, 9000 + type.ordinal());
-            long start = System.currentTimeMillis();
-            try {
-                game.selfTest();
-                ok++;
-                Msg.send(sender, "<green>OK</green> <white>" + type.displayName() + " <gray>(" + (System.currentTimeMillis() - start) + " ms)");
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "Selftest failed for " + type, e);
-                Msg.send(sender, "<red>FAIL</red> <white>" + type.displayName() + " <gray>" + e);
-            }
+        selftest(sender, 0, 0);
+    }
+
+    private void selftest(CommandSender sender, int index, int ok) {
+        GameType[] types = GameType.values();
+        if (index >= types.length) {
+            Msg.send(sender, "<white>Selftest finished: " + ok + "/" + types.length + " passed");
+            plugin.getLogger().info("SELFTEST RESULT " + ok + "/" + types.length);
+            return;
         }
-        Msg.send(sender, "<white>Selftest finished: " + ok + "/" + GameType.values().length + " passed");
-        plugin.getLogger().info("SELFTEST RESULT " + ok + "/" + GameType.values().length);
+        GameType type = types[index];
+        long start = System.currentTimeMillis();
+        CompletableFuture<Void> test;
+        try {
+            test = type.create(plugin, 9000 + index).selfTest();
+        } catch (Exception e) {
+            test = CompletableFuture.failedFuture(e);
+        }
+        test.whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (error == null) {
+                Msg.send(sender, "<green>OK</green> <white>" + type.displayName() + " <gray>(" + (System.currentTimeMillis() - start) + " ms)");
+            } else {
+                plugin.getLogger().log(Level.SEVERE, "Selftest failed for " + type, error);
+                Msg.send(sender, "<red>FAIL</red> <white>" + type.displayName() + " <gray>" + error);
+            }
+            selftest(sender, index + 1, error == null ? ok + 1 : ok);
+        }));
     }
 
     private Game byId(String raw) {

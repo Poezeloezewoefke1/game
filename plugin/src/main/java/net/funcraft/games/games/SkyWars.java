@@ -46,6 +46,11 @@ public final class SkyWars extends Game {
     }
 
     @Override
+    protected int[] mapArea() {
+        return new int[]{-44, -44, 44, 44};
+    }
+
+    @Override
     protected void buildMap() {
         int n = online().isEmpty() ? 8 : Math.max(2, Math.min(8, online().size()));
         // centre island

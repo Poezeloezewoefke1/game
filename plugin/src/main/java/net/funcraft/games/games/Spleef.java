@@ -27,6 +27,11 @@ public final class Spleef extends LastStanding {
     }
 
     @Override
+    protected int[] mapArea() {
+        return new int[]{-24, -24, 24, 24};
+    }
+
+    @Override
     protected void buildMap() {
         center = new Location(world, 0.5, TOP_Y + 1, 0.5);
         Build.disc(world, 0, TOP_Y, 0, RADIUS, Material.SNOW_BLOCK);

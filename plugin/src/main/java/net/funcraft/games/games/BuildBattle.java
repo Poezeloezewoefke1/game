@@ -82,6 +82,14 @@ public final class BuildBattle extends Game {
     }
 
     @Override
+    protected int[] mapArea() {
+        int count = Math.max(4, online().size());
+        int perRow = (int) Math.ceil(Math.sqrt(count));
+        int rows = (int) Math.ceil(count / (double) perRow);
+        return new int[]{-8, -8, (perRow - 1) * SPACING + SIZE + 8, (rows - 1) * SPACING + SIZE + 8};
+    }
+
+    @Override
     protected void buildMap() {
         List<String> themes = plugin.getConfig().getStringList("games.buildbattle.themes");
         if (themes.isEmpty()) {
