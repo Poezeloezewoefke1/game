@@ -86,7 +86,7 @@ public final class BedWars extends Game {
     private final Map<UUID, Integer> respawning = new HashMap<>();
     private final Map<UUID, Integer> finalKills = new HashMap<>();
     private final Map<UUID, Integer> bedsBroken = new HashMap<>();
-    private final Explosives explosives = new Explosives();
+    private final Explosives explosives = new Explosives(1.4);
     private final Set<Long> placed = new HashSet<>();
     private final List<Generator> diamondGens = new ArrayList<>();
     private final List<Generator> emeraldGens = new ArrayList<>();

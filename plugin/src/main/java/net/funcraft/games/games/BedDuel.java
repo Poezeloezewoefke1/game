@@ -37,12 +37,13 @@ public final class BedDuel extends TeamGame {
     private static final int TIME_LIMIT = 900;
 
     private final boolean fireball;
-    private final Explosives explosives = new Explosives();
+    private final Explosives explosives;
     private int islandX;
 
     private BedDuel(FunCraft plugin, int id, GameType type) {
         super(plugin, id, type);
         this.fireball = type == GameType.FIREBALL_FIGHT;
+        this.explosives = new Explosives(fireball ? 1.9 : 1.3);
     }
 
     public static BedDuel bedFight(FunCraft plugin, int id) {

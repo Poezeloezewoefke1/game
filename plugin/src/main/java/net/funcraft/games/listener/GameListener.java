@@ -174,6 +174,7 @@ public final class GameListener implements Listener {
         Game game = plugin.games().gameOf(event.getEntity().getWorld());
         if (game != null) {
             game.onExplode(event);
+            net.funcraft.games.util.Explosives.onExplode(plugin, event);
         }
     }
 

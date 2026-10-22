@@ -33,6 +33,14 @@ async function waitFor(fn, ms, step = 500) {
   return fn();
 }
 
+// Puts an item in the hand, moving it into the hotbar first if it is in the main inventory.
+async function hold(bot, item) {
+  try {
+    await bot.equip(item, 'hand');
+  } catch (e) {
+    console.log('equip error', e.message);
+  }
+}
 const hasItem = (bot, name) => bot.inventory.items().some((i) => i.name === name)
   || [5, 6, 7, 8, 45].some((s) => bot.inventory.slots[s] && bot.inventory.slots[s].name === name);
 
@@ -337,7 +345,7 @@ async function fight(a, b, ms) {
   check(hasItem(a, 'fire_charge'), 'fireball fight: kit has fireballs');
   const ballSlot = a.inventory.items().find((i) => i.name === 'fire_charge');
   if (ballSlot) {
-    a.setQuickBarSlot(ballSlot.slot - 36);
+    await hold(a, ballSlot);
     await a.look(a.entity.yaw, -Math.PI / 2, true);
     await sleep(300);
     const startY = a.entity.position.y;
@@ -378,7 +386,7 @@ async function fight(a, b, ms) {
   check(below && below.name !== 'air', `creeper duel: the map is deep (12 blocks down: ${below && below.name})`);
   const eggItem = a.inventory.items().find((i) => i.name === 'creeper_spawn_egg');
   if (eggItem) {
-    a.setQuickBarSlot(eggItem.slot - 36);
+    await hold(a, eggItem);
     rcon(inGame({ who: 'BotAlice', run: 'tp @s ~4 ~ ~' }));
     await sleep(800);
     const ground = a.blockAt(a.entity.position.offset(0, -1, 0));
@@ -414,7 +422,7 @@ async function fight(a, b, ms) {
   if (target) {
     const ball = b.inventory.items().find((i) => i.name === 'snowball');
     if (ball) {
-      b.setQuickBarSlot(ball.slot - 36);
+      await hold(b, ball);
     }
     await b.lookAt(target.position.offset(0, 1.2, 0), true);
     await sleep(200);
