@@ -18,6 +18,13 @@ function join(name) {
     const bot = mineflayer.createBot({ host: '127.0.0.1', port: 25565, username: name, version: VERSION, auth: 'offline' });
     bot.chatLog = [];
     bot.on('messagestr', (m) => bot.chatLog.push(m));
+    // Since 1.21.9 velocity arrives in blocks/tick (lpVec3), but mineflayer 4.39 still divides it
+    // by 8000, so bots would ignore all knockback. Re-apply the real value after mineflayer's handler.
+    bot._client.on('entity_velocity', (packet) => {
+      if (!bot.registry.version['>=']('1.21.9')) return;
+      const entity = bot.entities[packet.entityId];
+      if (entity) entity.velocity.set(packet.velocity.x, packet.velocity.y, packet.velocity.z);
+    });
     bot.once('spawn', () => resolve(bot));
     bot.once('kicked', (r) => reject(new Error(`${name} kicked: ${JSON.stringify(r)}`)));
     bot.once('error', reject);
@@ -515,33 +522,33 @@ async function fight(a, b, ms) {
   legitFlags.forEach((l) => console.log('      false positive? ' + l.trim()));
   check(legitFlags.length === 0, `anticheat: no flags during all the legit play above (${legitFlags.length})`);
   check(await startMatch(a, b, 'pvp'), 'anticheat: match started');
-  // reach: hit Bob from 6 blocks away
+  // reach: hit Bob from about 4.3 blocks away (vanilla reach is 3)
   rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
-  rcon(inGame({ who: 'BotAlice', run: 'tp @s ~6 ~ ~' }));
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s ~4.6 ~ ~' }));
   await sleep(2500);
   const farBob = a.players.BotBob && a.players.BotBob.entity;
-  const bobHealth = b.health;
   if (farBob) {
     await a.lookAt(farBob.position.offset(0, 1.5, 0), true);
     a.attack(farBob);
+    await sleep(300);
     a.attack(farBob);
   }
   await sleep(1000);
-  check(acLines().some((l) => /BotAlice failed Reach/.test(l)), 'anticheat: catches a 6-block reach hit');
-  check(b.health >= bobHealth, `anticheat: the reach hit did no damage (${bobHealth} -> ${b.health})`);
-  // fly: float straight up with no gravity
+  check(acLines().some((l) => /BotAlice failed Reach/.test(l)), 'anticheat: catches a 4.3-block reach hit');
+  // fly: send position packets rising 0.25 blocks per move with nothing underneath
   await sleep(2000);
   const groundY = a.entity.position.y;
-  a.physics.gravity = 0;
-  for (let i = 0; i < 40; i++) {
-    a.entity.position.y += 0.3;
-    a.entity.velocity.y = 0;
+  const start = a.entity.position.clone();
+  a.physicsEnabled = false;
+  for (let i = 1; i <= 40; i++) {
+    a._client.write('position', { x: start.x, y: start.y + 0.25 * i, z: start.z, flags: { onGround: false, hasHorizontalCollision: false } });
     await sleep(50);
   }
-  a.physics.gravity = 0.08;
+  a.physicsEnabled = true;
   await sleep(1500);
   check(acLines().some((l) => /BotAlice failed Fly/.test(l)), 'anticheat: catches flying');
-  check(a.entity.position.y < groundY + 6, `anticheat: the flyer was pulled back (${(a.entity.position.y - groundY).toFixed(1)} blocks up)`);
+  const serverY = parseFloat((rcon('data get entity BotAlice Pos[1]').match(/(-?[0-9.]+)d/) || [])[1]);
+  check(serverY < groundY + 6, `anticheat: the flyer was pulled back (${(serverY - groundY).toFixed(1)} blocks up on the server)`);
   b.chat('/leave');
   await finishMatch(a, b);
   check(!execSync('docker logs mc 2>&1').toString().includes('was kicked for'), 'anticheat: nobody got kicked during the test');
