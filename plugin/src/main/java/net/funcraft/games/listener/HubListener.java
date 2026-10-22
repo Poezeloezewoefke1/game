@@ -91,6 +91,8 @@ public final class HubListener implements Listener {
         plugin.games().quit(event.getPlayer());
         plugin.sidebars().remove(event.getPlayer());
         plugin.duels().clear(event.getPlayer());
+        plugin.parties().quit(event.getPlayer());
+        plugin.chat().remove(event.getPlayer());
         builders.remove(event.getPlayer().getUniqueId());
     }
 

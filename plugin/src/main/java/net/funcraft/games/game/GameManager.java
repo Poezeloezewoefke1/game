@@ -1,6 +1,7 @@
 package net.funcraft.games.game;
 
 import net.funcraft.games.FunCraft;
+import net.funcraft.games.Parties;
 import net.funcraft.games.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -34,28 +35,33 @@ public final class GameManager {
             return;
         }
         Game current = byPlayer.get(player.getUniqueId());
-        if (current != null && current.state() == Game.State.ENDING) {
-            // "Play again" while the previous match is still showing its results
-            current.removePlayer(player);
-            plugin.hub().send(player);
-            current = null;
+        if (current != null && current.type() == type && current.state() != Game.State.RUNNING
+                && current.state() != Game.State.ENDING) {
+            Msg.send(player, "<gray>You are already in the " + type.displayName() + " queue.");
+            return;
         }
-        if (current != null) {
-            if (current.type() == type && current.state() != Game.State.RUNNING) {
-                Msg.send(player, "<gray>You are already in the " + type.displayName() + " queue.");
-                return;
-            }
-            if (current.state() == Game.State.RUNNING) {
-                Msg.send(player, "<red>You are in a game. Type <yellow>/leave</yellow> first.");
-                return;
-            }
-            current.removePlayer(player);
+        if (!freeUp(player)) {
+            Msg.send(player, "<red>You are in a game. Type <yellow>/leave</yellow> first.");
+            return;
         }
+        // a party leader brings the rest of the party along
+        List<Player> group = new ArrayList<>();
+        group.add(player);
+        Parties.Party party = plugin.parties().of(player);
+        if (party != null && party.leader().equals(player.getUniqueId())) {
+            for (Player member : party.online()) {
+                if (!member.equals(player) && freeUp(member)) {
+                    group.add(member);
+                }
+            }
+        }
+        int max = type.maxPlayers(plugin);
+        int needed = Math.min(group.size(), max);
         Game target = null;
         for (Game game : games) {
             if (game.type() == type && !game.isPrivate() && !game.isLoading()
                     && (game.state() == Game.State.WAITING || game.state() == Game.State.STARTING)
-                    && game.players().size() < type.maxPlayers(plugin)) {
+                    && game.players().size() + needed <= max) {
                 target = game;
                 break;
             }
@@ -63,7 +69,30 @@ public final class GameManager {
         if (target == null) {
             target = create(type);
         }
-        target.addPlayer(player);
+        for (Player member : group) {
+            if (!target.addPlayer(member)) {
+                Msg.send(member, "<red>The " + type.displayName() + " queue is full, your party leader joined without you.");
+            } else if (!member.equals(player)) {
+                Msg.send(member, "<aqua>Your party leader took you to " + type.colored() + "<aqua>.");
+            }
+        }
+    }
+
+    /** Takes a player out of any queue or finished match. False if they are in a running match. */
+    private boolean freeUp(Player player) {
+        Game current = byPlayer.get(player.getUniqueId());
+        if (current == null) {
+            return true;
+        }
+        if (current.state() == Game.State.RUNNING || current.isLoading()) {
+            return false;
+        }
+        boolean ended = current.state() == Game.State.ENDING;
+        current.removePlayer(player);
+        if (ended) {
+            plugin.hub().send(player); // "Play again" while the previous match shows its results
+        }
+        return true;
     }
 
     public Game create(GameType type) {

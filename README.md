@@ -29,6 +29,8 @@ Plus:
 - **Hub:** double jump (press jump twice), launch pads, and a **parkour course** around the island with checkpoints, a timer and a best-times leaderboard.
 - **BedWars team picker:** choose your team while you're in the queue, so you can team up with friends (teams stay balanced).
 - **Spectate:** `/spectate <player>` lets you watch a friend's game.
+- **Parties:** `/party invite <friend>`. When the party leader joins a game, the whole party comes along, and in BedWars a party is kept on one team when the teams have room.
+- **Levels:** earn XP from games (10), kills (5) and wins (50). Your level `[12✫]` shows in chat, the tab list and the hub sidebar, and level-ups are announced. Your name in chat has your BedWars team colour.
 - Boss bar timers (next BedWars/SkyWars event, build time, time left), sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
 
 ## Commands
@@ -41,6 +43,7 @@ Plus:
 | `/vote` | Open the FFA kit vote |
 | `/stats [player]` | Show stats |
 | `/spectate <player>` | Watch someone's game |
+| `/party invite <player>` (`/p`) | Party up; also `accept`, `leave`, `kick`, `list`, `chat <msg>` |
 
 **Op-only (`/fc`):**
 

@@ -576,6 +576,11 @@ public abstract class Game {
         plugin.games().remove(this);
     }
 
+    /** Colour of a player's name in chat/tab while in this match (MiniMessage), or null. */
+    public String nameColor(Player player) {
+        return null;
+    }
+
     /** Command behind the end-of-game button, or null for none. */
     protected String playAgainCommand(Player player) {
         return privateMatch ? null : "/play " + type.key();

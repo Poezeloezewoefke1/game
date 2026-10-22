@@ -48,6 +48,11 @@ public final class Sidebars {
                         + Bukkit.getOnlinePlayers().size() + " online\n"),
                 net.funcraft.games.util.Msg.mm("\n<gray>/play <dark_gray>|</dark_gray> /duel <dark_gray>|</dark_gray> /spectate <dark_gray>|</dark_gray> /stats\n"));
         Game game = plugin.games().gameOf(player);
+        int level = plugin.stats().level(player.getUniqueId());
+        String nameColor = game == null ? null : game.nameColor(player);
+        String name = (nameColor == null ? "<white>" : nameColor) + player.getName();
+        plugin.chat().setPrefix(player, Stats.levelTag(level) + " " + name);
+        player.playerListName(net.funcraft.games.util.Msg.mm(Stats.levelTag(level) + " " + name));
         if (game != null) {
             sidebar.update(game.sidebarTitle(), game.sidebarFor(player));
             return;
@@ -58,6 +63,9 @@ public final class Sidebars {
         lines.add("<dark_gray>Hub");
         lines.add(" ");
         lines.add("<white>Player: <yellow>" + player.getName());
+        int xp = s.xp(id);
+        lines.add("<white>Level: " + Stats.levelTag(level) + " <gray>" + (xp - Stats.xpForLevel(level)) + "/"
+                + (Stats.xpForLevel(level + 1) - Stats.xpForLevel(level)) + " xp");
         lines.add("<white>Online: <green>" + Bukkit.getOnlinePlayers().size());
         lines.add("  ");
         lines.add("<white>Wins: <green>" + s.get(id, "total", "wins"));

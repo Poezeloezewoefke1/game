@@ -2,7 +2,7 @@ name: FunCraftGames
 version: '${version}'
 main: net.funcraft.games.FunCraft
 api-version: '1.21'
-description: BedWars, SkyWars, Build Battle, PvP, Duels, Spleef, TNT Run and Sumo with auto-generated maps.
+description: BedWars, SkyWars, Build Battle, PvP, Duels, Spleef, TNT Run, Block Party, One in the Chamber and Sumo with auto-generated maps.
 author: FunCraft
 
 commands:
@@ -25,6 +25,10 @@ commands:
   spectate:
     description: Watch a friend's game.
     usage: /spectate <player>
+  party:
+    description: Play together with friends.
+    usage: /party invite <player> | accept <leader> | leave | kick <player> | list | chat <message>
+    aliases: [p]
   vote:
     description: Vote for the kit of the FFA event.
   fc:

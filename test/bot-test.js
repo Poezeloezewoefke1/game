@@ -238,6 +238,59 @@ async function fight(a, b, ms) {
   check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'oitc: last one in wins');
   await finishMatch(a, b);
 
+  console.log('\n--- Party, chat format ---');
+  clearLogs(a, b);
+  a.chat('/party invite BotBob');
+  await sleep(1000);
+  b.chat('/party accept BotAlice');
+  check(await waitFor(() => said(a, /BotBob joined the party/), 5000), 'party: Bob joined Alice\'s party');
+  a.chat('/play spleef');
+  check(await waitFor(() => said(b, /party leader took you/), 5000), 'party: the leader\'s /play brings the party along');
+  check(/Spleef.*BotAlice.*BotBob|Spleef.*BotBob.*BotAlice/.test(rcon('fc list')), 'party: both are in the same queue');
+  a.chat('/leave');
+  b.chat('/leave');
+  await sleep(1000);
+  a.chat('hello from alice');
+  check(await waitFor(() => said(b, /\[\d+✫\] BotAlice: hello from alice/), 5000), 'chat: shows level and name');
+  a.chat('/party leave');
+  check(await waitFor(() => said(b, /party was disbanded/), 5000), 'party: leaving a 2-player party disbands it');
+
+  console.log('\n--- BedWars economy: generator -> shop ---');
+  check(await startMatch(a, b, 'bedwars'), 'bedwars economy: match started');
+  const gen = a.findBlock({ matching: (blk) => blk.name === 'gold_block', maxDistance: 12 });
+  check(!!gen, 'bedwars: found my generator');
+  if (gen) {
+    rcon(inGame({ who: 'BotAlice', run: `tp @s ${gen.position.x + 0.5} ${gen.position.y + 1} ${gen.position.z + 0.5}` }));
+    check(await waitFor(() => a.inventory.items().some((i) => i.name === 'iron_ingot' && i.count >= 6), 15000), 'bedwars: the generator gives iron');
+    const villagers = Object.values(a.entities).filter((e) => e.name === 'villager' && e.position.distanceTo(a.entity.position) < 16);
+    let bought = false;
+    for (const v of villagers) {
+      rcon(inGame({ who: 'BotAlice', run: `tp @s ${v.position.x + 1.5} ${v.position.y} ${v.position.z + 0.5}` }));
+      await sleep(800);
+      const opened = new Promise((resolve) => a.once('windowOpen', resolve));
+      a.activateEntity(v);
+      const win = await Promise.race([opened, sleep(3000).then(() => null)]);
+      if (win && /Item Shop/.test(JSON.stringify(win.title))) {
+        const before = a.inventory.items().filter((i) => i.name === 'iron_ingot').reduce((n, i) => n + i.count, 0);
+        await a.clickWindow(19, 0, 0); // 16 wool for 4 iron
+        await sleep(1500);
+        const wool = a.inventory.items().filter((i) => i.name.endsWith('_wool')).reduce((n, i) => n + i.count, 0);
+        const after = a.inventory.items().filter((i) => i.name === 'iron_ingot').reduce((n, i) => n + i.count, 0);
+        check(wool >= 16, `bedwars: bought 16 wool (${wool})`);
+        check(after < before, `bedwars: paid with iron (${before} -> ${after})`);
+        bought = true;
+        a.closeWindow(a.currentWindow || win);
+        break;
+      }
+      if (win) {
+        a.closeWindow(win);
+      }
+    }
+    check(bought, 'bedwars: found and used the item shop villager');
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
   voidPlayer('BotBob');

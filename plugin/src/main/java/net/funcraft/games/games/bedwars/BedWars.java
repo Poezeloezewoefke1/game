@@ -235,8 +235,42 @@ public final class BedWars extends Game {
         Collections.shuffle(shuffled, random);
         // players who picked a team get it, as long as teams stay balanced
         int perTeam = (int) Math.ceil(list.size() / (double) teams.size());
+        // parties first: each party goes to the emptiest team that has room for all of them
+        Set<UUID> placed = new HashSet<>();
+        for (Player p : shuffled) {
+            net.funcraft.games.Parties.Party party = plugin.parties().of(p);
+            if (party == null || placed.contains(p.getUniqueId())) {
+                continue;
+            }
+            List<Player> group = new ArrayList<>();
+            for (Player member : shuffled) {
+                if (party.members().contains(member.getUniqueId())) {
+                    group.add(member);
+                }
+            }
+            if (group.size() < 2) {
+                continue;
+            }
+            for (Player member : group) {
+                Team best = teams.get(0);
+                for (Team t : teams) {
+                    int free = perTeam - t.members.size();
+                    boolean hasMate = t.members.stream().anyMatch(id -> party.members().contains(id));
+                    int bestFree = perTeam - best.members.size();
+                    boolean bestHasMate = best.members.stream().anyMatch(id -> party.members().contains(id));
+                    if (free > 0 && (bestFree <= 0 || (hasMate && !bestHasMate) || (hasMate == bestHasMate && free > bestFree))) {
+                        best = t;
+                    }
+                }
+                assign(member, best);
+                placed.add(member.getUniqueId());
+            }
+        }
         List<Player> rest = new ArrayList<>();
         for (Player p : shuffled) {
+            if (placed.contains(p.getUniqueId())) {
+                continue;
+            }
             Team.Color4 choice = wantedTeam.get(p.getUniqueId());
             Team team = teams.stream().filter(t -> t.color == choice).findFirst().orElse(null);
             if (team != null && team.members.size() < perTeam) {
@@ -408,6 +442,12 @@ public final class BedWars extends Game {
             }
             applyEffects(p);
         }
+    }
+
+    @Override
+    public String nameColor(Player player) {
+        Team team = team(player);
+        return team == null ? null : team.color.mm;
     }
 
     Team team(Player p) {

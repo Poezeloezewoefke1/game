@@ -1,6 +1,7 @@
 package net.funcraft.games;
 
 import net.funcraft.games.game.GameType;
+import net.funcraft.games.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,11 +33,57 @@ public final class Stats {
     }
 
     private void add(Player player, GameType type, String stat) {
+        int before = level(player.getUniqueId());
         String base = player.getUniqueId().toString();
         data.set(base + ".name", player.getName());
         data.set(base + ".total." + stat, data.getInt(base + ".total." + stat) + 1);
         data.set(base + "." + type.key() + "." + stat, data.getInt(base + "." + type.key() + "." + stat) + 1);
         dirty = true;
+        int after = level(player.getUniqueId());
+        if (after > before) {
+            Msg.all(new ArrayList<>(Bukkit.getOnlinePlayers()), "<gold>" + player.getName() + " <yellow>reached " + levelTag(after) + "<yellow>!");
+            Msg.title(player, "<gold><bold>LEVEL UP!", levelTag(after), 5, 50, 10);
+            Msg.sound(player, "entity.player.levelup", 1f);
+        }
+    }
+
+    // ---------------------------------------------------------------- levels
+
+    /** XP from everything you've done: games played, kills and (mostly) wins. */
+    public int xp(UUID uuid) {
+        return get(uuid, "total", "games") * 10 + get(uuid, "total", "kills") * 5 + get(uuid, "total", "wins") * 50;
+    }
+
+    /** Level n needs 50*n*(n-1) xp in total: 0, 100, 300, 600, 1000, ... */
+    public static int levelFor(int xp) {
+        return (int) Math.floor((1 + Math.sqrt(1 + 8 * xp / 100.0)) / 2);
+    }
+
+    public static int xpForLevel(int level) {
+        return 50 * level * (level - 1);
+    }
+
+    public int level(UUID uuid) {
+        return levelFor(xp(uuid));
+    }
+
+    public static String levelColor(int level) {
+        if (level >= 50) {
+            return "<light_purple>";
+        } else if (level >= 30) {
+            return "<aqua>";
+        } else if (level >= 20) {
+            return "<gold>";
+        } else if (level >= 10) {
+            return "<yellow>";
+        } else if (level >= 5) {
+            return "<white>";
+        }
+        return "<gray>";
+    }
+
+    public static String levelTag(int level) {
+        return levelColor(level) + "[" + level + "✫]";
     }
 
     public void addWin(Player player, GameType type) {

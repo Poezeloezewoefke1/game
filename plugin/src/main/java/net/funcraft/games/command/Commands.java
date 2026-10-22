@@ -28,7 +28,7 @@ public final class Commands implements TabExecutor {
     }
 
     public void register() {
-        for (String name : List.of("play", "leave", "games", "duel", "stats", "vote", "spectate", "fc")) {
+        for (String name : List.of("play", "leave", "games", "duel", "stats", "vote", "spectate", "party", "fc")) {
             PluginCommand command = plugin.getCommand(name);
             if (command != null) {
                 command.setExecutor(this);
@@ -69,6 +69,7 @@ public final class Commands implements TabExecutor {
             case "games" -> plugin.hub().openSelector(player);
             case "duel" -> duel(player, args);
             case "vote" -> plugin.ffa().openVote(player);
+            case "party" -> party(player, args);
             case "spectate" -> {
                 Player target = args.length > 0 ? Bukkit.getPlayerExact(args[0]) : null;
                 Game game = target == null ? null : plugin.games().activeGameOf(target);
@@ -117,6 +118,48 @@ public final class Commands implements TabExecutor {
             return;
         }
         plugin.duels().challenge(player, target, kit);
+    }
+
+    private void party(Player player, String[] args) {
+        String sub = args.length == 0 ? "list" : args[0].toLowerCase(Locale.ROOT);
+        Player other = args.length > 1 ? Bukkit.getPlayerExact(args[1]) : null;
+        switch (sub) {
+            case "invite", "inv", "add" -> {
+                if (other == null) {
+                    Msg.send(player, "<red>Usage: /party invite <online player>");
+                } else {
+                    plugin.parties().invite(player, other);
+                }
+            }
+            case "accept", "join" -> {
+                if (other == null) {
+                    Msg.send(player, "<red>Usage: /party accept <leader>");
+                } else {
+                    plugin.parties().accept(player, other);
+                }
+            }
+            case "leave", "quit" -> plugin.parties().leave(player, true);
+            case "kick", "remove" -> {
+                if (other == null) {
+                    Msg.send(player, "<red>Usage: /party kick <player>");
+                } else {
+                    plugin.parties().kick(player, other);
+                }
+            }
+            case "chat", "c" -> plugin.parties().chat(player, String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)));
+            case "list", "info" -> plugin.parties().list(player);
+            default -> {
+                // "/party <name>" is a shortcut for invite
+                Player target = Bukkit.getPlayerExact(args[0]);
+                if (target != null) {
+                    plugin.parties().invite(player, target);
+                } else {
+                    Msg.raw(player, "<aqua><bold>Party</bold> <gray>- play together, the leader's /play brings everyone");
+                    Msg.raw(player, "<yellow>/party invite <player> <gray>| <yellow>/party accept <leader> <gray>| <yellow>/party leave");
+                    Msg.raw(player, "<yellow>/party kick <player> <gray>| <yellow>/party list <gray>| <yellow>/party chat <message>");
+                }
+            }
+        }
     }
 
     private void stats(CommandSender sender, String[] args) {
@@ -304,10 +347,16 @@ public final class Commands implements TabExecutor {
                     Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 }
                 case "stats", "spectate" -> Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+                case "party" -> {
+                    options.addAll(List.of("invite", "accept", "leave", "kick", "list", "chat"));
+                    Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+                }
                 case "fc" -> options.addAll(List.of("ffa", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
                 default -> {
                 }
             }
+        } else if (args.length == 2 && name.equals("party")) {
+            Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
         } else if (args.length == 2 && name.equals("duel")) {
             if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("deny")) {
                 Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));

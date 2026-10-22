@@ -20,6 +20,8 @@ public final class FunCraft extends JavaPlugin {
     private Kits kits;
     private FfaEvent ffa;
     private Parkour parkour;
+    private Parties parties;
+    private net.funcraft.games.listener.ChatListener chat;
     private HubListener hubListener;
     private int ticks;
 
@@ -33,6 +35,7 @@ public final class FunCraft extends JavaPlugin {
         kits.load();
         ffa = new FfaEvent(this);
         parkour = new Parkour(this);
+        parties = new Parties();
         games = new GameManager(this);
         sidebars = new Sidebars(this);
         duels = new Duels(this);
@@ -43,6 +46,8 @@ public final class FunCraft extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hubListener, this);
         getServer().getPluginManager().registerEvents(new GameListener(this), this);
         getServer().getPluginManager().registerEvents(parkour, this);
+        chat = new net.funcraft.games.listener.ChatListener();
+        getServer().getPluginManager().registerEvents(chat, this);
         Bukkit.getScheduler().runTaskTimer(this, parkour::tick, 40L, 2L);
         new Commands(this).register();
 
@@ -105,6 +110,14 @@ public final class FunCraft extends JavaPlugin {
 
     public Kits kits() {
         return kits;
+    }
+
+    public net.funcraft.games.listener.ChatListener chat() {
+        return chat;
+    }
+
+    public Parties parties() {
+        return parties;
     }
 
     public Parkour parkour() {
