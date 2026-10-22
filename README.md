@@ -11,7 +11,7 @@ automatically, so there's nothing to build or set up in-game.
 | **The Bridge** | Red vs Blue across a narrow bridge. Jump into the enemy's end portal to score; every point resets the round. First to 5 wins. | 2–8 |
 | **Fireball Fight** | Red vs Blue on islands far apart. Fireballs only knock back, so fireball-jump across and break their bed. Fireballs and wool regenerate. | 2–8 |
 | **SkyWars** | A 40-island archipelago with a huge castle island in the middle. Each player starts in a cage on their own island with a house. Loot the chests, bridge across and be the last one alive. Chests refill at 4:00. Pick a starter kit (Fighter, Archer, Builder, Enderman, Healer, Bomber) in the queue. | 2–8 |
-| **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode (with a floor changer), then votes on every build from *Super Poop* to *Legendary*. | 2–12 |
+| **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode (with a floor changer), then votes on every build from *Super Poop* to *Legendary*. Plots are walled in while you build, so nobody can peek or copy. | 2–12 |
 | **PvP Arena** | Free-for-all in a gladiator arena with a kit. Last one alive wins. | 2–12 |
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
 | **Spleef** | Two snow floors over the void. Dig out the snow under the others, and use snowballs too. | 2–12 |

@@ -795,6 +795,12 @@ public abstract class Game {
         onDeath(victim, killer != null && killer.equals(victim) ? null : killer);
     }
 
+    /** Credits a hit that didn't go through the damage event (e.g. a Spleef snowball) for kill attribution. */
+    protected void registerHit(Player victim, Player attacker) {
+        lastAttacker.put(victim.getUniqueId(), attacker.getUniqueId());
+        lastAttackTime.put(victim.getUniqueId(), System.currentTimeMillis());
+    }
+
     /** Shows the attacker how much health their target has left. */
     private void showHealth(Player attacker, Player victim) {
         if (!attacker.isOnline() || !victim.isOnline() || !isAlive(victim) || victim.getGameMode() == GameMode.SPECTATOR) {

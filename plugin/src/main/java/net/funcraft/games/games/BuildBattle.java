@@ -62,6 +62,7 @@ public final class BuildBattle extends Game {
 
     private final Map<UUID, Plot> plots = new LinkedHashMap<>();
     private final List<Plot> voteOrder = new ArrayList<>();
+    private final List<int[]> origins = new ArrayList<>();
     private final Map<UUID, Integer> scores = new HashMap<>();
     private final Map<UUID, Integer> currentVotes = new HashMap<>();
     private Phase phase = Phase.BUILDING;
@@ -116,6 +117,20 @@ public final class BuildBattle extends Game {
         Build.fill(world, x0, FLOOR_Y - 3, z0, x0 + SIZE - 1, FLOOR_Y - 3, z0 + SIZE - 1, Material.BEDROCK);
         Build.walls(world, x0 - 1, FLOOR_Y - 3, z0 - 1, x0 + SIZE, FLOOR_Y, z0 + SIZE, Material.SMOOTH_QUARTZ);
         Build.walls(world, x0 - 2, FLOOR_Y - 3, z0 - 2, x0 + SIZE + 1, FLOOR_Y, z0 + SIZE + 1, Material.POLISHED_BLACKSTONE);
+        // while building, every plot is a closed room: no peeking at (or copying) other builds
+        Build.walls(world, x0 - 1, FLOOR_Y + 1, z0 - 1, x0 + SIZE, FLOOR_Y + HEIGHT, z0 + SIZE, Material.WHITE_CONCRETE);
+        Build.fill(world, x0 - 1, FLOOR_Y + HEIGHT, z0 - 1, x0 + SIZE, FLOOR_Y + HEIGHT, z0 + SIZE, Material.GLASS);
+        origins.add(new int[]{x0, z0});
+    }
+
+    /** Takes the walls and glass roofs away so everyone can see the builds while voting. */
+    private void openPlots() {
+        for (int[] o : origins) {
+            int x0 = o[0];
+            int z0 = o[1];
+            Build.walls(world, x0 - 1, FLOOR_Y + 1, z0 - 1, x0 + SIZE, FLOOR_Y + HEIGHT, z0 + SIZE, Material.AIR);
+            Build.fill(world, x0 - 1, FLOOR_Y + HEIGHT, z0 - 1, x0 + SIZE, FLOOR_Y + HEIGHT, z0 + SIZE, Material.AIR);
+        }
     }
 
     private Location plotSpawn(Plot plot) {
@@ -179,6 +194,7 @@ public final class BuildBattle extends Game {
 
     private void startVoting() {
         phase = Phase.VOTING;
+        openPlots();
         voteOrder.clear();
         for (Plot plot : plots.values()) {
             if (players.contains(plot.owner())) {

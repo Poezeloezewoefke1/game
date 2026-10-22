@@ -392,6 +392,31 @@ async function fight(a, b, ms) {
   a.chat('/leave');
   await sleep(2000);
 
+  console.log('\n--- Spleef: snowballs knock you back ---');
+  check(await startMatch(a, b, 'spleef'), 'spleef: match started');
+  rcon('give BotBob snowball 8');
+  rcon(inGame({ who: 'BotBob', run: 'tp @s BotAlice' }));
+  rcon(inGame({ who: 'BotBob', run: 'tp @s ~3 ~ ~' }));
+  await sleep(1200);
+  const target = b.players.BotAlice && b.players.BotAlice.entity;
+  if (target) {
+    const ball = b.inventory.items().find((i) => i.name === 'snowball');
+    if (ball) {
+      b.setQuickBarSlot(ball.slot - 36);
+    }
+    await b.lookAt(target.position.offset(0, 1.2, 0), true);
+    await sleep(200);
+    const before = a.entity.position.clone();
+    b.activateItem();
+    await sleep(1200);
+    const moved = a.entity.position.distanceTo(before);
+    check(moved > 0.8, `spleef: a snowball knocks Alice back (${moved.toFixed(2)} blocks)`);
+  } else {
+    check(false, 'spleef: Bob can see Alice');
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
   voidPlayer('BotBob');

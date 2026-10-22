@@ -4,6 +4,7 @@ import net.funcraft.games.FunCraft;
 import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
 import net.funcraft.games.util.ItemBuilder;
+import net.funcraft.games.util.Msg;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -14,6 +15,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 /** Two snow floors over the void. Dig the snow out from under the others. */
 public final class Spleef extends LastStanding {
@@ -69,10 +71,27 @@ public final class Spleef extends LastStanding {
 
     @Override
     public void onProjectileHit(ProjectileHitEvent event) {
-        if (event.getEntity() instanceof Snowball) {
-            Block hit = event.getHitBlock();
-            if (hit != null && hit.getType() == Material.SNOW_BLOCK) {
-                hit.setType(Material.AIR);
+        if (!(event.getEntity() instanceof Snowball ball)) {
+            return;
+        }
+        Block hit = event.getHitBlock();
+        if (hit != null && hit.getType() == Material.SNOW_BLOCK) {
+            hit.setType(Material.AIR);
+        }
+        // snowballs do no damage, so vanilla gives no knockback - push the player ourselves
+        if (event.getHitEntity() instanceof Player victim && isAlive(victim) && !victim.equals(ball.getShooter())) {
+            Vector push = ball.getVelocity().setY(0);
+            if (push.lengthSquared() < 0.0001) {
+                push = victim.getLocation().toVector().subtract(ball.getLocation().toVector()).setY(0);
+            }
+            if (push.lengthSquared() > 0.0001) {
+                victim.setVelocity(victim.getVelocity().add(push.normalize().multiply(0.55).setY(0.32)));
+            }
+            Msg.sound(victim, "entity.player.hurt", 1.2f);
+            if (ball.getShooter() instanceof Player thrower) {
+                Msg.sound(thrower, "entity.arrow.hit_player", 1f);
+                // falling off right after a hit counts as a kill for the thrower
+                registerHit(victim, thrower);
             }
         }
     }
@@ -80,7 +99,7 @@ public final class Spleef extends LastStanding {
     @Override
     protected void onDamage(EntityDamageEvent event, Player victim, Player attacker) {
         if (event.getCause() == EntityDamageEvent.DamageCause.PROJECTILE) {
-            event.setDamage(0);
+            event.setCancelled(true); // the knockback is applied in onProjectileHit
         } else if (event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             event.setCancelled(true);
         }
