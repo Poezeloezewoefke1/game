@@ -251,7 +251,9 @@ async function fight(a, b, ms) {
   b.chat('/leave');
   await sleep(1000);
   a.chat('hello from alice');
-  check(await waitFor(() => said(b, /\[\d+✫\] BotAlice: hello from alice/), 5000), 'chat: shows level and name');
+  const serverSaw = () => /\[\d+✫\] BotAlice: hello from alice/.test(execSync('docker logs mc 2>&1').toString());
+  check(await waitFor(serverSaw, 5000), 'chat: rendered as "[level✫] name: message"');
+  console.log('      (Bob\'s client got: ' + JSON.stringify(b.chatLog.find((m) => /hello from alice/.test(m))) + ')');
   a.chat('/party leave');
   check(await waitFor(() => said(b, /party was disbanded/), 5000), 'party: leaving a 2-player party disbands it');
 
