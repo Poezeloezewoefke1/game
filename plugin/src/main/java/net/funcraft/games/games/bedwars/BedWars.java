@@ -4,6 +4,7 @@ import net.funcraft.games.FunCraft;
 import net.funcraft.games.game.Game;
 import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
+import net.funcraft.games.util.Explosives;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
 import org.bukkit.Bukkit;
@@ -15,13 +16,10 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Villager;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -86,7 +84,7 @@ public final class BedWars extends Game {
     private final Map<UUID, Integer> respawning = new HashMap<>();
     private final Map<UUID, Integer> finalKills = new HashMap<>();
     private final Map<UUID, Integer> bedsBroken = new HashMap<>();
-    private final Map<UUID, Long> fireballCooldown = new HashMap<>();
+    private final Explosives explosives = new Explosives();
     private final Set<Long> placed = new HashSet<>();
     private final List<Generator> diamondGens = new ArrayList<>();
     private final List<Generator> emeraldGens = new ArrayList<>();
@@ -587,16 +585,7 @@ public final class BedWars extends Game {
             }
         }
         if (b.getType() == Material.TNT) {
-            Player p = event.getPlayer();
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (b.getType() == Material.TNT) {
-                    b.setType(Material.AIR);
-                    world.spawn(b.getLocation().add(0.5, 0, 0.5), TNTPrimed.class, tnt -> {
-                        tnt.setFuseTicks(50);
-                        tnt.setSource(p);
-                    });
-                }
-            });
+            Explosives.primeNextTick(plugin, b, event.getPlayer());
             return;
         }
         placed.add(key(b));
@@ -681,25 +670,7 @@ public final class BedWars extends Game {
 
     @Override
     public void onInteract(PlayerInteractEvent event) {
-        ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.FIRE_CHARGE) {
-            return;
-        }
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-        event.setCancelled(true);
-        Player p = event.getPlayer();
-        long now = System.currentTimeMillis();
-        if (now - fireballCooldown.getOrDefault(p.getUniqueId(), 0L) < 500) {
-            return;
-        }
-        fireballCooldown.put(p.getUniqueId(), now);
-        Fireball ball = p.launchProjectile(Fireball.class);
-        ball.setYield(2.5f);
-        ball.setIsIncendiary(false);
-        ball.setVelocity(p.getLocation().getDirection().multiply(1.4));
-        item.setAmount(item.getAmount() - 1);
+        explosives.handleFireball(event);
     }
 
     @Override

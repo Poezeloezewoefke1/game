@@ -4,6 +4,7 @@ import net.funcraft.games.FunCraft;
 import net.funcraft.games.Kits;
 import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
+import net.funcraft.games.util.Explosives;
 import net.funcraft.games.util.Msg;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -32,6 +34,7 @@ public final class PvpArena extends LastStanding {
     private Kits.Kit kit;
     private boolean event;
     private final Set<Block> placed = new HashSet<>();
+    private final Explosives explosives = new Explosives();
 
     public PvpArena(FunCraft plugin, int id, GameType type) {
         super(plugin, id, type);
@@ -138,7 +141,16 @@ public final class PvpArena extends LastStanding {
             e.setCancelled(true);
             return;
         }
+        if (b.getType() == Material.TNT) {
+            Explosives.primeNextTick(plugin, b, e.getPlayer());
+            return;
+        }
         placed.add(b);
+    }
+
+    @Override
+    public void onInteract(PlayerInteractEvent e) {
+        explosives.handleFireball(e);
     }
 
     @Override

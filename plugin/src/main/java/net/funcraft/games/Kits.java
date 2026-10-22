@@ -3,6 +3,7 @@ package net.funcraft.games;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import net.funcraft.games.util.ItemBuilder;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -12,6 +13,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.CrossbowMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionType;
 
@@ -106,7 +108,10 @@ public final class Kits {
                 parseItem(k.getString("boots")), parseItem(k.getString("offhand")), items);
     }
 
-    /** Parses "material [xCOUNT] [enchant:level ...] [potion:type]". Unknown parts are skipped. */
+    /**
+     * Parses "material [xCOUNT] [enchant:level ...] [potion:type] [unbreakable] [color:#RRGGBB] [charged:potion]".
+     * Unknown parts are skipped.
+     */
     private ItemStack parseItem(String spec) {
         if (spec == null || spec.isBlank()) {
             return null;
@@ -120,12 +125,25 @@ public final class Kits {
         int amount = 1;
         List<String[]> enchants = new ArrayList<>();
         String potion = null;
+        String charged = null;
+        Color color = null;
+        boolean unbreakable = false;
         for (int i = 1; i < parts.length; i++) {
             String p = parts[i].toLowerCase(Locale.ROOT);
             if (p.startsWith("x") && p.length() > 1 && p.substring(1).chars().allMatch(Character::isDigit)) {
                 amount = Integer.parseInt(p.substring(1));
             } else if (p.startsWith("potion:")) {
                 potion = p.substring(7);
+            } else if (p.startsWith("charged:")) {
+                charged = p.substring(8);
+            } else if (p.startsWith("color:")) {
+                try {
+                    color = Color.fromRGB(Integer.parseInt(p.substring(6).replace("#", ""), 16) & 0xFFFFFF);
+                } catch (NumberFormatException e) {
+                    plugin.getLogger().warning("Bad color '" + p + "' in kits.yml (use color:#RRGGBB)");
+                }
+            } else if (p.equals("unbreakable")) {
+                unbreakable = true;
             } else if (p.contains(":")) {
                 enchants.add(p.split(":", 2));
             }
@@ -139,8 +157,29 @@ public final class Kits {
             }
             builder.enchant(enchantment, Integer.parseInt(e[1]));
         }
+        if (unbreakable) {
+            builder.unbreakable();
+        }
+        if (color != null) {
+            builder.color(color);
+        }
         ItemStack item = builder.build();
-        if (potion != null && item.getItemMeta() instanceof PotionMeta meta) {
+        if (potion != null) {
+            applyPotion(item, potion);
+        }
+        if (charged != null && item.getItemMeta() instanceof CrossbowMeta meta) {
+            ItemStack arrow = new ItemStack(charged.equals("arrow") ? Material.ARROW : Material.TIPPED_ARROW);
+            if (arrow.getType() == Material.TIPPED_ARROW) {
+                applyPotion(arrow, charged);
+            }
+            meta.addChargedProjectile(arrow);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private void applyPotion(ItemStack item, String potion) {
+        if (item.getItemMeta() instanceof PotionMeta meta) {
             PotionType type = Registry.POTION.get(NamespacedKey.minecraft(potion));
             if (type != null) {
                 meta.setBasePotionType(type);
@@ -149,7 +188,6 @@ public final class Kits {
                 plugin.getLogger().warning("Unknown potion '" + potion + "' in kits.yml");
             }
         }
-        return item;
     }
 
     public Kit get(String id) {

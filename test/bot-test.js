@@ -88,6 +88,24 @@ async function playGame(a, b, game, expectItem) {
   a.chat('/leave');
   await sleep(2000);
 
+  console.log('\n--- duel with an uploaded kit (fireball fight) ---');
+  a.chat('/duel BotBob fireballfight');
+  await sleep(1500);
+  b.chat('/duel accept BotAlice');
+  check(await waitFor(() => /RUNNING/.test(rcon('fc list')), 20000, 1000), 'fireball duel: match started');
+  await sleep(4000);
+  check(hasItem(a, 'fire_charge') && hasItem(b, 'blue_wool'), 'fireball duel: kit has fireballs and wool');
+  a.setQuickBarSlot(4);
+  await sleep(300);
+  a.activateItem();
+  await sleep(1000);
+  const ballsLeft = a.inventory.items().filter((i) => i.name === 'fire_charge').reduce((n, i) => n + i.count, 0);
+  check(ballsLeft === 5, `fireball duel: right-click threw a fireball (${ballsLeft} left)`);
+  b.chat('/leave');
+  await waitFor(() => !/RUNNING|ENDING/.test(rcon('fc list')), 20000, 1000);
+  a.chat('/leave');
+  await sleep(2000);
+
   console.log('\n--- FFA kit vote event ---');
   a.chat('/fc ffa');
   await sleep(2000);

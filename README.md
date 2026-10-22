@@ -18,7 +18,7 @@ automatically, so there's nothing to build or set up in-game.
 Plus:
 - **Hub island** with an NPC for every game, a game-selector compass, a live player count and a top-wins leaderboard.
 - **FFA event for ops:** `/fc ffa` starts a kit vote for everyone online. When the vote ends, **everyone online is put in one big FFA**. If you die you spectate, and the last one alive wins.
-- **9 PvP kits:** Classic, Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP and Crystal. They're used by the FFA event, the PvP Arena and duels.
+- **16 PvP kits:** Classic, Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP, Crystal, Bed Fight, Bridge, Creeper PvP, Dia SMP, Fireball Fight, Spear Elytra and Spear Mace. They're used by the FFA event, the PvP Arena and duels. Fire charges throw fireballs and TNT lights itself.
 - **Stats:** wins, kills, deaths, games and K/D per game (`/stats`), shown in the sidebar.
 - Sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
 
@@ -88,7 +88,7 @@ Recommended: at least 4 GB of RAM for the server.
 After the first start these files are in `data/plugins/FunCraftGames/` (Docker) or `server/plugins/FunCraftGames/`:
 
 - `config.yml`: enable/disable games, min/max players, countdown, Build Battle time and themes, the kit for the PvP queue and duels, FFA vote length, server name.
-- `kits.yml`: all PvP kits. The format is simple, one line per item: `"netherite_sword sharpness:5 unbreaking:3"`, `"golden_apple x64"`, `"splash_potion potion:strong_healing"`. Add your own and run `/fc reload`.
+- `kits.yml`: all PvP kits. The format is simple, one line per item: `"netherite_sword sharpness:5 unbreaking:3"`, `"golden_apple x64"`, `"splash_potion potion:strong_healing"`, `"leather_chestplate unbreakable color:#FF5555"`, `"crossbow quick_charge:1 charged:strong_harming"`. Add your own and run `/fc reload`.
 - `stats.yml`: everybody's stats.
 
 ## How it works
@@ -118,4 +118,5 @@ CI (`.github/workflows/build.yml`) builds the plugin and starts a real Paper ser
 
 The Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP and Crystal kits follow the MCTiers default
 kit layouts as collected in [HelixCraft/Minecraft-PVP-Kits](https://github.com/HelixCraft/Minecraft-PVP-Kits).
-They were rewritten as `kits.yml` entries for this plugin.
+They were rewritten as `kits.yml` entries for this plugin. The Bed Fight, Bridge, Creeper PvP, Dia SMP, Fireball Fight,
+Spear Elytra and Spear Mace kits were converted from PlayerKits `.dat` files.
