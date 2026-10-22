@@ -1,0 +1,8 @@
+{
+  "name": "funcraft-bot-test",
+  "private": true,
+  "description": "Joins the test server with two bots and plays through the minigames.",
+  "dependencies": {
+    "mineflayer": "^4.39.0"
+  }
+}

@@ -1,0 +1,41 @@
+# FunCraft minigame server.
+#
+#   1. Put FunCraftGames.jar into the ./plugins folder (see README.md)
+#   2. docker compose up -d
+#   3. Join localhost (or your public IP / tunnel address)
+#
+# Server files (worlds, configs, stats) end up in ./data.
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: funcraft
+    ports:
+      - "25565:25565"
+    environment:
+      EULA: "TRUE"
+      TYPE: PAPER
+      # Minecraft version. LATEST = newest Paper release. Pin it (e.g. "1.21.11")
+      # if your friends play on an older client.
+      VERSION: "LATEST"
+      MEMORY: "4G"
+      MOTD: "§6§lFunCraft §7- §eBedWars, SkyWars, Build Battle & more!"
+      MAX_PLAYERS: "30"
+      # Your Minecraft name(s), comma separated - ops can use /fc (e.g. /fc ffa).
+      OPS: ""
+      DIFFICULTY: "normal"
+      MODE: "adventure"
+      SPAWN_PROTECTION: "0"
+      ALLOW_NETHER: "FALSE"
+      ALLOW_FLIGHT: "TRUE"
+      LEVEL_TYPE: "minecraft:flat"
+      GENERATE_STRUCTURES: "FALSE"
+      VIEW_DISTANCE: "10"
+      SIMULATION_DISTANCE: "8"
+      # Optional: let players on other client versions join.
+      # MODRINTH_PROJECTS: "viaversion,viabackwards"
+    volumes:
+      - ./data:/data
+      - ./plugins:/plugins:ro
+    restart: unless-stopped
+    tty: true
+    stdin_open: true

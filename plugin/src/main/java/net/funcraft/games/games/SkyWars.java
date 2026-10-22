@@ -1,0 +1,301 @@
+package net.funcraft.games.games;
+
+import net.funcraft.games.FunCraft;
+import net.funcraft.games.game.Game;
+import net.funcraft.games.game.GameType;
+import net.funcraft.games.util.Build;
+import net.funcraft.games.util.ItemBuilder;
+import net.funcraft.games.util.Msg;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
+
+/** Solo SkyWars: own island, loot chests, bridge to the middle, last one alive wins. */
+public final class SkyWars extends Game {
+
+    private static final int Y = 64;
+    private static final int RING = 34;
+    private static final int CAGE_SECONDS = 5;
+    private static final int REFILL_AT = 240;
+    private static final int DEATHMATCH_AT = 600;
+    private static final int END_AT = 900;
+    private static final int BUILD_LIMIT = 110;
+
+    private final List<Location> spawns = new ArrayList<>();
+    private final List<Block> islandChests = new ArrayList<>();
+    private final List<Block> centerChests = new ArrayList<>();
+    private boolean cagesOpen;
+
+    public SkyWars(FunCraft plugin, int id) {
+        super(plugin, id, GameType.SKYWARS);
+    }
+
+    @Override
+    protected void buildMap() {
+        int n = online().isEmpty() ? 8 : Math.max(2, Math.min(8, online().size()));
+        // centre island
+        Build.island(world, 0, Y, 0, 11, Material.GRASS_BLOCK, random);
+        Build.disc(world, 0, Y, 0, 4.5, Material.STONE_BRICKS);
+        Build.disc(world, 0, Y, 0, 1.5, Material.CHISELED_STONE_BRICKS);
+        Build.tree(world, 7, Y + 1, 2, random);
+        Build.tree(world, -6, Y + 1, -5, random);
+        int[][] mid = {{3, 0}, {-3, 0}, {0, 3}, {0, -3}};
+        BlockFace[] faces = {BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH, BlockFace.NORTH};
+        for (int i = 0; i < mid.length; i++) {
+            Build.directional(world, mid[i][0], Y + 1, mid[i][1], Material.CHEST, faces[i]);
+            centerChests.add(world.getBlockAt(mid[i][0], Y + 1, mid[i][1]));
+        }
+        // small stepping islands between the ring and the centre
+        for (int i = 0; i < n; i++) {
+            double a = Math.toRadians(i * 360.0 / n + 180.0 / n);
+            int x = (int) Math.round(Math.cos(a) * 20);
+            int z = (int) Math.round(Math.sin(a) * 20);
+            Build.island(world, x, Y - 2, z, 3.5, Material.GRASS_BLOCK, random);
+            Build.directional(world, x, Y - 1, z, Material.CHEST, BlockFace.NORTH);
+            islandChests.add(world.getBlockAt(x, Y - 1, z));
+        }
+        // player islands
+        for (int i = 0; i < n; i++) {
+            double a = Math.toRadians(i * 360.0 / n);
+            int x = (int) Math.round(Math.cos(a) * RING);
+            int z = (int) Math.round(Math.sin(a) * RING);
+            Build.island(world, x, Y, z, 5.5, Material.GRASS_BLOCK, random);
+            Build.set(world, x, Y - 1, z, Material.IRON_ORE);
+            int ox = (int) Math.round(Math.cos(a) * 3);
+            int oz = (int) Math.round(Math.sin(a) * 3);
+            Build.directional(world, x + ox - oz, Y + 1, z + oz + ox, Material.CHEST, BlockFace.NORTH);
+            Build.directional(world, x + ox + oz, Y + 1, z + oz - ox, Material.CHEST, BlockFace.NORTH);
+            islandChests.add(world.getBlockAt(x + ox - oz, Y + 1, z + oz + ox));
+            islandChests.add(world.getBlockAt(x + ox + oz, Y + 1, z + oz - ox));
+            Build.cage(world, x, Y + 3, z, Material.GLASS);
+            Location spawn = new Location(world, x + 0.5, Y + 3, z + 0.5);
+            spawns.add(Build.lookAt(spawn, new Location(world, 0.5, Y + 3, 0.5)));
+        }
+        fillChests();
+    }
+
+    private void fillChests() {
+        for (int i = 0; i < islandChests.size(); i++) {
+            // the first chest of each player island always has the basics
+            boolean starter = i >= islandChests.size() - spawns.size() * 2 && (i - (islandChests.size() - spawns.size() * 2)) % 2 == 0;
+            fill(islandChests.get(i), false, starter);
+        }
+        for (Block b : centerChests) {
+            fill(b, true, false);
+        }
+    }
+
+    private void fill(Block block, boolean center, boolean starter) {
+        if (!(block.getState() instanceof Chest chest)) {
+            return;
+        }
+        Inventory inv = chest.getBlockInventory();
+        inv.clear();
+        List<ItemStack> items = new ArrayList<>();
+        if (starter) {
+            items.add(new ItemStack(random.nextBoolean() ? Material.STONE : Material.OAK_PLANKS, 48));
+            items.add(ItemBuilder.of(random.nextBoolean() ? Material.STONE_SWORD : Material.IRON_SWORD).build());
+            items.add(new ItemStack(pick(Material.IRON_CHESTPLATE, Material.CHAINMAIL_CHESTPLATE, Material.IRON_LEGGINGS)));
+            items.add(new ItemStack(Material.STONE_PICKAXE));
+            items.add(new ItemStack(Material.COOKED_BEEF, 8));
+        }
+        int rolls = center ? 6 + random.nextInt(3) : 4 + random.nextInt(3);
+        for (int i = 0; i < rolls; i++) {
+            items.add(center ? centerLoot() : normalLoot());
+        }
+        List<Integer> slots = new ArrayList<>();
+        for (int i = 0; i < inv.getSize(); i++) {
+            slots.add(i);
+        }
+        Collections.shuffle(slots, random);
+        for (int i = 0; i < items.size() && i < slots.size(); i++) {
+            inv.setItem(slots.get(i), items.get(i));
+        }
+    }
+
+    private Material pick(Material... options) {
+        return options[random.nextInt(options.length)];
+    }
+
+    private ItemStack normalLoot() {
+        List<Supplier<ItemStack>> table = List.of(
+                () -> new ItemStack(pick(Material.STONE, Material.OAK_PLANKS, Material.COBBLESTONE), 16 + random.nextInt(33)),
+                () -> new ItemStack(pick(Material.STONE, Material.OAK_PLANKS), 32),
+                () -> new ItemStack(pick(Material.STONE_SWORD, Material.IRON_SWORD, Material.STONE_AXE)),
+                () -> new ItemStack(pick(Material.LEATHER_HELMET, Material.CHAINMAIL_HELMET, Material.IRON_HELMET, Material.GOLDEN_HELMET)),
+                () -> new ItemStack(pick(Material.LEATHER_CHESTPLATE, Material.CHAINMAIL_CHESTPLATE, Material.IRON_CHESTPLATE)),
+                () -> new ItemStack(pick(Material.LEATHER_LEGGINGS, Material.CHAINMAIL_LEGGINGS, Material.IRON_LEGGINGS)),
+                () -> new ItemStack(pick(Material.LEATHER_BOOTS, Material.CHAINMAIL_BOOTS, Material.IRON_BOOTS)),
+                () -> new ItemStack(Material.SNOWBALL, 8 + random.nextInt(9)),
+                () -> new ItemStack(Material.EGG, 8 + random.nextInt(9)),
+                () -> new ItemStack(pick(Material.COOKED_BEEF, Material.BREAD, Material.COOKED_PORKCHOP, Material.APPLE), 3 + random.nextInt(6)),
+                () -> new ItemStack(Material.ARROW, 6 + random.nextInt(10)),
+                () -> new ItemStack(Material.BOW),
+                () -> new ItemStack(Material.IRON_PICKAXE),
+                () -> new ItemStack(Material.WATER_BUCKET),
+                () -> new ItemStack(Material.LAVA_BUCKET),
+                () -> new ItemStack(Material.GOLDEN_APPLE),
+                () -> new ItemStack(Material.FISHING_ROD),
+                () -> new ItemStack(Material.EXPERIENCE_BOTTLE, 4));
+        return table.get(random.nextInt(table.size())).get();
+    }
+
+    private ItemStack centerLoot() {
+        List<Supplier<ItemStack>> table = List.of(
+                () -> new ItemStack(pick(Material.DIAMOND_HELMET, Material.DIAMOND_BOOTS, Material.IRON_HELMET)),
+                () -> new ItemStack(pick(Material.DIAMOND_CHESTPLATE, Material.DIAMOND_LEGGINGS, Material.IRON_CHESTPLATE)),
+                () -> ItemBuilder.of(Material.DIAMOND_SWORD).build(),
+                () -> ItemBuilder.of(Material.IRON_SWORD).enchant(Enchantment.SHARPNESS, 2).build(),
+                () -> ItemBuilder.of(Material.BOW).enchant(Enchantment.POWER, 2).build(),
+                () -> ItemBuilder.of(Material.BOW).enchant(Enchantment.PUNCH, 1).build(),
+                () -> new ItemStack(Material.ARROW, 16),
+                () -> new ItemStack(Material.ENDER_PEARL, 1 + random.nextInt(2)),
+                () -> new ItemStack(Material.GOLDEN_APPLE, 1 + random.nextInt(2)),
+                () -> new ItemStack(Material.OAK_PLANKS, 64),
+                () -> new ItemStack(Material.TNT, 2 + random.nextInt(3)),
+                () -> new ItemStack(Material.FLINT_AND_STEEL),
+                () -> ItemBuilder.of(Material.DIAMOND_PICKAXE).enchant(Enchantment.EFFICIENCY, 2).build(),
+                () -> ItemBuilder.of(Material.SPLASH_POTION).name("<red>Splash Potion of Healing")
+                        .potion(PotionEffectType.INSTANT_HEALTH, 1, 1).build(),
+                () -> ItemBuilder.of(Material.POTION).name("<aqua>Potion of Speed")
+                        .potion(PotionEffectType.SPEED, 60, 1).build(),
+                () -> new ItemStack(Material.COOKED_BEEF, 10));
+        return table.get(random.nextInt(table.size())).get();
+    }
+
+    @Override
+    protected void onStart(List<Player> list) {
+        Collections.shuffle(spawns, random);
+        for (int i = 0; i < list.size(); i++) {
+            Player p = list.get(i);
+            p.teleport(spawns.get(i % spawns.size()));
+            Msg.title(p, "<aqua><bold>SkyWars", "<gray>Cages open in " + CAGE_SECONDS + " seconds", 5, 40, 10);
+        }
+    }
+
+    @Override
+    protected void onSecond() {
+        if (!cagesOpen) {
+            int left = CAGE_SECONDS - elapsed;
+            if (left > 0) {
+                Msg.title(alivePlayers(), "<yellow>" + left, "<gray>Get ready...");
+                Msg.sound(alivePlayers(), "block.note_block.hat", 1.5f);
+                return;
+            }
+            cagesOpen = true;
+            for (Location s : spawns) {
+                Build.removeCage(world, s.getBlockX(), s.getBlockY(), s.getBlockZ());
+            }
+            Msg.title(alivePlayers(), "<green><bold>GO!", "<gray>Loot your chests and fight!");
+            Msg.sound(alivePlayers(), "entity.player.levelup", 1f);
+            return;
+        }
+        int t = elapsed;
+        if (t == REFILL_AT) {
+            fillChests();
+            Msg.all(online(), "<gold>All chests have been refilled!");
+            Msg.sound(online(), "block.chest.open", 1f);
+        } else if (t == DEATHMATCH_AT) {
+            Msg.all(online(), "<red><bold>Deathmatch!</bold> <gray>Everyone glows and gets Speed I.");
+            for (Player p : alivePlayers()) {
+                p.setGlowing(true);
+                p.addPotionEffect(new org.bukkit.potion.PotionEffect(PotionEffectType.SPEED, 20 * 600, 0));
+            }
+        } else if (t >= END_AT) {
+            end(null, List.of());
+        }
+    }
+
+    @Override
+    protected void onDeath(Player victim, Player killer) {
+        deathMessage(victim, killer, null);
+        Location at = victim.getLocation();
+        if (at.getY() > voidLevel() + 2) {
+            for (ItemStack item : victim.getInventory().getContents()) {
+                if (item != null && item.getType() != Material.AIR) {
+                    world.dropItemNaturally(at, item);
+                }
+            }
+        }
+        eliminate(victim, true);
+        if (alive.size() > 1) {
+            Msg.all(online(), "<gray>" + alive.size() + " players remaining.");
+        }
+    }
+
+    @Override
+    protected void onDamage(EntityDamageEvent event, Player victim, Player attacker) {
+        if (!cagesOpen && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+            event.setCancelled(true);
+        }
+    }
+
+    @Override
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (!cagesOpen) {
+            event.setCancelled(true);
+        }
+    }
+
+    @Override
+    public void onBlockPlace(BlockPlaceEvent event) {
+        if (!cagesOpen || event.getBlock().getY() > BUILD_LIMIT) {
+            event.setCancelled(true);
+        }
+    }
+
+    @Override
+    protected boolean allowHunger() {
+        return true;
+    }
+
+    @Override
+    protected boolean allowItemDrops() {
+        return true;
+    }
+
+    @Override
+    protected double voidLevel() {
+        return 20;
+    }
+
+    @Override
+    protected Location spectatorSpawn() {
+        return new Location(world, 0.5, Y + 20, 0.5, 0, 60);
+    }
+
+    @Override
+    protected List<String> sidebar(Player player) {
+        List<String> lines = new ArrayList<>();
+        lines.add("<dark_gray>#" + id);
+        lines.add(" ");
+        lines.add("<white>Players left: <green>" + alive.size());
+        String next;
+        if (elapsed < REFILL_AT) {
+            next = "Refill " + Msg.time(REFILL_AT - elapsed);
+        } else if (elapsed < DEATHMATCH_AT) {
+            next = "Deathmatch " + Msg.time(DEATHMATCH_AT - elapsed);
+        } else {
+            next = "Game end " + Msg.time(END_AT - elapsed);
+        }
+        lines.add("<white>Next: <yellow>" + next);
+        lines.add("  ");
+        lines.add("<white>Kills: <red>" + kills.getOrDefault(player.getUniqueId(), 0));
+        return lines;
+    }
+}

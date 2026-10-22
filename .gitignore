@@ -1,0 +1,13 @@
+# Gradle
+plugin/.gradle/
+plugin/build/
+# Server data created by docker compose / start scripts
+data/
+server/*
+!server/start.sh
+!server/start.bat
+plugins/*.jar
+*.log
+.idea/
+*.iml
+.DS_Store

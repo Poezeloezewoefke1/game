@@ -1,0 +1,289 @@
+package net.funcraft.games.command;
+
+import net.funcraft.games.FunCraft;
+import net.funcraft.games.game.Game;
+import net.funcraft.games.game.GameType;
+import net.funcraft.games.util.Msg;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.logging.Level;
+
+/** All plugin commands: /play, /leave, /games, /duel, /stats and the admin command /fc. */
+public final class Commands implements TabExecutor {
+
+    private final FunCraft plugin;
+
+    public Commands(FunCraft plugin) {
+        this.plugin = plugin;
+    }
+
+    public void register() {
+        for (String name : List.of("play", "leave", "games", "duel", "stats", "vote", "fc")) {
+            PluginCommand command = plugin.getCommand(name);
+            if (command != null) {
+                command.setExecutor(this);
+                command.setTabCompleter(this);
+            }
+        }
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        String name = command.getName().toLowerCase(Locale.ROOT);
+        if (name.equals("fc")) {
+            admin(sender, args);
+            return true;
+        }
+        if (name.equals("stats")) {
+            stats(sender, args);
+            return true;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Only players can use this command.");
+            return true;
+        }
+        switch (name) {
+            case "play" -> {
+                if (args.length == 0) {
+                    plugin.hub().openSelector(player);
+                    return true;
+                }
+                GameType type = GameType.parse(String.join("", args));
+                if (type == null) {
+                    Msg.send(player, "<red>Unknown game. Try: <yellow>" + gameList());
+                } else {
+                    plugin.games().join(player, type);
+                }
+            }
+            case "leave" -> plugin.games().leave(player);
+            case "games" -> plugin.hub().openSelector(player);
+            case "duel" -> duel(player, args);
+            case "vote" -> plugin.ffa().openVote(player);
+            default -> {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void duel(Player player, String[] args) {
+        if (args.length == 0) {
+            Msg.send(player, "<gray>Usage: <yellow>/duel <player></yellow>, <yellow>/duel accept <player></yellow>, <yellow>/duel deny <player>");
+            return;
+        }
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        if ((sub.equals("accept") || sub.equals("deny")) && args.length >= 2) {
+            Player other = Bukkit.getPlayerExact(args[1]);
+            if (other == null) {
+                Msg.send(player, "<red>That player is not online.");
+                return;
+            }
+            if (sub.equals("accept")) {
+                plugin.duels().accept(player, other);
+            } else {
+                plugin.duels().deny(player, other);
+            }
+            return;
+        }
+        Player target = Bukkit.getPlayerExact(args[0]);
+        if (target == null) {
+            Msg.send(player, "<red>That player is not online.");
+            return;
+        }
+        String kit = args.length > 1 ? args[1] : null;
+        if (kit != null && plugin.kits().get(kit) == null) {
+            Msg.send(player, "<red>Unknown kit. Kits: <yellow>" + plugin.ffa().kitNames());
+            return;
+        }
+        plugin.duels().challenge(player, target, kit);
+    }
+
+    private void stats(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Only players can use this command.");
+            return;
+        }
+        UUID target = player.getUniqueId();
+        if (args.length > 0) {
+            Player online = Bukkit.getPlayerExact(args[0]);
+            target = online != null ? online.getUniqueId() : plugin.stats().find(args[0]);
+            if (target == null) {
+                Msg.send(player, "<red>No stats found for " + Msg.escape(args[0]) + ".");
+                return;
+            }
+        }
+        plugin.hub().openStats(player, target);
+    }
+
+    private void admin(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("funcraft.admin")) {
+            Msg.send(sender, "<red>You don't have permission.");
+            return;
+        }
+        String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "list" -> {
+                if (plugin.games().games().isEmpty()) {
+                    Msg.send(sender, "<gray>No games right now.");
+                }
+                for (Game game : plugin.games().games()) {
+                    List<String> names = new ArrayList<>();
+                    game.online().forEach(p -> names.add(p.getName()));
+                    Msg.send(sender, "<yellow>#" + game.id() + " <white>" + game.type().displayName() + " <gray>"
+                            + game.state() + " <dark_gray>- <white>" + String.join(", ", names));
+                }
+            }
+            case "start", "forcestart" -> {
+                Game game = null;
+                if (args.length > 1) {
+                    game = byId(args[1]);
+                } else if (sender instanceof Player p) {
+                    game = plugin.games().gameOf(p);
+                }
+                if (game == null) {
+                    Msg.send(sender, "<red>Join a queue first (or give a game id from /fc list).");
+                    return;
+                }
+                game.forceStart();
+                Msg.send(sender, "<green>Starting " + game.name() + ".");
+            }
+            case "stop" -> {
+                Game game = args.length > 1 ? byId(args[1]) : sender instanceof Player p ? plugin.games().gameOf(p) : null;
+                if (game == null) {
+                    Msg.send(sender, "<red>Unknown game.");
+                    return;
+                }
+                if (game.state() == Game.State.RUNNING) {
+                    game.end(null, List.of());
+                } else {
+                    game.finish();
+                }
+                Msg.send(sender, "<green>Stopped " + game.name() + ".");
+            }
+            case "build" -> {
+                if (sender instanceof Player p) {
+                    boolean on = plugin.hubListener().toggleBuild(p);
+                    Msg.send(p, on ? "<green>Hub build mode enabled (needs creative mode)." : "<gray>Hub build mode disabled.");
+                }
+            }
+            case "rebuildhub" -> {
+                plugin.hub().build();
+                Msg.send(sender, "<green>Hub rebuilt.");
+            }
+            case "reload" -> {
+                plugin.reloadConfig();
+                plugin.kits().load();
+                Msg.send(sender, "<green>Config reloaded.");
+            }
+            case "selftest" -> selftest(sender);
+            case "ffa" -> {
+                if (!(sender instanceof Player p)) {
+                    Msg.send(sender, "<red>Run this in-game.");
+                    return;
+                }
+                if (args.length > 1 && args[1].equalsIgnoreCase("cancel")) {
+                    plugin.ffa().cancel(p);
+                } else {
+                    plugin.ffa().start(p, args.length > 1 ? args[1] : null);
+                }
+            }
+            default -> {
+                Msg.raw(sender, "<gold><bold>FunCraft admin</bold>");
+                Msg.raw(sender, "<yellow>/fc ffa <gray>- start a kit vote, then put everyone online into an FFA");
+                Msg.raw(sender, "<yellow>/fc ffa <kit> <gray>- start the FFA right away with that kit");
+                Msg.raw(sender, "<yellow>/fc ffa cancel <gray>- cancel the running kit vote");
+                Msg.raw(sender, "<yellow>/fc list <gray>- show running games");
+                Msg.raw(sender, "<yellow>/fc start [id] <gray>- force start a queue (works solo too)");
+                Msg.raw(sender, "<yellow>/fc stop [id] <gray>- end a game");
+                Msg.raw(sender, "<yellow>/fc build <gray>- toggle building in the hub");
+                Msg.raw(sender, "<yellow>/fc rebuildhub <gray>- regenerate the hub island");
+                Msg.raw(sender, "<yellow>/fc reload <gray>- reload config.yml");
+                Msg.raw(sender, "<yellow>/fc selftest <gray>- generate every map once to check it works");
+            }
+        }
+    }
+
+    private void selftest(CommandSender sender) {
+        int ok = 0;
+        for (GameType type : GameType.values()) {
+            Game game = type.create(plugin, 9000 + type.ordinal());
+            long start = System.currentTimeMillis();
+            try {
+                game.selfTest();
+                ok++;
+                Msg.send(sender, "<green>OK</green> <white>" + type.displayName() + " <gray>(" + (System.currentTimeMillis() - start) + " ms)");
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Selftest failed for " + type, e);
+                Msg.send(sender, "<red>FAIL</red> <white>" + type.displayName() + " <gray>" + e);
+            }
+        }
+        Msg.send(sender, "<white>Selftest finished: " + ok + "/" + GameType.values().length + " passed");
+        plugin.getLogger().info("SELFTEST RESULT " + ok + "/" + GameType.values().length);
+    }
+
+    private Game byId(String raw) {
+        try {
+            int id = Integer.parseInt(raw.replace("#", ""));
+            for (Game game : plugin.games().games()) {
+                if (game.id() == id) {
+                    return game;
+                }
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return null;
+    }
+
+    private static String gameList() {
+        List<String> keys = new ArrayList<>();
+        for (GameType type : GameType.values()) {
+            keys.add(type.key());
+        }
+        return String.join(", ", keys);
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        String name = command.getName().toLowerCase(Locale.ROOT);
+        List<String> options = new ArrayList<>();
+        if (args.length == 1) {
+            switch (name) {
+                case "play" -> {
+                    for (GameType type : GameType.values()) {
+                        options.add(type.key());
+                    }
+                }
+                case "duel" -> {
+                    options.add("accept");
+                    options.add("deny");
+                    Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+                }
+                case "stats" -> Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+                case "fc" -> options.addAll(List.of("ffa", "list", "start", "stop", "build", "rebuildhub", "reload", "selftest"));
+                default -> {
+                }
+            }
+        } else if (args.length == 2 && name.equals("duel")) {
+            if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("deny")) {
+                Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+            } else {
+                plugin.kits().all().forEach(k -> options.add(k.id()));
+            }
+        } else if (args.length == 2 && name.equals("fc") && args[0].equalsIgnoreCase("ffa")) {
+            options.add("cancel");
+            plugin.kits().all().forEach(k -> options.add(k.id()));
+        }
+        String last = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
+        options.removeIf(o -> !o.toLowerCase(Locale.ROOT).startsWith(last));
+        return options;
+    }
+}

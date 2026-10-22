@@ -1,0 +1,53 @@
+# FunCraft Games configuration. Change values and run /fc reload (or restart).
+
+# Shown in the sidebar title and on join.
+server-name: "FunCraft"
+# Last line of the sidebar (MiniMessage format: https://docs.advntr.dev/minimessage/format.html)
+sidebar-footer: "<gold>Have fun!"
+
+# Seconds a queue counts down once it has enough players (drops to 5 when the game is full).
+countdown-seconds: 20
+
+ffa:
+  # How long the /fc ffa kit vote lasts.
+  vote-seconds: 30
+
+games:
+  bedwars:
+    enabled: true
+    min-players: 2
+    max-players: 8
+  skywars:
+    enabled: true
+    min-players: 2
+    max-players: 8
+  buildbattle:
+    enabled: true
+    min-players: 2
+    max-players: 12
+    build-seconds: 300
+    vote-seconds: 15
+    # Leave empty to use the built-in list of 40 themes.
+    themes: []
+  pvp:
+    enabled: true
+    min-players: 2
+    max-players: 12
+    # Kit from kits.yml used by the PvP Arena queue.
+    kit: classic
+  duels:
+    enabled: true
+    # Default kit for queued duels; /duel <player> <kit> picks another one.
+    kit: classic
+  spleef:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  tntrun:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  sumo:
+    enabled: true
+    min-players: 2
+    max-players: 8

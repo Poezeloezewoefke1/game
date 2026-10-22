@@ -1,0 +1,35 @@
+name: FunCraftGames
+version: '${version}'
+main: net.funcraft.games.FunCraft
+api-version: '1.21'
+description: BedWars, SkyWars, Build Battle, PvP, Duels, Spleef, TNT Run and Sumo with auto-generated maps.
+author: FunCraft
+
+commands:
+  play:
+    description: Join a minigame queue (or open the game menu).
+    usage: /play [game]
+    aliases: [join]
+  leave:
+    description: Leave your game or queue and go back to the hub.
+    aliases: [hub, lobby, spawn, l]
+  games:
+    description: Open the game selector.
+    aliases: [menu]
+  duel:
+    description: Challenge another player to a 1v1.
+    usage: /duel <player> [kit] | /duel accept <player> | /duel deny <player>
+  stats:
+    description: Show your (or someone else's) stats.
+    usage: /stats [player]
+  vote:
+    description: Vote for the kit of the FFA event.
+  fc:
+    description: FunCraft admin commands.
+    usage: /fc help
+    permission: funcraft.admin
+
+permissions:
+  funcraft.admin:
+    description: Use /fc admin commands.
+    default: op
