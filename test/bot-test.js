@@ -199,6 +199,13 @@ async function fight(a, b, ms) {
   check(await waitFor(() => said(a, /won the game/), 5000), 'buildbattle: a winner was picked');
   await finishMatch(a, b);
 
+  console.log('\n--- SkyWars: cages open and starter kit ---');
+  check(await startMatch(a, b, 'skywars'), 'skywars kit: match started');
+  check(await waitFor(() => hasItem(a, 'stone_sword'), 8000), 'skywars: default Fighter kit given when cages open');
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'skywars: last player standing wins');
+  await finishMatch(a, b);
+
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
   voidPlayer('BotBob');

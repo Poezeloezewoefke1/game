@@ -190,6 +190,73 @@ public final class SkyWars extends Game {
         return table.get(random.nextInt(table.size())).get();
     }
 
+    /** Small starter kits picked in the queue, handed out when the cages open. */
+    private enum StarterKit {
+        FIGHTER("Fighter", Material.STONE_SWORD, Material.LEATHER_CHESTPLATE, "Stone sword + leather chestplate"),
+        ARCHER("Archer", Material.BOW, null, "Bow + 12 arrows"),
+        BUILDER("Builder", Material.BRICKS, null, "64 bricks + stone pickaxe"),
+        ENDERMAN("Enderman", Material.ENDER_PEARL, null, "2 ender pearls"),
+        HEALER("Healer", Material.GOLDEN_APPLE, null, "3 golden apples"),
+        BOMBER("Bomber", Material.TNT, null, "5 TNT + flint and steel");
+
+        final String name;
+        final Material icon;
+        final Material armor;
+        final String description;
+
+        StarterKit(String name, Material icon, Material armor, String description) {
+            this.name = name;
+            this.icon = icon;
+            this.armor = armor;
+            this.description = description;
+        }
+
+        List<ItemStack> items() {
+            return switch (this) {
+                case FIGHTER -> List.of(new ItemStack(Material.STONE_SWORD));
+                case ARCHER -> List.of(new ItemStack(Material.BOW), new ItemStack(Material.ARROW, 12));
+                case BUILDER -> List.of(new ItemStack(Material.BRICKS, 64), new ItemStack(Material.STONE_PICKAXE));
+                case ENDERMAN -> List.of(new ItemStack(Material.ENDER_PEARL, 2));
+                case HEALER -> List.of(new ItemStack(Material.GOLDEN_APPLE, 3));
+                case BOMBER -> List.of(new ItemStack(Material.TNT, 5), new ItemStack(Material.FLINT_AND_STEEL));
+            };
+        }
+    }
+
+    private final java.util.Map<java.util.UUID, StarterKit> chosenKit = new java.util.HashMap<>();
+
+    @Override
+    protected void onQueueJoin(Player player) {
+        StarterKit kit = chosenKit.getOrDefault(player.getUniqueId(), StarterKit.FIGHTER);
+        player.getInventory().setItem(2, plugin.hub().tag(ItemBuilder.of(kit.icon).name("<aqua><bold>Choose Kit</bold> <gray>(right click)")
+                .lore("<gray>Selected: <white>" + kit.name).build(), "sw_kit"));
+    }
+
+    @Override
+    public void onQueueItem(Player player, String id) {
+        if (!id.equals("sw_kit")) {
+            return;
+        }
+        net.funcraft.games.util.Gui gui = new net.funcraft.games.util.Gui(1, "<dark_gray>SkyWars kit");
+        StarterKit current = chosenKit.getOrDefault(player.getUniqueId(), StarterKit.FIGHTER);
+        StarterKit[] kits = StarterKit.values();
+        for (int i = 0; i < kits.length; i++) {
+            StarterKit kit = kits[i];
+            ItemBuilder b = ItemBuilder.of(kit.icon).name("<bold><aqua>" + kit.name).lore("<gray>" + kit.description, "",
+                    kit == current ? "<green>Selected" : "<yellow>Click to select").flags();
+            if (kit == current) {
+                b.glow();
+            }
+            gui.set(i + 1, b.build(), (p, click) -> {
+                chosenKit.put(p.getUniqueId(), kit);
+                onQueueJoin(p);
+                Msg.send(p, "<gray>SkyWars kit: <aqua>" + kit.name);
+                p.closeInventory();
+            });
+        }
+        gui.open(player);
+    }
+
     @Override
     protected void onStart(List<Player> list) {
         Collections.shuffle(spawns, random);
@@ -197,6 +264,8 @@ public final class SkyWars extends Game {
             Player p = list.get(i);
             p.teleport(spawns.get(i % spawns.size()));
             Msg.title(p, "<aqua><bold>SkyWars", "<gray>Cages open in " + CAGE_SECONDS + " seconds", 5, 40, 10);
+            Msg.send(p, "<gray>Your kit: <aqua>" + chosenKit.getOrDefault(p.getUniqueId(), StarterKit.FIGHTER).name
+                    + " <dark_gray>(you get it when the cages open)");
         }
     }
 
@@ -212,6 +281,15 @@ public final class SkyWars extends Game {
             cagesOpen = true;
             for (Location s : spawns) {
                 Build.removeCage(world, s.getBlockX(), s.getBlockY(), s.getBlockZ());
+            }
+            for (Player p : alivePlayers()) {
+                StarterKit kit = chosenKit.getOrDefault(p.getUniqueId(), StarterKit.FIGHTER);
+                for (ItemStack item : kit.items()) {
+                    p.getInventory().addItem(item);
+                }
+                if (kit.armor != null) {
+                    p.getInventory().setChestplate(new ItemStack(kit.armor));
+                }
             }
             Msg.title(alivePlayers(), "<green><bold>GO!", "<gray>Loot your chests and fight!");
             Msg.sound(alivePlayers(), "entity.player.levelup", 1f);

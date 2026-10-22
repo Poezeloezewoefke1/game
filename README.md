@@ -7,7 +7,7 @@ automatically, so there's nothing to build or set up in-game.
 | Game | What it is | Players |
 |------|------------|---------|
 | **BedWars** | Up to 4 teams with beds, iron/gold generators, diamond and emerald islands, an item shop and team upgrades. Fireballs, TNT and permanent armor are in. | 2–8 |
-| **SkyWars** | Each player starts in a cage on their own island. Loot the chests, bridge to the middle (better loot) and be the last one alive. Chests refill at 4:00. | 2–8 |
+| **SkyWars** | Each player starts in a cage on their own island. Loot the chests, bridge to the middle (better loot) and be the last one alive. Chests refill at 4:00. Pick a starter kit (Fighter, Archer, Builder, Enderman, Healer, Bomber) in the queue. | 2–8 |
 | **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode, then votes on every build from *Super Poop* to *Legendary*. | 2–12 |
 | **PvP Arena** | Free-for-all in a gladiator arena with a kit. Last one alive wins. | 2–12 |
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
