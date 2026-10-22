@@ -46,6 +46,30 @@ public final class Explosives {
         return true;
     }
 
+    /**
+     * Fireball hits: scale the damage and throw the player away from the blast. Shooting at your own
+     * feet launches you ("fireball jump"). Returns true if the damage came from a fireball.
+     */
+    public static boolean fireballHit(Plugin plugin, org.bukkit.event.entity.EntityDamageEvent event, Player victim,
+                                      double damageFactor, double launch) {
+        if (!(event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent byEntity)
+                || !(byEntity.getDamager() instanceof Fireball ball)) {
+            return false;
+        }
+        event.setDamage(event.getDamage() * damageFactor);
+        org.bukkit.util.Vector push = victim.getLocation().add(0, 1, 0).toVector().subtract(ball.getLocation().toVector());
+        if (push.lengthSquared() < 0.01) {
+            push = new org.bukkit.util.Vector(0, 1, 0);
+        }
+        org.bukkit.util.Vector v = push.normalize().multiply(launch);
+        v.setY(Math.max(v.getY(), 0.35) + 0.35);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            victim.setVelocity(v);
+            victim.setFallDistance(0);
+        });
+        return true;
+    }
+
     /** Replaces a freshly placed TNT block with lit TNT on the next tick. */
     public static void primeNextTick(Plugin plugin, Block block, Player placer) {
         Bukkit.getScheduler().runTask(plugin, () -> {

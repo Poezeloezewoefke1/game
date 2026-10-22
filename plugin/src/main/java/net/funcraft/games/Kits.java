@@ -30,8 +30,9 @@ public final class Kits {
 
     public static final String DEFAULT = "classic";
 
+    /** {@code deep}: the kit is played on a deep, fully destructible terrain map (crystals, creepers). */
     public record Kit(String id, String name, Material icon, String description, ItemStack helmet, ItemStack chestplate,
-                      ItemStack leggings, ItemStack boots, ItemStack offhand, Map<Integer, ItemStack> items) {
+                      ItemStack leggings, ItemStack boots, ItemStack offhand, Map<Integer, ItemStack> items, boolean deep) {
 
         public void apply(Player player) {
             PlayerInventory inv = player.getInventory();
@@ -85,7 +86,7 @@ public final class Kits {
             items.put(0, new ItemStack(Material.IRON_SWORD));
             kits.put(DEFAULT, new Kit(DEFAULT, "<gold>Classic", Material.IRON_SWORD, "", new ItemStack(Material.IRON_HELMET),
                     new ItemStack(Material.IRON_CHESTPLATE), new ItemStack(Material.IRON_LEGGINGS), new ItemStack(Material.IRON_BOOTS),
-                    null, items));
+                    null, items, false));
         }
         plugin.getLogger().info("Loaded " + kits.size() + " PvP kits.");
     }
@@ -105,7 +106,8 @@ public final class Kits {
         }
         return new Kit(id, k.getString("name", id), icon == null ? Material.IRON_SWORD : icon, k.getString("description", ""),
                 parseItem(k.getString("helmet")), parseItem(k.getString("chestplate")), parseItem(k.getString("leggings")),
-                parseItem(k.getString("boots")), parseItem(k.getString("offhand")), items);
+                parseItem(k.getString("boots")), parseItem(k.getString("offhand")), items,
+                "deep".equalsIgnoreCase(k.getString("map", "")));
     }
 
     /**

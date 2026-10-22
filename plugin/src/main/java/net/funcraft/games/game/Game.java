@@ -113,6 +113,19 @@ public abstract class Game {
     protected void onQueueJoin(Player player) {
     }
 
+    /** A player in this match ate or drank something. */
+    public void onConsume(org.bukkit.event.player.PlayerItemConsumeEvent event) {
+    }
+
+    /** A mob spawned in this match's world (e.g. from a spawn egg). */
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+    }
+
+    /** True for 1.8-style combat: no attack cooldown, so you can spam click. */
+    protected boolean legacyCombat() {
+        return false;
+    }
+
     /** A queue item with this id was used (see {@link net.funcraft.games.Hub#tag}). */
     public void onQueueItem(Player player, String id) {
     }
@@ -470,6 +483,9 @@ public abstract class Game {
             alive.add(p.getUniqueId());
             plugin.stats().addGame(p, type);
             plugin.games().prepare(p, GameMode.SURVIVAL);
+            if (legacyCombat()) {
+                net.funcraft.games.util.Combat.legacy(p);
+            }
         }
         onStart(list);
         if (mapName != null) {
@@ -712,11 +728,18 @@ public abstract class Game {
         return spectatorSpawn();
     }
 
-    private static Player attackerOf(EntityDamageEvent event) {
+    /** Entities (creepers, ...) spawned by a player, so their damage counts as that player's. */
+    protected final Map<UUID, UUID> entityOwners = new HashMap<>();
+
+    private Player attackerOf(EntityDamageEvent event) {
         if (event instanceof EntityDamageByEntityEvent byEntity) {
             Entity damager = byEntity.getDamager();
             if (damager instanceof Player p) {
                 return p;
+            }
+            UUID owner = entityOwners.get(damager.getUniqueId());
+            if (owner != null) {
+                return Bukkit.getPlayer(owner);
             }
             if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player p) {
                 return p;

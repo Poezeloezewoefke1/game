@@ -7,6 +7,7 @@ import net.funcraft.games.util.Build;
 import net.funcraft.games.util.Explosives;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Structures;
 import net.funcraft.games.util.Theme;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -133,6 +134,7 @@ public final class BedWars extends Game {
             int z = d[1] * DIAMOND_DISTANCE;
             theme.island(world, x, Y, z, 4.5, random);
             Build.disc(world, x, Y, z, 1.5, Material.DIAMOND_BLOCK);
+            Structures.lamp(world, x + 3, Y + 1, z, theme);
             diamondGens.add(new Generator(new Location(world, x + 0.5, Y + 1.2, z + 0.5), Material.DIAMOND,
                     label(new Location(world, x + 0.5, Y + 3.2, z + 0.5))));
         }
@@ -146,8 +148,11 @@ public final class BedWars extends Game {
             emeraldGens.add(new Generator(new Location(world, e[0] + 0.5, Y + 1.2, e[1] + 0.5), Material.EMERALD,
                     label(new Location(world, e[0] + 0.5, Y + 3.2, e[1] + 0.5))));
         }
-        theme.tree(world, 0, Y + 1, 8, random);
-        theme.tree(world, 0, Y + 1, -8, random);
+        Structures.tower(world, 0, Y + 1, 8, 6, theme);
+        Structures.tower(world, 0, Y + 1, -8, 6, theme);
+        for (int[] l : new int[][]{{5, 5}, {-5, 5}, {5, -5}, {-5, -5}}) {
+            Structures.lamp(world, l[0], Y + 1, l[1], theme);
+        }
         diamondTimer = diamondInterval();
         emeraldTimer = emeraldInterval();
         timeline.add(new TimedEvent(6 * 60, "Diamond II", () -> diamondTier = 2));
@@ -168,6 +173,9 @@ public final class BedWars extends Game {
         theme.island(world, cx, Y, cz, 9.5, random);
         Build.disc(world, cx, Y, cz, 4.5, team.color.concrete);
         Build.disc(world, cx, Y, cz, 3.5, Material.SMOOTH_STONE);
+        for (int[] l : new int[][]{{vx * 3 - ux * 7, vz * 3 - uz * 7}, {-vx * 3 - ux * 7, -vz * 3 - uz * 7}}) {
+            Structures.lamp(world, cx + l[0], Y + 1, cz + l[1], theme);
+        }
         // generator at the back
         int gx = cx + ux * 6;
         int gz = cz + uz * 6;
@@ -783,10 +791,18 @@ public final class BedWars extends Game {
                 return;
             }
         }
+        if (Explosives.fireballHit(plugin, event, victim, 0.25, 1.4)) {
+            return;
+        }
         EntityDamageEvent.DamageCause cause = event.getCause();
         if (cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION || cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
             event.setDamage(event.getDamage() * 0.4);
         }
+    }
+
+    @Override
+    protected boolean legacyCombat() {
+        return true; // spam click like the old days
     }
 
     // -------------------------------------------------------------- interact

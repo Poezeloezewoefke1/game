@@ -57,6 +57,52 @@ public enum Theme {
         return displayName;
     }
 
+    /** Wood used for houses and trims in this theme. */
+    public Material log() {
+        return switch (this) {
+            case DESERT -> Material.STRIPPED_JUNGLE_LOG;
+            case SNOWY -> Material.SPRUCE_LOG;
+            case NETHER -> Material.CRIMSON_STEM;
+            case END -> Material.PURPUR_PILLAR;
+            case MUSHROOM -> Material.MUSHROOM_STEM;
+            case CHERRY -> Material.CHERRY_LOG;
+            default -> Material.OAK_LOG;
+        };
+    }
+
+    public Material planks() {
+        return switch (this) {
+            case DESERT -> Material.SMOOTH_SANDSTONE;
+            case SNOWY -> Material.SPRUCE_PLANKS;
+            case NETHER -> Material.CRIMSON_PLANKS;
+            case END -> Material.PURPUR_BLOCK;
+            case MUSHROOM -> Material.BROWN_MUSHROOM_BLOCK;
+            case CHERRY -> Material.CHERRY_PLANKS;
+            default -> Material.OAK_PLANKS;
+        };
+    }
+
+    public Material roof() {
+        return switch (this) {
+            case DESERT -> Material.CUT_RED_SANDSTONE;
+            case SNOWY -> Material.SNOW_BLOCK;
+            case NETHER -> Material.NETHER_WART_BLOCK;
+            case END -> Material.END_STONE_BRICKS;
+            case MUSHROOM -> Material.RED_MUSHROOM_BLOCK;
+            case CHERRY -> Material.PINK_TERRACOTTA;
+            default -> Material.DARK_OAK_PLANKS;
+        };
+    }
+
+    public Material light() {
+        return switch (this) {
+            case NETHER -> Material.SHROOMLIGHT;
+            case END -> Material.END_ROD;
+            case SNOWY -> Material.SEA_LANTERN;
+            default -> Material.LANTERN;
+        };
+    }
+
     public static Theme random(Random random) {
         Theme[] all = values();
         return all[random.nextInt(all.length)];

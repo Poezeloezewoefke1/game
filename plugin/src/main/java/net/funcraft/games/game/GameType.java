@@ -2,7 +2,9 @@ package net.funcraft.games.game;
 
 import net.funcraft.games.FunCraft;
 import net.funcraft.games.games.bedwars.BedWars;
+import net.funcraft.games.games.BedDuel;
 import net.funcraft.games.games.BlockParty;
+import net.funcraft.games.games.Bridge;
 import net.funcraft.games.games.BuildBattle;
 import net.funcraft.games.games.OneInTheChamber;
 import net.funcraft.games.games.PvpArena;
@@ -22,6 +24,18 @@ public enum GameType {
             "Protect your bed, collect resources at",
             "your generator and buy gear from the shop.",
             "Destroy enemy beds to stop them respawning!"),
+    BED_FIGHT("Bed Fight", "<red>", Material.WHITE_BED, 2, 8, BedDuel::bedFight,
+            "Red vs Blue. Bridge over to the other",
+            "island and break their bed - after that",
+            "they can't respawn. Teams are automatic."),
+    BRIDGE("The Bridge", "<blue>", Material.END_PORTAL_FRAME, 2, 8, Bridge::new,
+            "Fight across a narrow bridge and jump",
+            "into the enemy's end portal to score.",
+            "First team to 5 points wins!"),
+    FIREBALL_FIGHT("Fireball Fight", "<gold>", Material.FIRE_CHARGE, 2, 8, BedDuel::fireballFight,
+            "Fireballs only knock back - fireball-jump",
+            "across the gap, build, and break the",
+            "enemy bed. Teams are automatic."),
     SKYWARS("SkyWars", "<aqua>", Material.ENDER_EYE, 2, 8, SkyWars::new,
             "Start on your own sky island, loot the",
             "chests, bridge to the middle and be the",
@@ -134,6 +148,9 @@ public enum GameType {
             case "tnt", "tntrun" -> TNT_RUN;
             case "party", "bp", "blockparty", "disco" -> BLOCK_PARTY;
             case "oneinthechamber", "chamber", "1itc" -> OITC;
+            case "bedfight", "bf" -> BED_FIGHT;
+            case "thebridge", "bridges" -> BRIDGE;
+            case "fireball", "fireballs", "ff", "fbf" -> FIREBALL_FIGHT;
             default -> null;
         };
     }

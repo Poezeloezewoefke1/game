@@ -1,13 +1,16 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**10 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**13 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
 |------|------------|---------|
-| **BedWars** | Up to 4 teams with beds, iron/gold generators, diamond and emerald islands, an item shop and team upgrades. Fireballs, TNT, permanent armor and an "It's a Trap!" upgrade are in. | 2–8 |
-| **SkyWars** | Each player starts in a cage on their own island. Loot the chests, bridge to the middle (better loot) and be the last one alive. Chests refill at 4:00. Pick a starter kit (Fighter, Archer, Builder, Enderman, Healer, Bomber) in the queue. | 2–8 |
+| **BedWars** | Up to 4 teams with beds, iron/gold generators, diamond and emerald islands, an item shop and team upgrades. Fireballs, TNT, permanent armor and an "It's a Trap!" upgrade are in. Old-school spam-click PvP. | 2–8 |
+| **Bed Fight** | Red vs Blue (automatic teams). Bridge to the other island and break their bed; after that they can't respawn. | 2–8 |
+| **The Bridge** | Red vs Blue across a narrow bridge. Jump into the enemy's end portal to score; every point resets the round. First to 5 wins. | 2–8 |
+| **Fireball Fight** | Red vs Blue on islands far apart. Fireballs only knock back, so fireball-jump across and break their bed. Fireballs and wool regenerate. | 2–8 |
+| **SkyWars** | A 40-island archipelago with a huge castle island in the middle. Each player starts in a cage on their own island with a house. Loot the chests, bridge across and be the last one alive. Chests refill at 4:00. Pick a starter kit (Fighter, Archer, Builder, Enderman, Healer, Bomber) in the queue. | 2–8 |
 | **Build Battle** | Everyone gets the same theme (40 built in) and 5 minutes in creative mode (with a floor changer), then votes on every build from *Super Poop* to *Legendary*. | 2–12 |
 | **PvP Arena** | Free-for-all in a gladiator arena with a kit. Last one alive wins. | 2–12 |
 | **Duels** | 1v1. Queue up or challenge someone: `/duel <player> [kit]`. | 2 |
@@ -22,6 +25,8 @@ Plus:
 - **FFA event for ops:** `/fc ffa` starts a kit vote for everyone online. When the vote ends, **everyone online is put in one big FFA**. If you die you spectate, and the last one alive wins.
 - **16 PvP kits:** Classic, Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP, Crystal, Bed Fight, Bridge, Creeper PvP, Dia SMP, Fireball Fight, Spear Elytra and Spear Mace. They're used by the FFA event, the PvP Arena and duels. Fire charges throw fireballs and TNT lights itself.
 - **Stats:** wins, kills, deaths, games and K/D per game (`/stats`), shown in the sidebar.
+- **Buildings on the maps:** houses, towers, wells, ruins, lamp posts and castles in the map's theme.
+- **Crystal and Creeper kits** play on a deep, fully destructible terrain map, so you can blast and dig down. Creepers from spawn eggs are lit instantly and stand still until hit. Fireballs knock back instead of hurting.
 - **Random map themes:** SkyWars and BedWars islands come in Plains, Desert, Snowy, Nether, The End, Mushroom or Cherry Blossom. Arenas can be a Colosseum, Desert Temple, Nether Fortress, Ocean Monument or Deep Dark. TNT Run and Sumo get random colours.
 - **Combat feedback:** your target's health on your action bar when you hit them, a +1 Kill notice, and killstreak announcements (3 / UNSTOPPABLE 5 / GODLIKE 7 / LEGENDARY 10, plus "X ended Y's streak").
 - **[PLAY AGAIN]** button when a game ends puts you straight back in the queue; after a duel it's **[REMATCH]** with the same kit.
@@ -38,7 +43,7 @@ Plus:
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |

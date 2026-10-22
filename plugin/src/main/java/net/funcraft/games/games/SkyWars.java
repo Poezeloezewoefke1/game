@@ -6,6 +6,7 @@ import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Structures;
 import net.funcraft.games.util.Theme;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -30,7 +31,10 @@ import java.util.function.Supplier;
 public final class SkyWars extends Game {
 
     private static final int Y = 64;
-    private static final int RING = 34;
+    private static final int RING = 58;
+    private static final int MID_RADIUS = 22;
+    private static final int MAP_HALF = 86;
+    private static final int TOTAL_ISLANDS = 40;
     private static final int CAGE_SECONDS = 5;
     private static final int REFILL_AT = 240;
     private static final int DEATHMATCH_AT = 600;
@@ -39,6 +43,7 @@ public final class SkyWars extends Game {
 
     private final List<Location> spawns = new ArrayList<>();
     private final List<Block> islandChests = new ArrayList<>();
+    private final List<Block> starterChests = new ArrayList<>();
     private final List<Block> centerChests = new ArrayList<>();
     private boolean cagesOpen;
     private Theme theme;
@@ -49,63 +54,98 @@ public final class SkyWars extends Game {
 
     @Override
     protected int[] mapArea() {
-        return new int[]{-44, -44, 44, 44};
+        return new int[]{-MAP_HALF, -MAP_HALF, MAP_HALF, MAP_HALF};
+    }
+
+    private record Isle(int x, int z, double r) {
     }
 
     @Override
     protected void buildMap() {
-        int n = online().isEmpty() ? 8 : Math.max(2, Math.min(8, online().size()));
-        // centre island
+        int n = online().isEmpty() ? 8 : Math.max(2, Math.min(12, online().size()));
         theme = Theme.random(random);
-        mapName = theme.displayName() + " Isles";
-        theme.island(world, 0, Y, 0, 11, random);
-        Build.disc(world, 0, Y, 0, 4.5, theme.path);
-        Build.ring(world, 0, Y, 0, 3.5, 4.5, theme.trim);
-        Build.disc(world, 0, Y, 0, 1.5, theme.accent);
-        theme.tree(world, 7, Y + 1, 2, random);
-        theme.tree(world, -6, Y + 1, -5, random);
-        theme.plants(world, 0, Y, 0, 10, 14, random);
-        int[][] mid = {{3, 0}, {-3, 0}, {0, 3}, {0, -3}};
-        BlockFace[] faces = {BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH, BlockFace.NORTH};
-        for (int i = 0; i < mid.length; i++) {
-            Build.directional(world, mid[i][0], Y + 1, mid[i][1], Material.CHEST, faces[i]);
-            centerChests.add(world.getBlockAt(mid[i][0], Y + 1, mid[i][1]));
+        mapName = theme.displayName() + " Archipelago";
+        List<Isle> isles = new ArrayList<>();
+
+        // huge middle island with a castle full of loot
+        theme.island(world, 0, Y, 0, MID_RADIUS, random);
+        isles.add(new Isle(0, 0, MID_RADIUS));
+        centerChests.addAll(Structures.castle(world, 0, Y + 1, 0, 9, theme, random));
+        int[][] around = {{14, 0}, {-14, 0}, {0, 14}, {0, -14}, {11, 11}, {-11, -11}};
+        for (int[] c : around) {
+            Build.directional(world, c[0], Y + 1, c[1], Material.CHEST, BlockFace.NORTH);
+            centerChests.add(world.getBlockAt(c[0], Y + 1, c[1]));
         }
-        // small stepping islands between the ring and the centre
-        for (int i = 0; i < n; i++) {
-            double a = Math.toRadians(i * 360.0 / n + 180.0 / n);
-            int x = (int) Math.round(Math.cos(a) * 20);
-            int z = (int) Math.round(Math.sin(a) * 20);
-            theme.island(world, x, Y - 2, z, 3.5, random);
-            Build.directional(world, x, Y - 1, z, Material.CHEST, BlockFace.NORTH);
-            islandChests.add(world.getBlockAt(x, Y - 1, z));
+        for (int i = 0; i < 6; i++) {
+            double a = Math.toRadians(i * 60 + 30);
+            theme.tree(world, (int) Math.round(Math.cos(a) * 18), Y + 1, (int) Math.round(Math.sin(a) * 18), random);
         }
-        // player islands
+        theme.plants(world, 0, Y, 0, MID_RADIUS - 1, 40, random);
+
+        // player islands on the outer ring, each with a starter chest, a building and a cage
         for (int i = 0; i < n; i++) {
             double a = Math.toRadians(i * 360.0 / n);
             int x = (int) Math.round(Math.cos(a) * RING);
             int z = (int) Math.round(Math.sin(a) * RING);
-            theme.island(world, x, Y, z, 5.5, random);
-            theme.plants(world, x, Y, z, 4.5, 4, random);
-            Build.set(world, x, Y - 1, z, Material.IRON_ORE);
+            theme.island(world, x, Y, z, 6.5, random);
+            isles.add(new Isle(x, z, 6.5));
+            theme.plants(world, x, Y, z, 5.5, 4, random);
             int ox = (int) Math.round(Math.cos(a) * 3);
             int oz = (int) Math.round(Math.sin(a) * 3);
-            Build.directional(world, x + ox - oz, Y + 1, z + oz + ox, Material.CHEST, BlockFace.NORTH);
-            Build.directional(world, x + ox + oz, Y + 1, z + oz - ox, Material.CHEST, BlockFace.NORTH);
-            islandChests.add(world.getBlockAt(x + ox - oz, Y + 1, z + oz + ox));
-            islandChests.add(world.getBlockAt(x + ox + oz, Y + 1, z + oz - ox));
-            Build.cage(world, x, Y + 3, z, Material.GLASS);
-            Location spawn = new Location(world, x + 0.5, Y + 3, z + 0.5);
-            spawns.add(Build.lookAt(spawn, new Location(world, 0.5, Y + 3, 0.5)));
+            Build.directional(world, x - ox, Y + 1, z - oz, Material.CHEST, BlockFace.NORTH);
+            starterChests.add(world.getBlockAt(x - ox, Y + 1, z - oz));
+            Block houseChest = Structures.house(world, x + ox * 4 / 3, Y + 1, z + oz * 4 / 3, theme, random);
+            islandChests.add(houseChest);
+            Build.cage(world, x, Y + 9, z, Material.GLASS);
+            spawns.add(Build.lookAt(new Location(world, x + 0.5, Y + 9, z + 0.5), new Location(world, 0.5, Y + 9, 0.5)));
+        }
+
+        // lots of loot islands scattered around at different heights
+        int target = TOTAL_ISLANDS - isles.size();
+        int made = 0;
+        for (int attempt = 0; attempt < 3000 && made < target; attempt++) {
+            double a = random.nextDouble() * Math.PI * 2;
+            double d = MID_RADIUS + 8 + random.nextDouble() * (MAP_HALF - MID_RADIUS - 16);
+            int x = (int) Math.round(Math.cos(a) * d);
+            int z = (int) Math.round(Math.sin(a) * d);
+            double r = 3 + random.nextDouble() * 3;
+            boolean free = true;
+            for (Isle o : isles) {
+                double gap = Math.hypot(o.x() - x, o.z() - z) - o.r() - r;
+                if (gap < 5) {
+                    free = false;
+                    break;
+                }
+            }
+            if (!free) {
+                continue;
+            }
+            int y = Y - 8 + random.nextInt(17);
+            theme.island(world, x, y, z, r, random);
+            isles.add(new Isle(x, z, r));
+            made++;
+            if (r >= 5 && random.nextInt(2) == 0) {
+                Block chest = Structures.random(world, x, y + 1, z, theme, random);
+                if (chest != null) {
+                    islandChests.add(chest);
+                    continue;
+                }
+            } else if (random.nextInt(3) == 0) {
+                theme.tree(world, x + 1, y + 1, z + 1, random);
+            }
+            Build.directional(world, x, y + 1, z, Material.CHEST, BlockFace.NORTH);
+            islandChests.add(world.getBlockAt(x, y + 1, z));
+            theme.plants(world, x, y, z, r - 1, 2, random);
         }
         fillChests();
     }
 
     private void fillChests() {
-        for (int i = 0; i < islandChests.size(); i++) {
-            // the first chest of each player island always has the basics
-            boolean starter = i >= islandChests.size() - spawns.size() * 2 && (i - (islandChests.size() - spawns.size() * 2)) % 2 == 0;
-            fill(islandChests.get(i), false, starter);
+        for (Block b : starterChests) {
+            fill(b, false, true);
+        }
+        for (Block b : islandChests) {
+            fill(b, false, false);
         }
         for (Block b : centerChests) {
             fill(b, true, false);
@@ -337,6 +377,8 @@ public final class SkyWars extends Game {
     protected void onDamage(EntityDamageEvent event, Player victim, Player attacker) {
         if (!cagesOpen && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             event.setCancelled(true);
+        } else if (event.getCause() == EntityDamageEvent.DamageCause.FALL && elapsed <= CAGE_SECONDS + 5) {
+            event.setCancelled(true); // the drop out of the cage
         }
     }
 
@@ -371,7 +413,7 @@ public final class SkyWars extends Game {
 
     @Override
     protected Location spectatorSpawn() {
-        return new Location(world, 0.5, Y + 20, 0.5, 0, 60);
+        return new Location(world, 0.5, Y + 35, -30.5, 0, 45);
     }
 
     @Override

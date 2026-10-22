@@ -192,6 +192,36 @@ public final class GameListener implements Listener {
         }
     }
 
+    @EventHandler(ignoreCancelled = true)
+    public void onConsume(org.bukkit.event.player.PlayerItemConsumeEvent event) {
+        Game game = game(event.getPlayer());
+        if (game != null && game.state() == Game.State.RUNNING && game.isAlive(event.getPlayer())) {
+            game.onConsume(event);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+        Game game = plugin.games().gameOf(event.getLocation().getWorld());
+        if (game != null && game.state() == Game.State.RUNNING) {
+            game.onCreatureSpawn(event);
+        }
+    }
+
+    @EventHandler
+    public void onPortal(org.bukkit.event.player.PlayerPortalEvent event) {
+        if (event.getFrom().getWorld().getName().startsWith("fc_")) {
+            event.setCancelled(true); // end portals are goals in The Bridge, never real portals
+        }
+    }
+
+    @EventHandler
+    public void onEntityPortal(org.bukkit.event.entity.EntityPortalEvent event) {
+        if (event.getFrom().getWorld().getName().startsWith("fc_")) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler
     public void onFlow(BlockFromToEvent event) {
         Game game = plugin.games().gameOf(event.getBlock().getWorld());

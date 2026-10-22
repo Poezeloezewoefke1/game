@@ -6,6 +6,7 @@ import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
 import net.funcraft.games.util.ItemBuilder;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Structures;
 import net.funcraft.games.util.Theme;
 import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
@@ -71,6 +72,16 @@ public final class OneInTheChamber extends Game {
                 int bz = wallAlongX ? z : z + j;
                 int bh = Math.max(1, h - random.nextInt(2));
                 Build.fill(world, bx, Y + 1, bz, bx, Y + bh, bz, random.nextInt(4) == 0 ? theme.accent : theme.trim);
+            }
+        }
+        for (int i = 0; i < 4; i++) {
+            double a = Math.toRadians(i * 90 + 45);
+            int x = (int) Math.round(Math.cos(a) * RADIUS * 0.55);
+            int z = (int) Math.round(Math.sin(a) * RADIUS * 0.55);
+            if (i % 2 == 0) {
+                Structures.house(world, x, Y + 1, z, theme, random);
+            } else {
+                Structures.tower(world, x, Y + 1, z, 5, theme);
             }
         }
         for (int i = 0; i < 6; i++) {

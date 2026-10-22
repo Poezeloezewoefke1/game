@@ -6,6 +6,8 @@ import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Build;
 import net.funcraft.games.util.Explosives;
 import net.funcraft.games.util.Msg;
+import net.funcraft.games.util.Structures;
+import net.funcraft.games.util.Theme;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -109,20 +111,81 @@ public final class PvpArena extends LastStanding {
         return kit;
     }
 
+    private static final int DEEP = 26;
+
+    /** Crystal/creeper kits: a big chunk of terrain you can blow up and dig down into. */
+    private boolean deep() {
+        return kit().deep();
+    }
+
     private int arenaRadius() {
+        if (deep()) {
+            return duel() ? 22 : (int) Math.max(30, 18 + online().size() * 1.5);
+        }
         return duel() ? 14 : (int) Math.max(22, 12 + online().size() * 1.5);
     }
 
     @Override
     protected int[] mapArea() {
-        int r = arenaRadius() + 12;
+        int r = arenaRadius() + (deep() ? 6 : 12);
         return new int[]{-r, -r, r, r};
+    }
+
+    private void buildDeep() {
+        Theme theme = Theme.random(random);
+        mapName = theme.displayName() + " Crater";
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (x * x + z * z > radius * radius) {
+                    continue;
+                }
+                for (int d = 0; d <= DEEP; d++) {
+                    int y = FLOOR_Y - d;
+                    Material m;
+                    if (d == DEEP) {
+                        m = Material.BEDROCK;
+                    } else if (d == 0) {
+                        m = theme.top;
+                    } else if (d <= 3) {
+                        m = theme.soil;
+                    } else if (random.nextInt(40) == 0) {
+                        m = d > 14 ? Material.DIAMOND_ORE : Material.IRON_ORE;
+                    } else if (d > 14) {
+                        m = random.nextInt(8) == 0 ? Material.TUFF : Material.DEEPSLATE;
+                    } else {
+                        m = random.nextInt(7) == 0 ? theme.accent : theme.stone;
+                    }
+                    world.getBlockAt(x, y, z).setType(m, false);
+                }
+            }
+        }
+        // a few buildings to fight around
+        for (int i = 0; i < 5; i++) {
+            double a = Math.toRadians(i * 72 + random.nextInt(30));
+            double d = radius * (0.35 + random.nextDouble() * 0.3);
+            Structures.random(world, (int) Math.round(Math.cos(a) * d), FLOOR_Y + 1, (int) Math.round(Math.sin(a) * d), theme, random);
+        }
+        for (int i = 0; i < 8; i++) {
+            double a = Math.toRadians(i * 45 + 20);
+            theme.tree(world, (int) Math.round(Math.cos(a) * (radius - 3)), FLOOR_Y + 1, (int) Math.round(Math.sin(a) * (radius - 3)), random);
+        }
+        theme.plants(world, 0, FLOOR_Y, 0, radius, 60, random);
+        int count = Math.max(2, Math.max(online().size(), duel() ? 2 : 8));
+        spawnRing(FLOOR_Y + 1, radius - 5, count);
+        for (Location s : spawns) {
+            Build.fill(world, s.getBlockX(), FLOOR_Y + 1, s.getBlockZ(), s.getBlockX(), FLOOR_Y + 3, s.getBlockZ(), Material.AIR);
+        }
     }
 
     @Override
     protected void buildMap() {
         int players = online().size();
         radius = arenaRadius();
+        if (deep()) {
+            center = new Location(world, 0.5, FLOOR_Y + 1, 0.5);
+            buildDeep();
+            return;
+        }
         center = new Location(world, 0.5, FLOOR_Y + 1, 0.5);
         Style style = Style.values()[random.nextInt(Style.values().length)];
         mapName = style.displayName;
@@ -198,6 +261,14 @@ public final class PvpArena extends LastStanding {
     @Override
     public void onBlockPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
+        if (deep()) {
+            if (b.getY() > FLOOR_Y + BUILD_HEIGHT) {
+                e.setCancelled(true);
+            } else if (b.getType() == Material.TNT) {
+                Explosives.primeNextTick(plugin, b, e.getPlayer());
+            }
+            return;
+        }
         if (b.getY() > FLOOR_Y + BUILD_HEIGHT || b.getX() * b.getX() + b.getZ() * b.getZ() > radius * radius) {
             e.setCancelled(true);
             return;
@@ -216,6 +287,12 @@ public final class PvpArena extends LastStanding {
 
     @Override
     public void onBlockBreak(BlockBreakEvent e) {
+        if (deep()) {
+            if (e.getBlock().getType() == Material.BEDROCK) {
+                e.setCancelled(true);
+            }
+            return;
+        }
         if (!placed.remove(e.getBlock())) {
             e.setCancelled(true);
         }
@@ -223,6 +300,11 @@ public final class PvpArena extends LastStanding {
 
     @Override
     public void onExplode(EntityExplodeEvent e) {
+        if (deep()) {
+            e.blockList().removeIf(b -> b.getType() == Material.BEDROCK);
+            e.setYield(0f); // craters, not item clutter
+            return;
+        }
         e.blockList().removeIf(b -> !placed.contains(b));
         e.blockList().forEach(placed::remove);
     }
@@ -260,7 +342,41 @@ public final class PvpArena extends LastStanding {
 
     @Override
     protected double voidLevel() {
-        return FLOOR_Y - 10;
+        return deep() ? FLOOR_Y - DEEP - 6 : FLOOR_Y - 10;
+    }
+
+    @Override
+    protected void onDamage(org.bukkit.event.entity.EntityDamageEvent event, Player victim, Player attacker) {
+        // fireballs push, they don't hurt
+        Explosives.fireballHit(plugin, event, victim, 0, 1.6);
+    }
+
+    /** Creepers from spawn eggs are lit straight away and stand still until someone hits them. */
+    @Override
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Creeper creeper)) {
+            return;
+        }
+        Player owner = null;
+        double best = 64;
+        for (Player p : alivePlayers()) {
+            if (p.getWorld() == world) {
+                double d = p.getLocation().distanceSquared(creeper.getLocation());
+                if (d < best) {
+                    best = d;
+                    owner = p;
+                }
+            }
+        }
+        if (owner != null) {
+            entityOwners.put(creeper.getUniqueId(), owner.getUniqueId());
+        }
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+            if (creeper.isValid()) {
+                org.bukkit.Bukkit.getMobGoals().removeAllGoals(creeper);
+                creeper.ignite();
+            }
+        });
     }
 
     @Override

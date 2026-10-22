@@ -210,6 +210,7 @@ public final class GameManager {
 
     /** Resets a player to a clean state for a match. */
     public void prepare(Player player, GameMode mode) {
+        net.funcraft.games.util.Combat.reset(player);
         player.closeInventory();
         player.getInventory().clear();
         player.getInventory().setArmorContents(null);

@@ -129,6 +129,12 @@ public final class Hub {
             Build.set(world, x, 64, z, Material.SLIME_BLOCK);
             Build.set(world, x, 65, z, Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
         }
+        // a few buildings on the grass ring
+        net.funcraft.games.util.Theme hubTheme = net.funcraft.games.util.Theme.PLAINS;
+        net.funcraft.games.util.Structures.house(world, 25, 65, 8, hubTheme, r);
+        net.funcraft.games.util.Structures.house(world, -25, 65, -8, hubTheme, r);
+        net.funcraft.games.util.Structures.tower(world, -14, 65, 24, 7, hubTheme);
+        net.funcraft.games.util.Structures.well(world, 16, 65, -23, hubTheme);
         // trees and flowers on the grass ring
         Material[] flowers = {Material.POPPY, Material.DANDELION, Material.CORNFLOWER, Material.OXEYE_DAISY, Material.ALLIUM};
         for (int i = 0; i < 400; i++) {
@@ -203,6 +209,9 @@ public final class Hub {
     private static Villager.Profession professionFor(GameType type) {
         return switch (type) {
             case BEDWARS -> Villager.Profession.ARMORER;
+            case BED_FIGHT -> Villager.Profession.FARMER;
+            case BRIDGE -> Villager.Profession.CARTOGRAPHER;
+            case FIREBALL_FIGHT -> Villager.Profession.CLERIC;
             case SKYWARS -> Villager.Profession.CARTOGRAPHER;
             case BUILD_BATTLE -> Villager.Profession.MASON;
             case PVP -> Villager.Profession.WEAPONSMITH;
@@ -305,7 +314,7 @@ public final class Hub {
 
     public void openSelector(Player player) {
         Gui gui = new Gui(3, "<dark_gray>Choose a game");
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 20, 22, 24};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
         GameType[] types = GameType.values();
         Game current = plugin.games().gameOf(player);
         for (int i = 0; i < types.length && i < slots.length; i++) {
@@ -365,7 +374,7 @@ public final class Hub {
         Gui gui = new Gui(3, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
         gui.set(4, ItemBuilder.of(Material.GOLD_BLOCK).name("<gold><bold>Overall")
                 .lore(statLines(target, "total")).build());
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 20, 22, 24};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length && i < slots.length; i++) {
             gui.set(slots[i], ItemBuilder.of(types[i].icon()).name("<bold>" + types[i].colored())

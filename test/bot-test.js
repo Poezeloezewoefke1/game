@@ -293,6 +293,105 @@ async function fight(a, b, ms) {
   b.chat('/leave');
   await finishMatch(a, b);
 
+  console.log('\n--- Bed Fight: auto teams, spam-click PvP, bed break ---');
+  check(await startMatch(a, b, 'bedfight'), 'bedfight: match started');
+  check((hasItem(a, 'red_wool') && hasItem(b, 'blue_wool')) || (hasItem(a, 'blue_wool') && hasItem(b, 'red_wool')),
+    'bedfight: players were split into red and blue teams');
+  const atk = a.entity.attributes && (a.entity.attributes['minecraft:attack_speed'] || a.entity.attributes['minecraft:generic.attack_speed']
+    || a.entity.attributes['generic.attack_speed'] || a.entity.attributes.attack_speed);
+  console.log('      attack speed attribute: ' + JSON.stringify(atk && atk.value));
+  check(!atk || atk.value >= 100, 'bedfight: 1.8 spam-click combat (no attack cooldown)');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  await sleep(1500);
+  const fightBed = a.findBlock({ matching: (blk) => blk.name.endsWith('_bed'), maxDistance: 16 });
+  check(!!fightBed, 'bedfight: Alice found Bob\'s bed');
+  if (fightBed) {
+    rcon(inGame({ who: 'BotAlice', run: `tp @s ${fightBed.position.x + 0.5} ${fightBed.position.y + 1} ${fightBed.position.z - 1.5}` }));
+    await sleep(1000);
+    try {
+      await a.dig(a.blockAt(fightBed.position), true);
+    } catch (e) {
+      console.log('dig error', e.message);
+    }
+    check(await waitFor(() => said(a, /BED DESTRUCTION/), 5000), 'bedfight: Alice broke Bob\'s bed');
+  }
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /FINAL KILL/), 6000), 'bedfight: no bed means a final kill');
+  check(await waitFor(() => said(a, /won the game/), 6000), 'bedfight: the other team wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Fireball Fight: fireball jump ---');
+  check(await startMatch(a, b, 'fireball'), 'fireball fight: match started');
+  check(hasItem(a, 'fire_charge'), 'fireball fight: kit has fireballs');
+  const ballSlot = a.inventory.items().find((i) => i.name === 'fire_charge');
+  if (ballSlot) {
+    a.setQuickBarSlot(ballSlot.slot - 36);
+    await a.look(a.entity.yaw, -Math.PI / 2, true);
+    await sleep(300);
+    const startY = a.entity.position.y;
+    let maxY = startY;
+    const tracker = setInterval(() => { maxY = Math.max(maxY, a.entity.position.y); }, 50);
+    a.activateItem();
+    await sleep(2000);
+    clearInterval(tracker);
+    check(maxY - startY > 2, `fireball fight: a fireball at your feet launches you (+${(maxY - startY).toFixed(1)} blocks)`);
+    check(a.health >= 19, `fireball fight: fireballs only knock back (health ${a.health})`);
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- The Bridge: score in the enemy portal ---');
+  check(await startMatch(a, b, 'bridge'), 'bridge: match started');
+  await sleep(3000); // cages
+  check(hasItem(a, 'iron_sword') && (hasItem(a, 'red_terracotta') || hasItem(a, 'blue_terracotta')), 'bridge: bridge kit in team colours');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  await sleep(1500);
+  const portal = a.findBlock({ matching: (blk) => blk.name === 'end_portal', maxDistance: 24 });
+  check(!!portal, 'bridge: Alice found the enemy goal');
+  if (portal) {
+    rcon(inGame({ who: 'BotAlice', run: `tp @s ${portal.position.x + 0.5} ${portal.position.y + 1.5} ${portal.position.z + 0.5}` }));
+    check(await waitFor(() => said(a, /BotAlice scored/), 6000), 'bridge: jumping in the enemy portal scores a point');
+  }
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /won the game/), 6000), 'bridge: last team in wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Creeper kit: deep map, lit creepers ---');
+  a.chat('/duel BotBob creeperpvp');
+  await sleep(1500);
+  b.chat('/duel accept BotAlice');
+  check(await waitFor(() => /RUNNING/.test(rcon('fc list')), 25000, 1000), 'creeper duel: match started');
+  await sleep(4000);
+  const below = a.blockAt(a.entity.position.offset(0, -12, 0));
+  check(below && below.name !== 'air', `creeper duel: the map is deep (12 blocks down: ${below && below.name})`);
+  const eggItem = a.inventory.items().find((i) => i.name === 'creeper_spawn_egg');
+  if (eggItem) {
+    a.setQuickBarSlot(eggItem.slot - 36);
+    rcon(inGame({ who: 'BotAlice', run: 'tp @s ~4 ~ ~' }));
+    await sleep(800);
+    const ground = a.blockAt(a.entity.position.offset(0, -1, 0));
+    await a.lookAt(ground.position.offset(0.5, 1, 0.5), true);
+    try {
+      await a.activateBlock(ground);
+    } catch (e) {
+      console.log('egg error', e.message);
+    }
+    let creeper = null;
+    await waitFor(() => (creeper = Object.values(a.entities).find((e) => e.name === 'creeper')) != null, 3000, 100);
+    check(!!creeper, 'creeper duel: the egg spawned a creeper');
+    if (creeper) {
+      const spot = creeper.position.clone();
+      await sleep(800);
+      const moved = creeper.isValid !== false && a.entities[creeper.id] ? a.entities[creeper.id].position.distanceTo(spot) : 0;
+      check(moved < 0.5, `creeper duel: the creeper stands still (${moved.toFixed(2)} blocks)`);
+      check(await waitFor(() => !a.entities[creeper.id], 4000, 100), 'creeper duel: it explodes by itself');
+    }
+  }
+  b.chat('/leave');
+  await waitFor(() => !/RUNNING|ENDING/.test(rcon('fc list')), 20000, 1000);
+  a.chat('/leave');
+  await sleep(2000);
+
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
   voidPlayer('BotBob');

@@ -2,6 +2,7 @@
 #
 # Item format: "<material> [xCOUNT] [enchantment:level ...] [potion:<potion type>]"
 # Slots: 0-8 = hotbar, 9-35 = main inventory. Armor/offhand have their own keys.
+# "map: deep" plays the kit on a deep, fully destructible terrain map (good for crystals/creepers).
 #
 # The kits below (everything except "classic") follow the MCTiers default kit layouts,
 # as collected in https://github.com/HelixCraft/Minecraft-PVP-Kits - thanks!
@@ -255,6 +256,7 @@ kits:
   crystal:
     name: "<red>Crystal PvP Kit"
     icon: end_crystal
+    map: deep
     helmet: "netherite_helmet mending:1 protection:4 unbreaking:3"
     chestplate: "netherite_chestplate mending:1 protection:4 unbreaking:3"
     leggings: "netherite_leggings blast_protection:4 mending:1 unbreaking:3"
@@ -329,6 +331,7 @@ kits:
   creeperpvp:
     name: "<green>Creeper PvP"
     icon: creeper_head
+    map: deep
     helmet: "chainmail_helmet protection:3"
     chestplate: "chainmail_chestplate protection:3"
     leggings: "chainmail_leggings protection:3"
