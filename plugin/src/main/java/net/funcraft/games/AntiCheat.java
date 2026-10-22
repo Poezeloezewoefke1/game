@@ -49,6 +49,8 @@ public final class AntiCheat implements Listener {
 
     private static final double MAX_REACH = 3.6;
     private static final double HARD_REACH = 5.0;
+    private static final int KILLAURA_HITS = 3;
+    private static final long KILLAURA_WINDOW_MS = 5000;
     private static final int MAX_CPS = 22;
     private static final int MAX_PLACE_PER_SEC = 14;
     private static final int MAX_BREAK_PER_SEC = 24;
@@ -67,6 +69,7 @@ public final class AntiCheat implements Listener {
         int breaks;
         long breakSecond;
         long lastAlert;
+        final java.util.ArrayDeque<Long> offTargetHits = new java.util.ArrayDeque<>();
     }
 
     private final FunCraft plugin;
@@ -365,9 +368,18 @@ public final class AntiCheat implements Listener {
         Vector toTarget = box.getCenter().subtract(eye);
         if (toTarget.lengthSquared() > 1.5) {
             double angle = Math.toDegrees(look.angle(toTarget));
-            if (angle > 75) {
-                e.setCancelled(true);
-                flag(p, "KillAura", 2, String.format("%.0f° off target", angle));
+            // the server only knows last tick's rotation, so one fast flick can look off target:
+            // only flag players who keep hitting things well behind them
+            if (angle > 100) {
+                Data d = of(p);
+                long now = System.currentTimeMillis();
+                d.offTargetHits.addLast(now);
+                while (now - d.offTargetHits.peekFirst() > KILLAURA_WINDOW_MS) {
+                    d.offTargetHits.removeFirst();
+                }
+                if (d.offTargetHits.size() >= KILLAURA_HITS) {
+                    flag(p, "KillAura", 2, String.format("%d hits %.0f° off target", d.offTargetHits.size(), angle));
+                }
             }
         }
     }

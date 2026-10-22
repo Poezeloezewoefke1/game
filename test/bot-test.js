@@ -20,12 +20,15 @@ function join(name) {
     bot.on('messagestr', (m) => bot.chatLog.push(m));
     // Since 1.21.9 velocity arrives in blocks/tick (lpVec3), but mineflayer 4.39 still divides it
     // by 8000, so bots would ignore all knockback. Re-apply the real value after mineflayer's handler.
-    bot._client.on('entity_velocity', (packet) => {
-      if (!bot.registry.version['>=']('1.21.9')) return;
-      const entity = bot.entities[packet.entityId];
-      if (entity) entity.velocity.set(packet.velocity.x, packet.velocity.y, packet.velocity.z);
+    // (Attached on spawn, after mineflayer's plugins have registered their own handler.)
+    bot.once('spawn', () => {
+      bot._client.on('entity_velocity', (packet) => {
+        if (!bot.registry.version['>=']('1.21.9')) return;
+        const entity = bot.entities[packet.entityId];
+        if (entity) entity.velocity.set(packet.velocity.x, packet.velocity.y, packet.velocity.z);
+      });
+      resolve(bot);
     });
-    bot.once('spawn', () => resolve(bot));
     bot.once('kicked', (r) => reject(new Error(`${name} kicked: ${JSON.stringify(r)}`)));
     bot.once('error', reject);
   });
@@ -535,19 +538,19 @@ async function fight(a, b, ms) {
   }
   await sleep(1000);
   check(acLines().some((l) => /BotAlice failed Reach/.test(l)), 'anticheat: catches a 4.3-block reach hit');
-  // fly: send position packets rising 0.25 blocks per move with nothing underneath
+  // fly: rise 0.25 blocks per tick with nothing underneath (physics off, so the bot sends exactly this)
   await sleep(2000);
   const groundY = a.entity.position.y;
-  const start = a.entity.position.clone();
   a.physicsEnabled = false;
   for (let i = 1; i <= 40; i++) {
-    a._client.write('position', { x: start.x, y: start.y + 0.25 * i, z: start.z, flags: { onGround: false, hasHorizontalCollision: false } });
+    a.entity.position.y += 0.25; // relative, so a setback from the server sticks like for a real cheat client
+    a.entity.onGround = false;
     await sleep(50);
   }
+  const serverY = parseFloat((rcon('data get entity BotAlice Pos[1]').match(/(-?[0-9.]+)d/) || [])[1]);
   a.physicsEnabled = true;
   await sleep(1500);
   check(acLines().some((l) => /BotAlice failed Fly/.test(l)), 'anticheat: catches flying');
-  const serverY = parseFloat((rcon('data get entity BotAlice Pos[1]').match(/(-?[0-9.]+)d/) || [])[1]);
   check(serverY < groundY + 6, `anticheat: the flyer was pulled back (${(serverY - groundY).toFixed(1)} blocks up on the server)`);
   b.chat('/leave');
   await finishMatch(a, b);
