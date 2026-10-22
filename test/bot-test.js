@@ -224,6 +224,20 @@ async function fight(a, b, ms) {
   check(await waitFor(() => said(a, /won the game|ended in a draw/), 150000, 1000), 'blockparty: the floor drops until the game ends');
   await finishMatch(a, b);
 
+  console.log('\n--- One in the Chamber: kill, bonus arrow, respawn ---');
+  check(await startMatch(a, b, 'oitc'), 'oitc: match started');
+  check(hasItem(a, 'bow') && hasItem(a, 'arrow'), 'oitc: bow and one arrow given');
+  a.setQuickBarSlot(0);
+  await fight(a, b, 45000);
+  check(said(a, /BotBob .*BotAlice/), 'oitc: Alice killed Bob');
+  await sleep(1000);
+  const arrows = a.inventory.items().filter((i) => i.name === 'arrow').reduce((n, i) => n + i.count, 0);
+  check(arrows === 2, `oitc: a kill gives an extra arrow (${arrows})`);
+  check(await waitFor(() => b.game.gameMode === 'survival', 8000), 'oitc: Bob respawns after dying');
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'oitc: last one in wins');
+  await finishMatch(a, b);
+
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
   voidPlayer('BotBob');

@@ -4,6 +4,7 @@ import net.funcraft.games.FunCraft;
 import net.funcraft.games.games.bedwars.BedWars;
 import net.funcraft.games.games.BlockParty;
 import net.funcraft.games.games.BuildBattle;
+import net.funcraft.games.games.OneInTheChamber;
 import net.funcraft.games.games.PvpArena;
 import net.funcraft.games.games.SkyWars;
 import net.funcraft.games.games.Spleef;
@@ -46,6 +47,10 @@ public enum GameType {
             "A colour gets called - stand on it before",
             "every other colour disappears! Each round",
             "is faster. Last dancer standing wins."),
+    OITC("One in the Chamber", "<gold>", Material.BOW, 2, 12, OneInTheChamber::new,
+            "Arrows kill in one hit and you only get",
+            "one. Every kill gives you another arrow.",
+            "First to 15 kills wins - don't miss!"),
     SUMO("Sumo", "<green>", Material.SLIME_BALL, 2, 8, Sumo::new,
             "Knock everyone off the platform with",
             "your fists. Last one standing wins.");
@@ -128,6 +133,7 @@ public enum GameType {
             case "duel", "1v1" -> DUELS;
             case "tnt", "tntrun" -> TNT_RUN;
             case "party", "bp", "blockparty", "disco" -> BLOCK_PARTY;
+            case "oneinthechamber", "chamber", "1itc" -> OITC;
             default -> null;
         };
     }

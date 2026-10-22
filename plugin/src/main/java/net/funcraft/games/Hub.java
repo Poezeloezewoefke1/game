@@ -114,7 +114,7 @@ public final class Hub {
         // NPC pads
         Material[] pads = {Material.RED_CONCRETE, Material.LIGHT_BLUE_CONCRETE, Material.MAGENTA_CONCRETE,
                 Material.ORANGE_CONCRETE, Material.YELLOW_CONCRETE, Material.WHITE_CONCRETE,
-                Material.BLACK_CONCRETE, Material.PINK_CONCRETE, Material.LIME_CONCRETE};
+                Material.BLACK_CONCRETE, Material.PINK_CONCRETE, Material.CYAN_CONCRETE, Material.LIME_CONCRETE};
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length; i++) {
             Location pad = npcLocation(i, types.length);
@@ -210,6 +210,7 @@ public final class Hub {
             case SPLEEF -> Villager.Profession.SHEPHERD;
             case TNT_RUN -> Villager.Profession.CLERIC;
             case BLOCK_PARTY -> Villager.Profession.FLETCHER;
+            case OITC -> Villager.Profession.LEATHERWORKER;
             case SUMO -> Villager.Profession.BUTCHER;
         };
     }
@@ -304,7 +305,7 @@ public final class Hub {
 
     public void openSelector(Player player) {
         Gui gui = new Gui(3, "<dark_gray>Choose a game");
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 21, 23};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 20, 22, 24};
         GameType[] types = GameType.values();
         Game current = plugin.games().gameOf(player);
         for (int i = 0; i < types.length && i < slots.length; i++) {
@@ -340,7 +341,7 @@ public final class Hub {
         Gui gui = new Gui(3, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
         gui.set(4, ItemBuilder.of(Material.GOLD_BLOCK).name("<gold><bold>Overall")
                 .lore(statLines(target, "total")).build());
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 21, 23};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 20, 22, 24};
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length && i < slots.length; i++) {
             gui.set(slots[i], ItemBuilder.of(types[i].icon()).name("<bold>" + types[i].colored())

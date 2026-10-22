@@ -1,7 +1,7 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**9 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**10 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
@@ -14,6 +14,7 @@ automatically, so there's nothing to build or set up in-game.
 | **Spleef** | Two snow floors over the void. Dig out the snow under the others, and use snowballs too. | 2–12 |
 | **TNT Run** | The floor vanishes behind you. Three layers and three double jumps. | 2–12 |
 | **Block Party** | A colour is called; stand on it before every other colour vanishes. The floor and timer get faster every round. | 2–16 |
+| **One in the Chamber** | A sword, a bow and one arrow. Arrows kill in one hit and every kill gives you another. You respawn; first to 15 kills wins. | 2–12 |
 | **Sumo** | Knock everyone off the platform with your fists. Everyone has 3 lives. | 2–8 |
 
 Plus:
@@ -34,7 +35,7 @@ Plus:
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty sumo` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |
