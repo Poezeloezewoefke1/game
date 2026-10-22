@@ -364,7 +364,7 @@ async function fight(a, b, ms) {
     a.activateItem();
     await sleep(2000);
     clearInterval(tracker);
-    check(maxY - startY > 2, `fireball fight: a fireball at your feet launches you (+${(maxY - startY).toFixed(1)} blocks)`);
+    check(maxY - startY > 2 && maxY - startY < 15, `fireball fight: a fireball at your feet launches you (+${(maxY - startY).toFixed(1)} blocks)`);
     check(a.health >= 19, `fireball fight: fireballs only knock back (health ${a.health})`);
   }
   b.chat('/leave');
@@ -542,11 +542,19 @@ async function fight(a, b, ms) {
   await sleep(2000);
   const groundY = a.entity.position.y;
   a.physicsEnabled = false;
+  let moveSent = 0;
+  const origWrite = a._client.write.bind(a._client);
+  a._client.write = (name, params) => { if (/^position/.test(name)) moveSent++; return origWrite(name, params); };
   for (let i = 1; i <= 40; i++) {
     a.entity.position.y += 0.25; // relative, so a setback from the server sticks like for a real cheat client
     a.entity.onGround = false;
     await sleep(50);
+    if (i === 20) {
+      console.log(`      fly: client y +${(a.entity.position.y - groundY).toFixed(2)}, server: ${rcon('data get entity BotAlice Pos[1]').trim()}, moves sent ${moveSent}`);
+    }
   }
+  a._client.write = origWrite;
+  console.log(`      fly: moves sent ${moveSent}, client y +${(a.entity.position.y - groundY).toFixed(2)}`);
   const serverY = parseFloat((rcon('data get entity BotAlice Pos[1]').match(/(-?[0-9.]+)d/) || [])[1]);
   a.physicsEnabled = true;
   await sleep(1500);

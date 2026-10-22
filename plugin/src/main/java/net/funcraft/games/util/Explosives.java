@@ -26,6 +26,7 @@ public final class Explosives {
 
     private static final long FIREBALL_COOLDOWN_MS = 500;
     private static final double LAUNCH_RADIUS = 4.5;
+    private static final double MAX_LIFT = 1.15;
     /** How hard a fireball's explosion throws players, stored on every fireball we launch. */
     private static final NamespacedKey LAUNCH = new NamespacedKey("funcraft", "fireball_launch");
 
@@ -112,7 +113,8 @@ public final class Explosives {
             push = new Vector(0, 1, 0);
         }
         Vector v = push.normalize().multiply(strength);
-        v.setY(Math.max(v.getY(), 0.35) + 0.35);
+        // a fireball at your feet should give a big jump (~8 blocks), not a trip to the sky
+        v.setY(Math.min(Math.max(v.getY(), 0.35) + 0.35, MAX_LIFT));
         if (plugin instanceof net.funcraft.games.FunCraft fc) {
             fc.antiCheat().exempt(victim, 3500);
         }
