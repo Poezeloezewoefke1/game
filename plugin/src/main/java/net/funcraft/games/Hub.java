@@ -330,8 +330,32 @@ public final class Hub {
                 plugin.games().join(p, type);
             });
         }
+        gui.set(4, ItemBuilder.of(Material.FIREWORK_ROCKET).name("<gold><bold>Quick Play")
+                .lore("<gray>Join the queue with the most", "<gray>players waiting (random if none).").build(), (p, click) -> {
+            p.closeInventory();
+            plugin.games().join(p, quickPlayChoice());
+        });
         gui.fill(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE).name(" ").build());
         gui.open(player);
+    }
+
+    /** The enabled game with the most people queued, or a random one. */
+    private GameType quickPlayChoice() {
+        List<GameType> enabled = new ArrayList<>();
+        GameType best = null;
+        int most = 0;
+        for (GameType type : GameType.values()) {
+            if (!type.enabled(plugin) || type == GameType.DUELS) {
+                continue;
+            }
+            enabled.add(type);
+            int queued = plugin.games().queued(type);
+            if (queued > most) {
+                most = queued;
+                best = type;
+            }
+        }
+        return best != null ? best : enabled.get(new Random().nextInt(enabled.size()));
     }
 
     public void openStats(Player viewer, UUID target) {

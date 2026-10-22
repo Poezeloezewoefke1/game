@@ -26,6 +26,7 @@ Plus:
 - **Combat feedback:** your target's health on your action bar when you hit them, a +1 Kill notice, and killstreak announcements (3 / UNSTOPPABLE 5 / GODLIKE 7 / LEGENDARY 10, plus "X ended Y's streak").
 - **[PLAY AGAIN]** button when a game ends puts you straight back in the queue; after a duel it's **[REMATCH]** with the same kit.
 - Varied death messages ("was knocked into the void by", "was sent to the shadow realm by", ...) and a lightning strike when someone is eliminated.
+- **Quick Play** in the game menu joins the queue with the most players waiting.
 - **Hub:** double jump (press jump twice), launch pads, and a **parkour course** around the island with checkpoints, a timer and a best-times leaderboard.
 - **BedWars team picker:** choose your team while you're in the queue, so you can team up with friends (teams stay balanced).
 - **Spectate:** `/spectate <player>` lets you watch a friend's game.
