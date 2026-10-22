@@ -8,6 +8,14 @@ sidebar-footer: "<gold>Have fun!"
 # Seconds a queue counts down once it has enough players (drops to 5 when the game is full).
 countdown-seconds: 20
 
+anticheat:
+  # Flags Fly, Speed, Reach, KillAura, AutoClicker, FastPlace and FastBreak/Nuker.
+  # Ops see alerts (toggle with /fc ac alerts). Movement cheats are set back.
+  enabled: true
+  # Kick players whose violation level for one check reaches kick-vl.
+  kick: true
+  kick-vl: 40
+
 ffa:
   # How long the /fc ffa kit vote lasts.
   vote-seconds: 30

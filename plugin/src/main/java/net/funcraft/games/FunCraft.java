@@ -21,6 +21,7 @@ public final class FunCraft extends JavaPlugin {
     private FfaEvent ffa;
     private Parkour parkour;
     private Parties parties;
+    private AntiCheat antiCheat;
     private net.funcraft.games.listener.ChatListener chat;
     private HubListener hubListener;
     private int ticks;
@@ -46,6 +47,8 @@ public final class FunCraft extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hubListener, this);
         getServer().getPluginManager().registerEvents(new GameListener(this), this);
         getServer().getPluginManager().registerEvents(parkour, this);
+        antiCheat = new AntiCheat(this);
+        getServer().getPluginManager().registerEvents(antiCheat, this);
         chat = new net.funcraft.games.listener.ChatListener();
         getServer().getPluginManager().registerEvents(chat, this);
         Bukkit.getScheduler().runTaskTimer(this, parkour::tick, 40L, 2L);
@@ -114,6 +117,10 @@ public final class FunCraft extends JavaPlugin {
 
     public net.funcraft.games.listener.ChatListener chat() {
         return chat;
+    }
+
+    public AntiCheat antiCheat() {
+        return antiCheat;
     }
 
     public Parties parties() {

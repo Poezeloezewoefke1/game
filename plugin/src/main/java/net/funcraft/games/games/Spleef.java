@@ -85,6 +85,7 @@ public final class Spleef extends LastStanding {
                 push = victim.getLocation().toVector().subtract(ball.getLocation().toVector()).setY(0);
             }
             if (push.lengthSquared() > 0.0001) {
+                plugin.antiCheat().exempt(victim, 2000);
                 victim.setVelocity(victim.getVelocity().add(push.normalize().multiply(0.55).setY(0.32)));
             }
             Msg.sound(victim, "entity.player.hurt", 1.2f);

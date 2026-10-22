@@ -431,6 +431,17 @@ async function fight(a, b, ms) {
 
   console.log('\n--- Sumo: three lives ---');
   check(await startMatch(a, b, 'sumo'), 'sumo lives: match started');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s ~1.5 ~ ~' }));
+  await sleep(600);
+  const sumoBob = a.players.BotBob && a.players.BotBob.entity;
+  const sumoBefore = b.entity.position.clone();
+  if (sumoBob) {
+    await a.lookAt(sumoBob.position.offset(0, 1.5, 0), true);
+    a.attack(sumoBob);
+  }
+  await sleep(800);
+  check(b.entity.position.distanceTo(sumoBefore) > 0.5, `sumo: punches knock people back (${b.entity.position.distanceTo(sumoBefore).toFixed(2)} blocks)`);
   voidPlayer('BotBob');
   check(await waitFor(() => said(a, /BotBob .*2 lives left/), 6000), 'sumo: first fall costs a life');
   await sleep(1500);
@@ -489,6 +500,43 @@ async function fight(a, b, ms) {
   const won = await waitFor(() => a.chatLog.some((m) => /won the game/i.test(m)), 15000, 500);
   check(won, 'ffa: last player standing won');
   await waitFor(() => !/RUNNING|ENDING/.test(rcon('fc list')), 20000, 1000);
+
+  console.log('\n--- Anti-cheat ---');
+  const acLines = () => execSync('docker logs mc 2>&1').toString().split('\n').filter((l) => l.includes('[AC]'));
+  const legitFlags = acLines();
+  legitFlags.forEach((l) => console.log('      false positive? ' + l.trim()));
+  check(legitFlags.length === 0, `anticheat: no flags during all the legit play above (${legitFlags.length})`);
+  check(await startMatch(a, b, 'pvp'), 'anticheat: match started');
+  // reach: hit Bob from 6 blocks away
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s ~6 ~ ~' }));
+  await sleep(2500);
+  const farBob = a.players.BotBob && a.players.BotBob.entity;
+  const bobHealth = b.health;
+  if (farBob) {
+    await a.lookAt(farBob.position.offset(0, 1.5, 0), true);
+    a.attack(farBob);
+    a.attack(farBob);
+  }
+  await sleep(1000);
+  check(acLines().some((l) => /BotAlice failed Reach/.test(l)), 'anticheat: catches a 6-block reach hit');
+  check(b.health >= bobHealth, `anticheat: the reach hit did no damage (${bobHealth} -> ${b.health})`);
+  // fly: float straight up with no gravity
+  await sleep(2000);
+  const groundY = a.entity.position.y;
+  a.physics.gravity = 0;
+  for (let i = 0; i < 40; i++) {
+    a.entity.position.y += 0.3;
+    a.entity.velocity.y = 0;
+    await sleep(50);
+  }
+  a.physics.gravity = 0.08;
+  await sleep(1500);
+  check(acLines().some((l) => /BotAlice failed Fly/.test(l)), 'anticheat: catches flying');
+  check(a.entity.position.y < groundY + 6, `anticheat: the flyer was pulled back (${(a.entity.position.y - groundY).toFixed(1)} blocks up)`);
+  b.chat('/leave');
+  await finishMatch(a, b);
+  check(!execSync('docker logs mc 2>&1').toString().includes('was kicked for'), 'anticheat: nobody got kicked during the test');
 
   a.quit();
   b.quit();

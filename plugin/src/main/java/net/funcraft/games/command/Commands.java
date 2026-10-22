@@ -211,6 +211,27 @@ public final class Commands implements TabExecutor {
                 game.forceStart();
                 Msg.send(sender, "<green>Starting " + game.name() + ".");
             }
+            case "ac", "anticheat" -> {
+                if (args.length > 1 && args[1].equalsIgnoreCase("alerts") && sender instanceof Player p) {
+                    boolean on = plugin.antiCheat().toggleAlerts(p);
+                    Msg.send(p, on ? "<green>Anti-cheat alerts on." : "<gray>Anti-cheat alerts off.");
+                } else if (args.length > 1 && Bukkit.getPlayerExact(args[1]) != null) {
+                    Player target = Bukkit.getPlayerExact(args[1]);
+                    Msg.send(sender, "<white>" + target.getName() + ": " + plugin.antiCheat().summary(target));
+                } else {
+                    var totals = plugin.antiCheat().totals();
+                    if (totals.isEmpty()) {
+                        Msg.send(sender, "<green>Nobody has anti-cheat violations right now.");
+                    }
+                    totals.forEach((id, vl) -> {
+                        Player p = Bukkit.getPlayer(id);
+                        if (p != null) {
+                            Msg.send(sender, "<yellow>" + p.getName() + " <gray>- " + plugin.antiCheat().summary(p));
+                        }
+                    });
+                    Msg.send(sender, "<gray>/fc ac <player> for details, /fc ac alerts to toggle alerts.");
+                }
+            }
             case "skip" -> {
                 Game game = args.length > 1 ? byId(args[1]) : sender instanceof Player p ? plugin.games().gameOf(p) : null;
                 if (game == null) {
@@ -266,6 +287,7 @@ public final class Commands implements TabExecutor {
                 Msg.raw(sender, "<yellow>/fc ffa <gray>- start a kit vote, then put everyone online into an FFA");
                 Msg.raw(sender, "<yellow>/fc ffa <kit> <gray>- start the FFA right away with that kit");
                 Msg.raw(sender, "<yellow>/fc ffa cancel <gray>- cancel the running kit vote");
+                Msg.raw(sender, "<yellow>/fc ac [player|alerts] <gray>- anti-cheat violations / toggle alerts");
                 Msg.raw(sender, "<yellow>/fc list <gray>- show running games");
                 Msg.raw(sender, "<yellow>/fc start [id] <gray>- force start a queue (works solo too)");
                 Msg.raw(sender, "<yellow>/fc skip [id] <gray>- skip the countdown or the current phase (e.g. Build Battle build time)");
@@ -351,7 +373,7 @@ public final class Commands implements TabExecutor {
                     options.addAll(List.of("invite", "accept", "leave", "kick", "list", "chat"));
                     Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 }
-                case "fc" -> options.addAll(List.of("ffa", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
+                case "fc" -> options.addAll(List.of("ffa", "ac", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
                 default -> {
                 }
             }

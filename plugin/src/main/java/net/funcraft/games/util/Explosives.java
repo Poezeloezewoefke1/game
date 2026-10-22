@@ -63,6 +63,9 @@ public final class Explosives {
         }
         org.bukkit.util.Vector v = push.normalize().multiply(launch);
         v.setY(Math.max(v.getY(), 0.35) + 0.35);
+        if (plugin instanceof net.funcraft.games.FunCraft fc) {
+            fc.antiCheat().exempt(victim, 3500);
+        }
         Bukkit.getScheduler().runTask(plugin, () -> {
             victim.setVelocity(v);
             victim.setFallDistance(0);

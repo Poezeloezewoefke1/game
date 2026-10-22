@@ -253,6 +253,7 @@ public final class HubListener implements Listener {
             return;
         }
         event.setCancelled(true);
+        plugin.antiCheat().exempt(p, 2500);
         p.setAllowFlight(false);
         p.setFlying(false);
         p.setVelocity(p.getLocation().getDirection().setY(0).normalize().multiply(1.1).setY(0.9));
@@ -267,6 +268,7 @@ public final class HubListener implements Listener {
             return;
         }
         Player p = event.getPlayer();
+        plugin.antiCheat().exempt(p, 4000);
         Vector toSpawn = plugin.hub().spawn().toVector().subtract(p.getLocation().toVector()).setY(0);
         p.setVelocity(toSpawn.normalize().multiply(1.6).setY(1.4));
         p.setFallDistance(0);

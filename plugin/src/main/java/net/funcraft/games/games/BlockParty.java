@@ -209,8 +209,13 @@ public final class BlockParty extends LastStanding {
     protected void onDamage(EntityDamageEvent event, Player victim, Player attacker) {
         if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && attacker != null) {
             // punch people off their colour: knockback, no damage
-            event.setDamage(0);
-            victim.setHealth(20);
+            // a 0-damage hit can skip knockback, so deal a hair of damage and heal it right back
+            event.setDamage(0.01);
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                if (victim.isOnline() && !victim.isDead()) {
+                    victim.setHealth(20);
+                }
+            });
         } else if (event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             event.setCancelled(true);
         }

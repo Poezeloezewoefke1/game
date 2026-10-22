@@ -134,6 +134,7 @@ public final class TntRun extends LastStanding {
         }
         left--;
         jumps.put(p.getUniqueId(), left);
+        plugin.antiCheat().exempt(p, 2500);
         Vector dir = p.getLocation().getDirection().setY(0).normalize().multiply(0.9);
         p.setVelocity(dir.setY(0.75));
         Msg.sound(p, "entity.bat.takeoff", 1.2f);
