@@ -220,6 +220,18 @@ async function fight(a, b, ms) {
 
   console.log('\n--- Block Party: dance until someone falls ---');
   check(await startMatch(a, b, 'blockparty'), 'blockparty: match started');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s BotBob' }));
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s ~1.5 ~ ~' }));
+  await sleep(600);
+  const bobBefore = b.entity.position.clone();
+  const bobEntity = a.players.BotBob && a.players.BotBob.entity;
+  if (bobEntity) {
+    await a.lookAt(bobEntity.position.offset(0, 1.5, 0), true);
+    a.attack(bobEntity);
+  }
+  await sleep(800);
+  check(b.entity.position.distanceTo(bobBefore) > 0.5, `blockparty: punching knocks people back (${b.entity.position.distanceTo(bobBefore).toFixed(2)} blocks)`);
+  check(b.health >= 19, `blockparty: punches do no damage (health ${b.health})`);
   check(await waitFor(() => a.inventory.items().some((i) => i.name.endsWith('_concrete')), 15000), 'blockparty: a colour gets called');
   check(await waitFor(() => said(a, /won the game|ended in a draw/), 150000, 1000), 'blockparty: the floor drops until the game ends');
   await finishMatch(a, b);

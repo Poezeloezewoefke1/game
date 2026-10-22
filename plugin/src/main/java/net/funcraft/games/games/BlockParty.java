@@ -80,8 +80,17 @@ public final class BlockParty extends LastStanding {
         for (int x = -HALF; x < HALF; x += tile) {
             for (int z = -HALF; z < HALF; z += tile) {
                 Material m = COLOURS[random.nextInt(colours)].block();
-                Build.fill(world, x, FLOOR_Y, z, x + tile - 1, FLOOR_Y, z + tile - 1, m);
+                // clip tiles at the floor edge: 32 isn't a multiple of 3, and anything painted
+                // outside -HALF..HALF-1 would never be removed by drop()
+                Build.fill(world, x, FLOOR_Y, z, Math.min(x + tile - 1, HALF - 1), FLOOR_Y, Math.min(z + tile - 1, HALF - 1), m);
             }
+        }
+        // clear any stray blocks just outside the floor
+        for (int i = -HALF - 1; i <= HALF; i++) {
+            Build.set(world, HALF, FLOOR_Y, i, Material.AIR);
+            Build.set(world, i, FLOOR_Y, HALF, Material.AIR);
+            Build.set(world, -HALF - 1, FLOOR_Y, i, Material.AIR);
+            Build.set(world, i, FLOOR_Y, -HALF - 1, Material.AIR);
         }
     }
 
@@ -198,7 +207,11 @@ public final class BlockParty extends LastStanding {
 
     @Override
     protected void onDamage(EntityDamageEvent event, Player victim, Player attacker) {
-        if (event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && attacker != null) {
+            // punch people off their colour: knockback, no damage
+            event.setDamage(0);
+            victim.setHealth(20);
+        } else if (event.getCause() != EntityDamageEvent.DamageCause.VOID) {
             event.setCancelled(true);
         }
     }
@@ -210,7 +223,7 @@ public final class BlockParty extends LastStanding {
 
     @Override
     protected String objective() {
-        return "Stand on the colour that gets called!";
+        return "Stand on the called colour - punch others off theirs!";
     }
 
     @Override
