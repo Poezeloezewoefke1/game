@@ -1,6 +1,7 @@
 package net.funcraft.games.listener;
 
 import net.funcraft.games.FunCraft;
+import net.funcraft.games.game.Game;
 import net.funcraft.games.game.GameType;
 import net.funcraft.games.util.Gui;
 import net.funcraft.games.util.Msg;
@@ -115,6 +116,10 @@ public final class HubListener implements Listener {
             case "spawn" -> p.teleport(plugin.hub().spawn());
             case "leave" -> plugin.games().leave(p);
             default -> {
+                Game game = plugin.games().gameOf(p);
+                if (game != null) {
+                    game.onQueueItem(p, id);
+                }
             }
         }
     }
@@ -232,7 +237,8 @@ public final class HubListener implements Listener {
         if (event.getTo().getY() < 35) {
             p.teleport(plugin.hub().spawn());
             p.setFallDistance(0);
-        } else if (p.getGameMode() == GameMode.ADVENTURE && !p.getAllowFlight() && ((org.bukkit.entity.Entity) p).isOnGround()) {
+        } else if (p.getGameMode() == GameMode.ADVENTURE && !p.getAllowFlight() && ((org.bukkit.entity.Entity) p).isOnGround()
+                && !plugin.parkour().isRunning(p)) {
             p.setAllowFlight(true); // recharge double jump on landing
         }
     }

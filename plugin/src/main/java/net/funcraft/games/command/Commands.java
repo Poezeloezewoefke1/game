@@ -28,7 +28,7 @@ public final class Commands implements TabExecutor {
     }
 
     public void register() {
-        for (String name : List.of("play", "leave", "games", "duel", "stats", "vote", "fc")) {
+        for (String name : List.of("play", "leave", "games", "duel", "stats", "vote", "spectate", "fc")) {
             PluginCommand command = plugin.getCommand(name);
             if (command != null) {
                 command.setExecutor(this);
@@ -69,6 +69,17 @@ public final class Commands implements TabExecutor {
             case "games" -> plugin.hub().openSelector(player);
             case "duel" -> duel(player, args);
             case "vote" -> plugin.ffa().openVote(player);
+            case "spectate" -> {
+                Player target = args.length > 0 ? Bukkit.getPlayerExact(args[0]) : null;
+                Game game = target == null ? null : plugin.games().activeGameOf(target);
+                if (target == null || game == null || game.state() != Game.State.RUNNING) {
+                    Msg.send(player, "<red>That player isn't in a running game.");
+                } else if (plugin.games().gameOf(player) != null) {
+                    Msg.send(player, "<red>Leave your game or queue first (<yellow>/leave</yellow>).");
+                } else if (game.addSpectator(player)) {
+                    player.teleport(target.getLocation());
+                }
+            }
             default -> {
                 return false;
             }
@@ -292,7 +303,7 @@ public final class Commands implements TabExecutor {
                     options.add("deny");
                     Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 }
-                case "stats" -> Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
+                case "stats", "spectate" -> Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 case "fc" -> options.addAll(List.of("ffa", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
                 default -> {
                 }

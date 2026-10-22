@@ -95,6 +95,32 @@ public final class Stats {
         return list.subList(0, Math.min(limit, list.size()));
     }
 
+    /** Best (lowest) time in ms for a timed challenge, 0 if none. */
+    public long getBest(UUID uuid, String key) {
+        return data.getLong(uuid + ".best." + key);
+    }
+
+    public void setBest(Player player, String key, long ms) {
+        data.set(player.getUniqueId() + ".name", player.getName());
+        data.set(player.getUniqueId() + ".best." + key, ms);
+        dirty = true;
+    }
+
+    /** Lowest times first. */
+    public List<Entry> topBest(String key, int limit) {
+        List<Entry> list = new ArrayList<>();
+        for (Map.Entry<String, Object> e : data.getValues(false).entrySet()) {
+            if (e.getValue() instanceof ConfigurationSection section) {
+                long value = section.getLong("best." + key);
+                if (value > 0) {
+                    list.add(new Entry(section.getString("name", "?"), (int) Math.min(Integer.MAX_VALUE, value)));
+                }
+            }
+        }
+        list.sort((a, b) -> Integer.compare(a.value(), b.value()));
+        return list.subList(0, Math.min(limit, list.size()));
+    }
+
     public void saveAsync() {
         if (!dirty) {
             return;

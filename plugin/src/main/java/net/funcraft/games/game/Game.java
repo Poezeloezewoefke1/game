@@ -78,6 +78,8 @@ public abstract class Game {
     private boolean privateMatch;
     private int maxOverride;
     private boolean loading;
+    /** Force-started by an admin: keep counting down even below the minimum players. */
+    private boolean forced;
     private BukkitTask tickTask;
 
     protected Game(FunCraft plugin, int id, GameType type) {
@@ -104,6 +106,14 @@ public abstract class Game {
 
     /** A player lost all their health or fell into the void. */
     protected abstract void onDeath(Player victim, Player killer);
+
+    /** A player joined the queue; give game-specific queue items here. */
+    protected void onQueueJoin(Player player) {
+    }
+
+    /** A queue item with this id was used (see {@link net.funcraft.games.Hub#tag}). */
+    public void onQueueItem(Player player, String id) {
+    }
 
     /** Called every second while running. */
     protected void onSecond() {
@@ -213,10 +223,25 @@ public abstract class Game {
         players.add(player.getUniqueId());
         plugin.games().track(player, this);
         plugin.hub().giveQueueItems(player);
+        onQueueJoin(player);
         Msg.all(online(), "<yellow>" + player.getName() + " <gray>joined the <white>" + type.displayName()
                 + "</white> queue <dark_gray>(" + players.size() + "/" + maxPlayers() + ")");
         Msg.sound(player, "block.note_block.pling", 1.4f);
         updateCountdown();
+        return true;
+    }
+
+    /** Lets someone watch a running match. They are sent back to the hub when it ends. */
+    public boolean addSpectator(Player player) {
+        if (state != State.RUNNING || world == null || players.contains(player.getUniqueId())) {
+            return false;
+        }
+        players.add(player.getUniqueId());
+        plugin.games().track(player, this);
+        plugin.games().prepare(player, GameMode.SPECTATOR);
+        player.teleport(spectatorSpawn());
+        Msg.all(online(), "<gray>" + player.getName() + " is now spectating.");
+        Msg.send(player, "<gray>You are spectating " + name() + ". Type <yellow>/leave</yellow> to go back to the hub.");
         return true;
     }
 
@@ -248,7 +273,7 @@ public abstract class Game {
             state = State.STARTING;
             countdown = countdownSeconds();
             Msg.all(online(), "<green>Enough players! Starting in <white>" + countdown + "</white> seconds.");
-        } else if (state == State.STARTING && players.size() < min && !privateMatch) {
+        } else if (state == State.STARTING && players.size() < min && !privateMatch && !forced) {
             state = State.WAITING;
             Msg.all(online(), "<red>Not enough players, countdown cancelled.");
         }
@@ -277,7 +302,7 @@ public abstract class Game {
         if (state == State.WAITING || state == State.STARTING) {
             state = State.STARTING;
             countdown = Math.min(countdown > 0 ? countdown : 5, 5);
-            privateMatch = true;
+            forced = true;
         }
     }
 
@@ -396,6 +421,11 @@ public abstract class Game {
     /** Keeps the (already loaded) map chunks loaded until the world is deleted. Main thread only. */
     private void ticketArea() {
         int[] area = mapArea();
+        // a world border just outside the map keeps elytras and pearls from leaving it
+        org.bukkit.WorldBorder border = world.getWorldBorder();
+        border.setCenter((area[0] + area[2]) / 2.0, (area[1] + area[3]) / 2.0);
+        border.setSize(Math.max(area[2] - area[0], area[3] - area[1]) + 24);
+        border.setWarningDistance(4);
         for (int cx = area[0] >> 4; cx <= area[2] >> 4; cx++) {
             for (int cz = area[1] >> 4; cz <= area[3] >> 4; cz++) {
                 world.getChunkAt(cx, cz).addPluginChunkTicket(plugin);

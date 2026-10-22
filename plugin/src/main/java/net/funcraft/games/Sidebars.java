@@ -43,6 +43,10 @@ public final class Sidebars {
 
     public void update(Player player) {
         Sidebar sidebar = of(player);
+        player.sendPlayerListHeaderAndFooter(
+                net.funcraft.games.util.Msg.mm("\n<gradient:#ffb300:#ff5e00><bold>" + plugin.serverName() + "</bold></gradient>\n<gray>"
+                        + Bukkit.getOnlinePlayers().size() + " online\n"),
+                net.funcraft.games.util.Msg.mm("\n<gray>/play <dark_gray>|</dark_gray> /duel <dark_gray>|</dark_gray> /spectate <dark_gray>|</dark_gray> /stats\n"));
         Game game = plugin.games().gameOf(player);
         if (game != null) {
             sidebar.update(game.sidebarTitle(), game.sidebarFor(player));

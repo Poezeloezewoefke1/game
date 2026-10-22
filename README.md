@@ -23,7 +23,9 @@ Plus:
 - **Random map themes:** SkyWars and BedWars islands come in Plains, Desert, Snowy, Nether, The End, Mushroom or Cherry Blossom. Arenas can be a Colosseum, Desert Temple, Nether Fortress, Ocean Monument or Deep Dark. TNT Run and Sumo get random colours.
 - **Combat feedback:** your target's health on your action bar when you hit them, a +1 Kill notice, and killstreak announcements (3 / UNSTOPPABLE 5 / GODLIKE 7 / LEGENDARY 10, plus "X ended Y's streak").
 - **[PLAY AGAIN]** button when a game ends puts you straight back in the queue.
-- **Hub:** double jump (press jump twice) and launch pads while you wait.
+- **Hub:** double jump (press jump twice), launch pads, and a **parkour course** around the island with checkpoints, a timer and a best-times leaderboard.
+- **BedWars team picker:** choose your team while you're in the queue, so you can team up with friends (teams stay balanced).
+- **Spectate:** `/spectate <player>` lets you watch a friend's game.
 - Sidebar scoreboard, titles, sounds, fireworks for the winner, team-coloured name tags in BedWars.
 
 ## Commands
@@ -35,6 +37,7 @@ Plus:
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |
 | `/stats [player]` | Show stats |
+| `/spectate <player>` | Watch someone's game |
 
 **Op-only (`/fc`):**
 

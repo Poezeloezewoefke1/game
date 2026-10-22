@@ -75,6 +75,7 @@ public final class Hub {
             build();
         }
         spawnNpcs();
+        plugin.parkour().load(world);
     }
 
     public World world() {
@@ -143,6 +144,7 @@ public final class Hub {
                 }
             }
         }
+        plugin.parkour().build(world);
         world.setSpawnLocation(spawn());
     }
 
@@ -251,6 +253,7 @@ public final class Hub {
 
     /** Teleports a player to the hub and resets them. */
     public void send(Player player) {
+        plugin.parkour().stop(player);
         plugin.games().prepare(player, GameMode.ADVENTURE);
         player.teleport(spawn());
         player.setAllowFlight(true); // double jump, see HubListener
@@ -281,7 +284,7 @@ public final class Hub {
         return item;
     }
 
-    private ItemStack tag(ItemStack item, String id) {
+    public ItemStack tag(ItemStack item, String id) {
         item.editMeta(meta -> meta.getPersistentDataContainer().set(itemKey, PersistentDataType.STRING, id));
         return item;
     }

@@ -110,6 +110,26 @@ async function fight(a, b, ms) {
   check(hasItem(a, 'compass'), 'hub: player got the game selector compass');
   check(Math.abs(a.entity.position.x) < 5 && Math.abs(a.entity.position.z) < 5, `hub: player spawned at the hub (${a.entity.position})`);
 
+  const plate = a.findBlock({ matching: (blk) => blk.name === 'light_weighted_pressure_plate', maxDistance: 48 });
+  check(!!plate, `hub: parkour start plate exists${plate ? ' at ' + plate.position : ''}`);
+
+  console.log('\n--- BedWars team picker ---');
+  a.chat('/play bedwars');
+  await sleep(1500);
+  check(hasItem(a, 'white_wool'), 'bedwars queue: team picker item given');
+  a.setQuickBarSlot(2);
+  await sleep(300);
+  const picker = new Promise((resolve) => a.once('windowOpen', resolve));
+  a.activateItem();
+  const win = await Promise.race([picker, sleep(5000).then(() => null)]);
+  check(!!win, 'bedwars queue: team picker menu opens');
+  if (win) {
+    await a.clickWindow(1, 0, 0);
+    check(await waitFor(() => said(a, /You picked the Red team/), 5000), 'bedwars queue: picked the Red team');
+  }
+  a.chat('/leave');
+  await sleep(1500);
+
   await playGame(a, b, 'bedwars', 'wooden_sword');
   await playGame(a, b, 'skywars');
   await playGame(a, b, 'pvp', 'iron_sword');

@@ -95,6 +95,7 @@ public final class BedWars extends Game {
     private int diamondTimer;
     private int emeraldTimer;
     private final Shop shop = new Shop(this);
+    private final Map<UUID, Team.Color4> wantedTeam = new HashMap<>();
     private Theme theme;
 
     public BedWars(FunCraft plugin, int id) {
@@ -232,10 +233,26 @@ public final class BedWars extends Game {
     protected void onStart(List<Player> list) {
         List<Player> shuffled = new ArrayList<>(list);
         Collections.shuffle(shuffled, random);
-        for (int i = 0; i < shuffled.size(); i++) {
-            Team team = teams.get(i % teams.size());
-            team.members.add(shuffled.get(i).getUniqueId());
-            teamOf.put(shuffled.get(i).getUniqueId(), team);
+        // players who picked a team get it, as long as teams stay balanced
+        int perTeam = (int) Math.ceil(list.size() / (double) teams.size());
+        List<Player> rest = new ArrayList<>();
+        for (Player p : shuffled) {
+            Team.Color4 choice = wantedTeam.get(p.getUniqueId());
+            Team team = teams.stream().filter(t -> t.color == choice).findFirst().orElse(null);
+            if (team != null && team.members.size() < perTeam) {
+                assign(p, team);
+            } else {
+                rest.add(p);
+            }
+        }
+        for (Player p : rest) {
+            Team smallest = teams.get(0);
+            for (Team t : teams) {
+                if (t.members.size() < smallest.members.size()) {
+                    smallest = t;
+                }
+            }
+            assign(p, smallest);
         }
         // teams without players lose their bed straight away
         for (Team team : teams) {
@@ -260,6 +277,55 @@ public final class BedWars extends Game {
         }
         Msg.all(list, "<gray>Collect <white>iron</white> and <gold>gold</gold> at your generator, buy gear at the <gold>Item Shop</gold>.");
         Msg.all(list, "<gray>Your bed lets you respawn. Break enemy beds to eliminate them!");
+    }
+
+    private void assign(Player p, Team team) {
+        team.members.add(p.getUniqueId());
+        teamOf.put(p.getUniqueId(), team);
+    }
+
+    // ------------------------------------------------------------ team picker
+
+    @Override
+    protected void onQueueJoin(Player player) {
+        player.getInventory().setItem(2, plugin.hub().tag(ItemBuilder.of(Material.WHITE_WOOL)
+                .name("<yellow><bold>Choose Team</bold> <gray>(right click)").lore("<gray>Play on the same team as your friends!").build(), "bw_team"));
+    }
+
+    @Override
+    public void onQueueItem(Player player, String id) {
+        if (!id.equals("bw_team")) {
+            return;
+        }
+        net.funcraft.games.util.Gui gui = new net.funcraft.games.util.Gui(1, "<dark_gray>Choose your team");
+        Team.Color4[] colors = Team.Color4.values();
+        for (int i = 0; i < colors.length; i++) {
+            Team.Color4 c = colors[i];
+            List<String> lore = new ArrayList<>();
+            for (Map.Entry<UUID, Team.Color4> e : wantedTeam.entrySet()) {
+                Player member = Bukkit.getPlayer(e.getKey());
+                if (e.getValue() == c && member != null && players.contains(e.getKey())) {
+                    lore.add("<gray>- " + member.getName());
+                }
+            }
+            if (lore.isEmpty()) {
+                lore.add("<dark_gray>Nobody yet");
+            }
+            lore.add("");
+            lore.add(c == wantedTeam.get(player.getUniqueId()) ? "<green>Your pick" : "<yellow>Click to join");
+            ItemBuilder b = ItemBuilder.of(c.wool).name("<bold>" + c.mm + c.name + " Team").lore(lore);
+            if (c == wantedTeam.get(player.getUniqueId())) {
+                b.glow();
+            }
+            gui.set(i * 2 + 1, b.build(), (p, click) -> {
+                wantedTeam.put(p.getUniqueId(), c);
+                p.getInventory().setItem(2, plugin.hub().tag(ItemBuilder.of(c.wool)
+                        .name("<yellow><bold>Choose Team</bold> <gray>(right click)").lore("<gray>Picked: " + c.mm + c.name).build(), "bw_team"));
+                Msg.send(p, "<gray>You picked the " + c.mm + c.name + " <gray>team. Teams are kept balanced, so you might be moved if it's full.");
+                p.closeInventory();
+            });
+        }
+        gui.open(player);
     }
 
     /** Gives a player their (re)spawn kit, keeping permanent upgrades. */

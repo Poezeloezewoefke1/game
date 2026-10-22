@@ -22,6 +22,9 @@ commands:
   stats:
     description: Show your (or someone else's) stats.
     usage: /stats [player]
+  spectate:
+    description: Watch a friend's game.
+    usage: /spectate <player>
   vote:
     description: Vote for the kit of the FFA event.
   fc:

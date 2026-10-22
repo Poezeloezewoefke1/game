@@ -99,7 +99,7 @@ public final class GameManager {
         byPlayer.remove(player.getUniqueId());
     }
 
-    void track(Player player, Game game) {
+    public void track(Player player, Game game) {
         byPlayer.put(player.getUniqueId(), game);
     }
 
