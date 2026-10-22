@@ -385,6 +385,9 @@ public final class AntiCheat implements Listener {
             return;
         }
         Player p = e.getPlayer();
+        if (p.getInventory().getItemInMainHand().getType().name().contains("SPEAR")) {
+            exempt(p, 2000); // a jab lunges you forward even when it misses (lunge swaps)
+        }
         if (p.getTargetBlockExact(5) != null) {
             return; // holding left click on a block (mining) swings every tick - not clicking
         }
