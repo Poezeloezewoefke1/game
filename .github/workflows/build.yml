@@ -77,6 +77,12 @@ jobs:
           docker exec mc rcon-cli fc bots
           docker exec mc rcon-cli list | grep -q 'Bot'
           docker logs mc 2>&1 | grep -E 'Bots:|Bots are not available' || true
+          # bots must be hurtable like real players
+          docker exec mc rcon-cli damage SteveBot 6
+          sleep 1
+          HEALTH=$(docker exec mc rcon-cli data get entity SteveBot Health | grep -oE '[0-9.]+f' | tr -d f)
+          echo "SteveBot health after 6 damage: $HEALTH"
+          awk -v h="$HEALTH" 'BEGIN { exit !(h != "" && h < 20) }'
           docker exec mc rcon-cli fc bots clear
       - name: Bot play-through
         if: matrix.bots != 'none'

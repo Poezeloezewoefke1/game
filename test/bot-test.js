@@ -827,7 +827,8 @@ async function fight(a, b, ms) {
   {
     // and they can be hurt and knocked back like anyone else
     const healthOf = (name) => parseFloat((rcon(`data get entity ${name} Health`).match(/(-?[0-9.]+)f/) || [])[1]);
-    const victim = (rcon('fc bots list').match(/(\w+Bot) \(PvP Arena\)/) || [])[1];
+    const plain = rcon('fc bots list').replace(/\x1b\[[0-9;]*m/g, '').replace(/\u00a7./g, '');
+    const victim = (plain.match(/(\w+Bot)\W*\(PvP Arena\)/) || [])[1];
     if (victim) {
       const before = healthOf(victim);
       for (let i = 0; i < 6 && !said(a, new RegExp(victim + ' ')); i++) {
