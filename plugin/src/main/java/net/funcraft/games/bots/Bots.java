@@ -62,10 +62,17 @@ public final class Bots {
     public void start() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> tick(), 1L, 1L);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (enabled() && filling()) {
+            if (!plugin.getConfig().getBoolean("bots.enabled", true)) {
+                plugin.getLogger().info("Bots are turned off in config.yml (bots.enabled: false).");
+            } else if (!filling()) {
+                plugin.getLogger().info("Bots are paused (/fc bots fill on to start them).");
+            } else {
                 ensureIdle();
+                if (!broken) {
+                    plugin.getLogger().info("Spawned " + bots.size() + " lobby bots. Manage them with /fc bots.");
+                }
             }
-        }, 100L);
+        }, 40L);
     }
 
     public boolean enabled() {
@@ -101,9 +108,16 @@ public final class Bots {
         return list;
     }
 
+    public String failure() {
+        return broken ? brokenReason : null;
+    }
+
     public String status() {
+        if (!plugin.getConfig().getBoolean("bots.enabled", true)) {
+            return "<red>Bots are turned off in config.yml (bots.enabled: false).";
+        }
         if (broken) {
-            return "<red>Bots don't work on this server version (" + brokenReason + ")";
+            return "<red>Bots couldn't be created on this server: <gray>" + brokenReason + " <dark_gray>(" + Bukkit.getVersion() + ")";
         }
         int busy = 0;
         for (Bot b : bots.values()) {
@@ -119,9 +133,15 @@ public final class Bots {
 
     /** Adds a bot. Returns null if bots can't be created on this server. */
     public Player add() {
-        if (broken) {
+        return add(false);
+    }
+
+    /** @param retry try again even if an earlier attempt failed (for /fc bots add) */
+    public Player add(boolean retry) {
+        if (broken && !retry) {
             return null;
         }
+        broken = false;
         String name = null;
         for (String n : NAMES) {
             if (Bukkit.getPlayerExact(n) == null) {
@@ -149,7 +169,8 @@ public final class Bots {
             bots.remove(uuid);
             broken = true;
             brokenReason = t.getClass().getSimpleName() + ": " + t.getMessage();
-            plugin.getLogger().log(Level.WARNING, "Bots are not available on this server version: " + brokenReason, t);
+            plugin.getLogger().log(Level.WARNING, "Couldn't create a bot on " + Bukkit.getName() + " " + Bukkit.getVersion()
+                    + " - " + brokenReason, t);
             return null;
         }
     }
@@ -200,8 +221,8 @@ public final class Bots {
     // ---------------------------------------------------------------- ticking
 
     private void tick() {
-        if (bots.isEmpty()) {
-            return;
+        if (++fillTicks % 40 == 0 && enabled()) {
+            fillQueues();
         }
         for (Bot bot : new ArrayList<>(bots.values())) {
             if (bot == null) {
@@ -219,9 +240,6 @@ public final class Bots {
                     plugin.getLogger().log(Level.WARNING, "Bot " + p.getName() + " tick failed", t);
                 }
             }
-        }
-        if (++fillTicks % 40 == 0 && enabled()) {
-            fillQueues();
         }
     }
 

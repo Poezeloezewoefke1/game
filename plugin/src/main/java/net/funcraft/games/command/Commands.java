@@ -317,11 +317,20 @@ public final class Commands implements TabExecutor {
             case "add" -> {
                 int added = 0;
                 for (int i = 0; i < n; i++) {
-                    if (bots.add() != null) {
+                    if (bots.add(true) != null) {
                         added++;
+                    } else {
+                        break;
                     }
                 }
-                Msg.send(sender, added > 0 ? "<green>Added " + added + " bot" + (added == 1 ? "" : "s") + "." : bots.status());
+                if (added > 0) {
+                    Msg.send(sender, "<green>Added " + added + " bot" + (added == 1 ? "" : "s") + ".");
+                    if (!bots.filling()) {
+                        Msg.send(sender, "<gray>Tip: <yellow>/fc bots fill on</yellow> lets them join queues by themselves.");
+                    }
+                } else {
+                    Msg.send(sender, bots.status());
+                }
             }
             case "remove" -> {
                 int removed = n >= 999 ? removeAll(bots) : bots.remove(n);
