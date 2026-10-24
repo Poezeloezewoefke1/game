@@ -70,6 +70,15 @@ public final class AntiCheat implements Listener {
         long breakSecond;
         long lastAlert;
         final java.util.ArrayDeque<Long> offTargetHits = new java.util.ArrayDeque<>();
+        // Timer
+        int moveEvents;
+        long moveWindow = System.currentTimeMillis();
+        // NoFall / Jesus
+        int groundSpoofs;
+        int waterWalks;
+        // Velocity (anti-knockback)
+        int kbFails;
+        long lastKbFail;
     }
 
     private final FunCraft plugin;
@@ -177,7 +186,58 @@ public final class AntiCheat implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onVelocity(PlayerVelocityEvent e) {
-        exempt(e.getPlayer(), 2500);
+        Player p = e.getPlayer();
+        exempt(p, 2500);
+        if (!enabled() || plugin.bots().isBot(p) || ignored(p)) {
+            return;
+        }
+        // --- Velocity: a player who doesn't move at all after a real knockback is ignoring it
+        Vector v = e.getVelocity();
+        double push = Math.hypot(v.getX(), v.getZ());
+        if (push < 0.3 || e.isCancelled()) {
+            return;
+        }
+        Location start = p.getLocation();
+        Vector dir = new Vector(v.getX(), 0, v.getZ()).normalize();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!p.isOnline() || p.getWorld() != start.getWorld() || ignored(p) || special(p, p.getLocation())) {
+                return;
+            }
+            // something solid right behind them stops the knockback legitimately
+            Location behind = start.clone().add(dir.clone().multiply(0.8));
+            if (!behind.getBlock().isPassable() || !behind.clone().add(0, 1, 0).getBlock().isPassable()) {
+                return;
+            }
+            Location now = p.getLocation();
+            double moved = Math.hypot(now.getX() - start.getX(), now.getZ() - start.getZ());
+            if (moved < push * 0.5) {
+                Data d = of(p);
+                long t = System.currentTimeMillis();
+                d.kbFails = t - d.lastKbFail < 30_000 ? d.kbFails + 1 : 1;
+                d.lastKbFail = t;
+                if (d.kbFails >= 3) {
+                    flag(p, "Velocity", 2, String.format("took %.2f of %.2f knockback", moved, push * 4));
+                    d.kbFails = 0;
+                }
+            }
+        }, 6L);
+    }
+
+    private static boolean solidAround(Location l) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                Block b = l.clone().add(dx * 0.4, -0.1, dz * 0.4).getBlock();
+                if (b.getType().isSolid() || b.getType() == Material.LILY_PAD) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean frostWalker(Player p) {
+        ItemStack boots = p.getInventory().getBoots();
+        return boots != null && boots.containsEnchantment(org.bukkit.enchantments.Enchantment.FROST_WALKER);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -246,7 +306,32 @@ public final class AntiCheat implements Listener {
             d.lastGood = from;
         }
         boolean grounded = supported(to) || supported(from);
-        if (ignored(p) || now < d.exemptUntil || special(p, to)) {
+        boolean exempt = ignored(p) || now < d.exemptUntil;
+        // --- Timer: more movement updates than a normal client sends (20 a second)
+        d.moveEvents++;
+        if (now - d.moveWindow >= 2000) {
+            if (!exempt && d.moveEvents > 52) {
+                flag(p, "Timer", 1 + (d.moveEvents - 52) / 10.0, d.moveEvents / 2 + " moves/s");
+                e.setTo(d.lastGood);
+            }
+            d.moveEvents = 0;
+            d.moveWindow = now;
+        }
+        // --- Jesus: walking on top of water (checked here because water is otherwise exempt)
+        Block feetBlock = to.getBlock();
+        Block belowBlock = to.clone().subtract(0, 0.1, 0).getBlock();
+        if (!exempt && belowBlock.getType() == Material.WATER && !feetBlock.isLiquid() && feetBlock.isPassable()
+                && !p.isSwimming() && Math.abs(to.getY() - from.getY()) < 0.05 && !solidAround(to) && !frostWalker(p)) {
+            if (++d.waterWalks > 20) {
+                flag(p, "Jesus", 1.5, "walking on water");
+                e.setTo(d.lastGood);
+                d.waterWalks = 0;
+                return;
+            }
+        } else {
+            d.waterWalks = 0;
+        }
+        if (exempt || special(p, to)) {
             d.airMoves = 0;
             if (grounded) {
                 d.lastGood = to;
@@ -256,6 +341,21 @@ public final class AntiCheat implements Listener {
             return;
         }
         double dy = to.getY() - from.getY();
+        // --- Step: going up a full block or more in one move without jumping
+        if (supported(from) && supported(to) && dy >= 1.0 && amplifier(p, PotionEffectType.JUMP_BOOST) == 0) {
+            flag(p, "Step", 2, String.format("up %.2f", dy));
+            e.setTo(d.lastGood);
+            return;
+        }
+        // --- NoFall: the client says it's on the ground while it's falling through the air
+        if (!grounded && dy < -0.08 && p.isOnGround()) {
+            if (++d.groundSpoofs > 4) {
+                flag(p, "NoFall", 1.5, "fake ground while falling");
+                d.groundSpoofs = 0;
+            }
+        } else if (grounded) {
+            d.groundSpoofs = 0;
+        }
         // --- Fly: staying up or climbing with nothing underneath
         if (!grounded) {
             d.airMoves++;

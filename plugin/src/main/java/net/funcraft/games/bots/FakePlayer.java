@@ -125,6 +125,43 @@ final class FakePlayer {
 
     // --------------------------------------------------------------- ticking
 
+    private static boolean loadedWarned;
+
+    /**
+     * Real clients tell the server when they have finished loading (after joining and after every
+     * world change); until then the player can't be hurt. Bots have no client, so we say it for them -
+     * otherwise they could never take damage or knockback.
+     */
+    void markLoaded() {
+        boolean done = false;
+        try {
+            Nms.call(handle, "setClientLoaded", true);
+            done = true;
+        } catch (ReflectiveOperationException ignored) {
+            try {
+                Nms.set(handle, "clientLoaded", true);
+                done = true;
+            } catch (ReflectiveOperationException ignored2) {
+                // older versions don't have this at all
+            }
+        }
+        try {
+            Nms.call(handle, "hasChangedDimension");
+            done = true;
+        } catch (ReflectiveOperationException ignored) {
+            try {
+                Nms.set(handle, "isChangingDimension", false);
+                done = true;
+            } catch (ReflectiveOperationException ignored2) {
+                // nothing to reset
+            }
+        }
+        if (!done && !loadedWarned) {
+            loadedWarned = true;
+            Bukkit.getLogger().warning("[FunCraftGames] Bots: couldn't mark bots as loaded; they may not take damage on this version.");
+        }
+    }
+
     /** Runs the player's own tick (health, effects, cooldowns, invulnerability timer, and - on some versions - movement). */
     void tick() throws ReflectiveOperationException {
         Nms.call(handle, "doTick");

@@ -218,6 +218,51 @@ final class Shop {
         return list;
     }
 
+    private record Wish(int category, int index, String name, boolean wanted) {
+    }
+
+    private static boolean hasAny(Player p, Material... types) {
+        for (Material m : types) {
+            if (p.getInventory().contains(m)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Bots shop too: buys the most useful thing they can afford with what they carry, paying the
+     * normal price. Returns what was bought, or null.
+     */
+    String botBuy(Player p) {
+        Team team = game.team(p);
+        BedWars.Kit kit = game.kit(p);
+        Material wool = team == null ? Material.WHITE_WOOL : team.color.wool;
+        List<Wish> wishes = List.of(
+                new Wish(0, 0, "wool", count(p, wool) < 24),
+                new Wish(1, 0, "a stone sword", !hasAny(p, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD)),
+                new Wish(2, 0, "chainmail armor", kit.armor < 1),
+                new Wish(5, 0, "a golden apple", count(p, Material.GOLDEN_APPLE) < 1),
+                new Wish(1, 1, "an iron sword", !hasAny(p, Material.IRON_SWORD, Material.DIAMOND_SWORD)),
+                new Wish(2, 1, "iron armor", kit.armor < 2),
+                new Wish(1, 2, "a diamond sword", !hasAny(p, Material.DIAMOND_SWORD)),
+                new Wish(2, 2, "diamond armor", kit.armor < 3),
+                new Wish(4, 1, "a bow", !hasAny(p, Material.BOW) && count(p, Material.GOLD_INGOT) >= 14),
+                new Wish(4, 0, "arrows", hasAny(p, Material.BOW) && count(p, Material.ARROW) < 6),
+                new Wish(0, 0, "wool", count(p, wool) < 48));
+        for (Wish w : wishes) {
+            if (!w.wanted()) {
+                continue;
+            }
+            Offer offer = offers(p, w.category()).get(w.index());
+            if (count(p, offer.currency()) >= offer.price() && offer.buy().test(p)) {
+                take(p, offer.currency(), offer.price());
+                return w.name();
+            }
+        }
+        return null;
+    }
+
     private Offer simple(ItemStack item, Material currency, int price) {
         return new Offer(p -> item, currency, price, p -> {
             giveItem(p, item.clone());

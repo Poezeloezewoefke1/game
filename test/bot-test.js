@@ -823,6 +823,29 @@ async function fight(a, b, ms) {
   a.chat('/play pvp');
   check(await waitFor(() => /PvP Arena/.test(rcon('fc bots list')), 12000, 1000), 'bots: bots join a queue a real player is waiting in');
   check(await waitFor(() => /RUNNING/.test(rcon('fc list')), 45000, 1000), 'bots: the queue fills up and the game starts');
+  await sleep(4500); // spawn protection
+  {
+    // and they can be hurt and knocked back like anyone else
+    const healthOf = (name) => parseFloat((rcon(`data get entity ${name} Health`).match(/(-?[0-9.]+)f/) || [])[1]);
+    const victim = (rcon('fc bots list').match(/(\w+Bot) \(PvP Arena\)/) || [])[1];
+    if (victim) {
+      const before = healthOf(victim);
+      for (let i = 0; i < 6 && !said(a, new RegExp(victim + ' ')); i++) {
+        rcon(inGame({ who: 'BotAlice', run: `tp @s ${victim}` }));
+        await sleep(250);
+        const e = a.players[victim] && a.players[victim].entity;
+        if (e) {
+          await a.lookAt(e.position.offset(0, 1.2, 0), true);
+          a.attack(e);
+        }
+        await sleep(600);
+      }
+      const after = healthOf(victim);
+      check(after < before || said(a, new RegExp(victim + ' ')), `bots: bots take damage (${victim} ${before} -> ${after})`);
+    } else {
+      check(false, 'bots: found a bot in the match to hit');
+    }
+  }
   check(await waitFor(() => a.health < 20 || said(a, /BotAlice .*Bot/), 40000, 500), `bots: bots fight real players (health ${a.health})`);
   a.chat('/leave');
   rcon('fc bots fill off');

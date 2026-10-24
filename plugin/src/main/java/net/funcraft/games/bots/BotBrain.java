@@ -54,6 +54,10 @@ public final class BotBrain {
     private int strafeTicks;
     private float strafeDir = 1;
     private int eatCooldown;
+    private int armorCheck;
+    private java.util.UUID lastTarget;
+    private int reactTicks;
+    private final java.util.Set<Block> looted = new java.util.HashSet<>();
     private Location wanderTarget;
     private int wanderTicks;
     private int stuckTicks;
@@ -82,6 +86,8 @@ public final class BotBrain {
 
     void forget() {
         bot.setSneaking(false);
+        looted.clear();
+        lastTarget = null;
         memo = null;
         timer = 0;
         wanderTarget = null;
@@ -356,7 +362,16 @@ public final class BotBrain {
             }
         }
         lookAt(tl.clone().add(0, target.getHeight() * 0.7, 0));
-        if (d < 3.3 && attackCooldown <= 0 && canSee(target)) {
+        // like a person, a bot needs a moment to react to a new opponent
+        if (!target.getUniqueId().equals(lastTarget)) {
+            lastTarget = target.getUniqueId();
+            reactTicks = 6 + random.nextInt(8);
+        }
+        if (reactTicks > 0) {
+            reactTicks--;
+            return;
+        }
+        if (d < 3.0 && attackCooldown <= 0 && canSee(target)) {
             melee(target);
         }
     }
@@ -364,7 +379,9 @@ public final class BotBrain {
     public void melee(LivingEntity target) {
         holdBestWeapon();
         bot.swingMainHand();
-        bot.attack(target);
+        if (random.nextInt(100) >= 18) { // sometimes a swing just misses
+            bot.attack(target);
+        }
         var speed = bot.getAttribute(org.bukkit.attribute.Attribute.ATTACK_SPEED);
         boolean spam = speed != null && speed.getValue() > 50; // 1.8-style combat
         attackCooldown = spam ? 3 + random.nextInt(3) : 11 + random.nextInt(4);
@@ -511,8 +528,103 @@ public final class BotBrain {
         }
     }
 
+    private static int armorScore(Material m) {
+        String n = m.name();
+        int tier = n.startsWith("NETHERITE") ? 6 : n.startsWith("DIAMOND") ? 5 : n.startsWith("IRON") ? 4 : n.startsWith("CHAINMAIL") ? 3
+                : n.startsWith("GOLDEN") ? 2 : n.startsWith("LEATHER") ? 1 : 0;
+        return tier;
+    }
+
+    /** Puts on any better armor it picked up. */
+    public void equipArmor() {
+        if (--armorCheck > 0) {
+            return;
+        }
+        armorCheck = 40;
+        PlayerInventory inv = bot.getInventory();
+        for (int i = 0; i < inv.getStorageContents().length; i++) {
+            ItemStack item = inv.getItem(i);
+            if (item == null) {
+                continue;
+            }
+            String n = item.getType().name();
+            int score = armorScore(item.getType());
+            if (score == 0) {
+                continue;
+            }
+            ItemStack worn = null;
+            java.util.function.Consumer<ItemStack> wear = null;
+            if (n.endsWith("_HELMET")) {
+                worn = inv.getHelmet();
+                wear = inv::setHelmet;
+            } else if (n.endsWith("_CHESTPLATE")) {
+                worn = inv.getChestplate();
+                wear = inv::setChestplate;
+            } else if (n.endsWith("_LEGGINGS")) {
+                worn = inv.getLeggings();
+                wear = inv::setLeggings;
+            } else if (n.endsWith("_BOOTS")) {
+                worn = inv.getBoots();
+                wear = inv::setBoots;
+            }
+            if (wear != null && (worn == null || armorScore(worn.getType()) < score)) {
+                inv.setItem(i, worn);
+                wear.accept(item);
+            }
+        }
+    }
+
+    /** Walks to the nearest chest it hasn't looted yet and takes what's inside. True while busy looting. */
+    public boolean lootChests(double range) {
+        Block best = null;
+        double bestD = range * range;
+        Location me = bot.getLocation();
+        int cx = me.getBlockX() >> 4;
+        int cz = me.getBlockZ() >> 4;
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            for (int z = cz - 1; z <= cz + 1; z++) {
+                if (!bot.getWorld().isChunkLoaded(x, z)) {
+                    continue;
+                }
+                for (var state : bot.getWorld().getChunkAt(x, z).getTileEntities()) {
+                    if (state instanceof org.bukkit.block.Chest && !looted.contains(state.getBlock())) {
+                        double d = state.getLocation().add(0.5, 0, 0.5).distanceSquared(me);
+                        if (d < bestD) {
+                            bestD = d;
+                            best = state.getBlock();
+                        }
+                    }
+                }
+            }
+        }
+        if (best == null) {
+            return false;
+        }
+        Location at = best.getLocation().add(0.5, 0, 0.5);
+        if (bestD > 2.6 * 2.6) {
+            moveTo(at, true);
+            return true;
+        }
+        looted.add(best);
+        if (best.getState() instanceof org.bukkit.block.Chest chest) {
+            lookAt(at);
+            bot.swingMainHand();
+            for (ItemStack item : chest.getBlockInventory().getContents()) {
+                if (item != null) {
+                    var left = bot.getInventory().addItem(item);
+                    chest.getBlockInventory().removeItem(item);
+                    left.values().forEach(rest -> chest.getBlockInventory().addItem(rest));
+                }
+            }
+            bot.getWorld().playSound(at, "block.chest.open", 0.8f, 1f);
+            armorCheck = 0;
+        }
+        return true;
+    }
+
     /** The standard behaviour: fight the nearest enemy, or look around. */
     public void play(Game game) {
+        equipArmor();
         eatIfHurt();
         Player enemy = nearestEnemy(game, 80);
         if (enemy != null) {

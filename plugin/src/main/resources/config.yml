@@ -9,7 +9,8 @@ sidebar-footer: "<gold>Have fun!"
 countdown-seconds: 20
 
 anticheat:
-  # Flags Fly, Speed, Reach, KillAura, AutoClicker, FastPlace and FastBreak/Nuker.
+  # Flags Fly, Speed, Timer, NoFall, Step, Jesus, Velocity (anti-knockback), Reach, KillAura,
+  # AutoClicker, FastPlace and FastBreak/Nuker.
   # Ops see alerts (toggle with /fc ac alerts). Movement cheats are set back.
   enabled: true
   # Kick players whose violation level for one check reaches kick-vl.
@@ -22,12 +23,12 @@ bots:
   # They never count for stats or leaderboards. Manage them with /fc bots.
   enabled: true
   # Bots that are always online in the hub.
-  hub: 4
+  hub: 8
   # A queue with at least one real player gets topped up with bots until it has this many
   # players (or the game's minimum, whichever is higher).
-  fill-to: 4
+  fill-to: 8
   # Most bots online at once.
-  max: 16
+  max: 24
   fill-queues: true
 
 ffa:

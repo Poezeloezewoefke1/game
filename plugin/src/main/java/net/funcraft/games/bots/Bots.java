@@ -60,6 +60,15 @@ public final class Bots {
     }
 
     public void start() {
+        // configs written by an earlier version still have the old, smaller defaults: bump them
+        var cfg = plugin.getConfig();
+        if (cfg.getInt("bots.hub", 8) == 4 && cfg.getInt("bots.fill-to", 8) == 4 && cfg.getInt("bots.max", 24) == 16) {
+            cfg.set("bots.hub", 8);
+            cfg.set("bots.fill-to", 8);
+            cfg.set("bots.max", 24);
+            plugin.saveConfig();
+            plugin.getLogger().info("Bots: updated config.yml to the new defaults (8 in the hub, queues filled to 8).");
+        }
         Bukkit.getScheduler().runTaskTimer(plugin, () -> tick(), 1L, 1L);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!plugin.getConfig().getBoolean("bots.enabled", true)) {
@@ -210,7 +219,7 @@ public final class Bots {
     }
 
     private void ensureIdle() {
-        int want = Math.max(0, plugin.getConfig().getInt("bots.hub", 4));
+        int want = Math.max(0, plugin.getConfig().getInt("bots.hub", 8));
         while (bots.size() < want && !broken) {
             if (add() == null) {
                 break;
@@ -254,6 +263,9 @@ public final class Bots {
             return;
         }
         brain.beginTick();
+        if (brain.ticks % 5 == 1) {
+            bot.fake.markLoaded();
+        }
         boolean moving = p.getGameMode() != GameMode.SPECTATOR;
         if (nativeMovement == null) {
             // calibration: no input, just see if the server lets the first bot fall
@@ -420,15 +432,16 @@ public final class Bots {
                 continue;
             }
             GameType type = game.type();
-            int target = Math.max(type.minPlayers(plugin), plugin.getConfig().getInt("bots.fill-to", 4));
+            int target = Math.max(type.minPlayers(plugin), plugin.getConfig().getInt("bots.fill-to", 8));
             target = Math.min(target, game.maxPlayers());
-            if (real + botsIn.size() < target) {
+            // up to two bots join per round, so a queue fills in a few seconds but not all at once
+            for (int i = 0; i < 2 && real + botsIn.size() + i < target; i++) {
                 Player idle = idleBot();
-                if (idle == null && bots.size() < plugin.getConfig().getInt("bots.max", 16)) {
+                if (idle == null && bots.size() < plugin.getConfig().getInt("bots.max", 24)) {
                     idle = add();
                 }
-                if (idle != null) {
-                    game.addPlayer(idle);
+                if (idle == null || !game.addPlayer(idle)) {
+                    break;
                 }
             }
         }

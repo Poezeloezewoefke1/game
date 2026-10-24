@@ -440,4 +440,14 @@ public final class SkyWars extends Game {
     public boolean botsBuild() {
         return true;
     }
+
+    /** Bots loot the chests around them before they go hunting. */
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        brain.equipArmor();
+        if (brain.nearestEnemy(this, 9) == null && brain.lootChests(14)) {
+            return;
+        }
+        brain.play(this);
+    }
 }

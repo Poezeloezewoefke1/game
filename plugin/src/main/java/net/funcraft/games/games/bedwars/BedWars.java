@@ -909,6 +909,14 @@ public final class BedWars extends Game {
         return true;
     }
 
+    /** What a bot is busy with: collecting at its generator, shopping, or attacking. */
+    private enum BotPlan { GATHER, SHOP, ATTACK }
+
+    private static final class BotState {
+        BotPlan plan = BotPlan.GATHER;
+        int until;
+    }
+
     @Override
     public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
         Team mine = team(bot);
@@ -916,40 +924,94 @@ public final class BedWars extends Game {
             brain.play(this);
             return;
         }
-        // bots "buy" wool now and then so they can bridge
-        if (brain.timer <= 0) {
-            brain.timer = 400;
-            if (!bot.getInventory().contains(mine.color.wool)) {
-                bot.getInventory().addItem(new org.bukkit.inventory.ItemStack(mine.color.wool, 24));
-            }
+        if (!(brain.memo instanceof BotState)) {
+            BotState fresh = new BotState();
+            fresh.until = brain.ticks + 300 + brain.random().nextInt(200);
+            brain.memo = fresh;
         }
+        BotState st = (BotState) brain.memo;
+        brain.equipArmor();
         brain.eatIfHurt();
-        Player enemy = brain.nearestEnemy(this, 10);
+        // anyone close gets fought first, whatever the plan
+        Player enemy = brain.nearestEnemy(this, st.plan == BotPlan.ATTACK ? 10 : 6);
         if (enemy != null) {
             brain.fight(enemy);
             return;
         }
-        Team target = null;
-        double best = Double.MAX_VALUE;
-        for (Team t : teams) {
-            if (t != mine && t.bedAlive && t.bedFoot != null) {
-                double d = bot.getLocation().distanceSquared(t.bedFoot.getLocation());
-                if (d < best) {
-                    best = d;
-                    target = t;
+        switch (st.plan) {
+            case GATHER -> {
+                if (mine.generator != null) {
+                    if (brain.flatDistance(mine.generator) > 1.2) {
+                        brain.moveTo(mine.generator, true);
+                    } else {
+                        brain.wander(mine.generator, 1, false);
+                    }
+                }
+                if (brain.ticks > st.until || bot.getInventory().contains(Material.IRON_INGOT, 32)) {
+                    st.plan = BotPlan.SHOP;
+                    st.until = brain.ticks + 400;
                 }
             }
-        }
-        if (target == null) {
-            brain.play(this);
-            return;
-        }
-        Location bed = target.bedFoot.getLocation().add(0.5, 0, 0.5);
-        if (brain.distance(bed) < 3.5) {
-            brain.lookAt(bed);
-            brain.breakBlock(target.bedFoot);
-        } else {
-            brain.moveTo(bed, true);
+            case SHOP -> {
+                org.bukkit.entity.Entity keeper = null;
+                double best = 60 * 60;
+                for (org.bukkit.entity.Villager v : world.getEntitiesByClass(org.bukkit.entity.Villager.class)) {
+                    if (v.getScoreboardTags().contains(SHOP_TAG)) {
+                        double d = v.getLocation().distanceSquared(bot.getLocation());
+                        if (d < best) {
+                            best = d;
+                            keeper = v;
+                        }
+                    }
+                }
+                if (keeper == null || brain.ticks > st.until) {
+                    st.plan = BotPlan.ATTACK;
+                    st.until = brain.ticks + 900 + brain.random().nextInt(600);
+                } else if (best > 2.8 * 2.8) {
+                    brain.moveTo(keeper.getLocation(), true);
+                } else {
+                    brain.lookAt(keeper.getLocation().add(0, 1.5, 0));
+                    for (int i = 0; i < 4 && shop.botBuy(bot) != null; i++) {
+                        Msg.sound(bot, "entity.experience_orb.pickup", 1.2f);
+                    }
+                    st.plan = BotPlan.ATTACK;
+                    st.until = brain.ticks + 900 + brain.random().nextInt(600);
+                }
+            }
+            case ATTACK -> {
+                if (brain.ticks > st.until) {
+                    st.plan = BotPlan.GATHER;
+                    st.until = brain.ticks + 300 + brain.random().nextInt(200);
+                    return;
+                }
+                Team target = null;
+                double best = Double.MAX_VALUE;
+                for (Team t : teams) {
+                    if (t != mine && t.bedAlive && t.bedFoot != null) {
+                        double d = bot.getLocation().distanceSquared(t.bedFoot.getLocation());
+                        if (d < best) {
+                            best = d;
+                            target = t;
+                        }
+                    }
+                }
+                if (target == null) {
+                    Player far = brain.nearestEnemy(this, 120);
+                    if (far != null) {
+                        brain.fight(far);
+                    } else {
+                        brain.wander(mine.spawn, 6, false);
+                    }
+                    return;
+                }
+                Location bed = target.bedFoot.getLocation().add(0.5, 0, 0.5);
+                if (brain.distance(bed) < 3.5) {
+                    brain.lookAt(bed);
+                    brain.breakBlock(target.bedFoot);
+                } else {
+                    brain.moveTo(bed, true);
+                }
+            }
         }
     }
 }
