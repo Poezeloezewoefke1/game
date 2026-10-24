@@ -79,6 +79,9 @@ public final class MurderMystery extends Game {
 
     @Override
     protected void onStart(List<Player> list) {
+        if (list.isEmpty()) {
+            return; // map self-test
+        }
         List<Player> shuffled = new ArrayList<>(list);
         Collections.shuffle(shuffled, random);
         murderer = shuffled.get(0).getUniqueId();
