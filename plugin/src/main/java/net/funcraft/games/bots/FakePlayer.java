@@ -133,32 +133,36 @@ final class FakePlayer {
      * otherwise they could never take damage or knockback.
      */
     void markLoaded() {
-        boolean done = false;
+        String how = null;
         try {
             Nms.call(handle, "setClientLoaded", true);
-            done = true;
+            how = "setClientLoaded";
         } catch (ReflectiveOperationException ignored) {
             try {
                 Nms.set(handle, "clientLoaded", true);
-                done = true;
+                how = "clientLoaded";
             } catch (ReflectiveOperationException ignored2) {
                 // older versions don't have this at all
             }
         }
         try {
             Nms.call(handle, "hasChangedDimension");
-            done = true;
+            how = (how == null ? "" : how + ", ") + "hasChangedDimension";
         } catch (ReflectiveOperationException ignored) {
             try {
                 Nms.set(handle, "isChangingDimension", false);
-                done = true;
+                how = (how == null ? "" : how + ", ") + "isChangingDimension";
             } catch (ReflectiveOperationException ignored2) {
                 // nothing to reset
             }
         }
-        if (!done && !loadedWarned) {
+        if (!loadedWarned) {
             loadedWarned = true;
-            Bukkit.getLogger().warning("[FunCraftGames] Bots: couldn't mark bots as loaded; they may not take damage on this version.");
+            if (how == null) {
+                Bukkit.getLogger().warning("[FunCraftGames] Bots: couldn't mark bots as loaded; they may not take damage on this version.");
+            } else {
+                Bukkit.getLogger().info("[FunCraftGames] Bots: marked as loaded via " + how + ".");
+            }
         }
     }
 
