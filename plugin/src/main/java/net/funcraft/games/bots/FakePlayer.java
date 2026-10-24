@@ -154,6 +154,17 @@ final class FakePlayer {
         } catch (ReflectiveOperationException ignored) {
             // no game listener field by that name
         }
+        if (listener != null) {
+            // newer versions keep it on the connection: markClientLoaded() / hasClientLoaded()
+            try {
+                if (!(boolean) Nms.call(listener, "hasClientLoaded")) {
+                    Nms.call(listener, "markClientLoaded");
+                }
+                how.add("markClientLoaded");
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                // older versions keep it on the player
+            }
+        }
         for (Object target : new Object[]{handle, listener}) {
             if (target == null) {
                 continue;
@@ -189,7 +200,7 @@ final class FakePlayer {
 
     private static boolean loadName(String name) {
         String n = name.toLowerCase(java.util.Locale.ROOT);
-        return n.contains("client") && n.contains("load") && !n.contains("timeout") && !n.contains("timer");
+        return n.contains("client") && n.contains("load") && !n.contains("unload") && !n.contains("timeout") && !n.contains("timer");
     }
 
     private static java.util.List<java.lang.reflect.Member> findLoadedHooks(Class<?> c) {
