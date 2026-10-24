@@ -664,6 +664,51 @@ async function fight(a, b, ms) {
   b.chat('/leave');
   await finishMatch(a, b);
 
+  console.log('\n--- UHC Meetup ---');
+  check(await startMatch(a, b, 'uhc'), 'uhc: match started');
+  check(hasItem(a, 'golden_apple') && (hasItem(a, 'diamond_sword') || hasItem(a, 'iron_sword')), 'uhc: random UHC kit');
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'uhc: last one alive wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- The Floor is Lava ---');
+  check(await startMatch(a, b, 'lava'), 'lava: match started');
+  check(await waitFor(() => said(a, /lava is rising/), 20000), 'lava: the lava rises');
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- Capture the Flag ---');
+  check(await startMatch(a, b, 'ctf'), 'ctf: match started');
+  {
+    const hop = async () => {
+      await sleep(600);
+      a.setControlState('jump', true);
+      await sleep(300);
+      a.setControlState('jump', false);
+      await sleep(700);
+    };
+    rcon(inGame({ who: 'BotAlice', run: 'tp @s 37.5 66 0.5' }));
+    await hop();
+    let homeX = -36.5;
+    if (!said(a, /BotAlice has the/)) {
+      rcon(inGame({ who: 'BotAlice', run: 'tp @s -36.5 66 0.5' }));
+      await hop();
+      homeX = 37.5;
+    }
+    check(said(a, /BotAlice has the/), 'ctf: touching the enemy banner takes the flag');
+    rcon(inGame({ who: 'BotAlice', run: `tp @s ${homeX} 66 0.5` }));
+    await hop();
+    check(await waitFor(() => said(a, /BotAlice captured the flag/), 3000), 'ctf: bringing it home scores a capture');
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- Simon Says ---');
+  check(await startMatch(a, b, 'simon'), 'simon: match started');
+  check(await waitFor(() => said(a, /got it right|nobody is out|didn't do it|fell for it/), 20000), 'simon: Simon gives orders and judges them');
+  b.chat('/leave');
+  await finishMatch(a, b);
+
   console.log('\n--- Anvil Rain ---');
   check(await startMatch(a, b, 'anvilrain'), 'anvilrain: match started');
   check(await waitFor(() => said(a, /got flattened by an anvil/), 20000), 'anvilrain: anvils fall and flatten players');

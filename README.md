@@ -1,7 +1,7 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**26 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**30 minigames, lobby bots, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
@@ -32,8 +32,13 @@ automatically, so there's nothing to build or set up in-game.
 | **Red Light, Green Light** | Run to the red line while the giant looks away. Move on a red light and you're out. Everyone who makes it across wins. | 2–16 |
 | **Bow Spleef** | An Infinity bow on a two-layer TNT floor over the void. Every arrow blows a hole where it lands. Last one standing. | 2–12 |
 | **Anvil Rain** | Anvils fall from the sky, faster and faster, and some aim right at you. One hit and you're out. | 2–12 |
+| **UHC Meetup** | A random UHC kit (iron/diamond gear, golden apples, lava and water buckets, blocks) on a hilly island. No natural regeneration, and the world border closes in after a minute. Last one alive wins. | 2–16 |
+| **The Floor is Lava** | Lava rises through a hilly map full of towers, one layer every few seconds and faster as time goes on. Climb, build up with your cobblestone and knock others down with the push stick. | 2–16 |
+| **Capture the Flag** | Red vs Blue. Grab the enemy banner and bring it to your base while your own flag is home. The carrier glows; kill them and the flag drops. First to 3 captures. | 2–16 |
+| **Simon Says** | Jump, crouch, look up, punch someone, stand on red, don't move... but only when Simon says! Rounds get faster. | 2–16 |
 
 Plus:
+- **Lobby bots:** fake players (no Minecraft account needed) hang out in the hub and **join any queue where a real player is waiting**, so a game can start even when only you or a couple of friends are online. They really play: they fight, bridge across gaps, break beds, run for the portal in The Bridge, find the Block Party colour, freeze on red lights, jump the parkour, collect gold in Murder Mystery, hide and seek, fight zombies, chase the flag... They accept `/duel` challenges too, say "gg" after a game, show up as `[BOT]` in the tab list and never count for stats or leaderboards. Manage them with `/fc bots` and `bots:` in `config.yml`.
 - **Hub island** with an NPC for every game, a game-selector compass, a live player count and a top-wins leaderboard.
 - **FFA event for ops:** `/fc ffa` starts a kit vote for everyone online. When the vote ends, **everyone online is put in one big FFA**. If you die you spectate, and the last one alive wins.
 - **16 PvP kits:** Classic, Sword, Axe, Mace, UHC, Netherite OP, Pot, SMP, Crystal, Bed Fight, Bridge, Creeper PvP, Dia SMP, Fireball Fight, Spear Elytra and Spear Mace. They're used by the FFA event, the PvP Arena and duels. Fire charges throw fireballs and TNT lights itself.
@@ -57,7 +62,7 @@ Plus:
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball pillars tnttag murder hideandseek zombies gungame quake koth paintball parkour redlight bowspleef anvilrain` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball pillars tnttag murder hideandseek zombies gungame quake koth paintball parkour redlight bowspleef anvilrain uhc lava ctf simon` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |
@@ -81,6 +86,7 @@ Plus:
 | `/fc rebuildhub` | Regenerate the hub island |
 | `/fc reload` | Reload `config.yml` and `kits.yml` |
 | `/fc selftest` | Generate every map once to check everything works |
+| `/fc bots` | Bot status. `/fc bots add [n]`, `remove [n\|all]`, `clear`, `list`, `fill on\|off` (turns queue filling and the hub bots on/off) |
 
 ## Running the server
 

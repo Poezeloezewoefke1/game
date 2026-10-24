@@ -240,6 +240,10 @@ public final class Hub {
             case RED_LIGHT -> Villager.Profession.CARTOGRAPHER;
             case BOW_SPLEEF -> Villager.Profession.FLETCHER;
             case ANVIL_RAIN -> Villager.Profession.MASON;
+            case UHC_MEETUP -> Villager.Profession.ARMORER;
+            case FLOOR_IS_LAVA -> Villager.Profession.TOOLSMITH;
+            case CTF -> Villager.Profession.CARTOGRAPHER;
+            case SIMON_SAYS -> Villager.Profession.LIBRARIAN;
         };
     }
 
@@ -332,8 +336,8 @@ public final class Hub {
     // ------------------------------------------------------------------ menus
 
     public void openSelector(Player player) {
-        Gui gui = new Gui(5, "<dark_gray>Choose a game");
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
+        Gui gui = new Gui(6, "<dark_gray>Choose a game");
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43, 46, 47, 48, 49, 50, 51, 52};
         GameType[] types = GameType.values();
         Game current = plugin.games().gameOf(player);
         for (int i = 0; i < types.length && i < slots.length; i++) {
@@ -390,10 +394,10 @@ public final class Hub {
         Stats stats = plugin.stats();
         OfflinePlayer off = Bukkit.getOfflinePlayer(target);
         String name = stats.has(target) ? stats.nameOf(target) : off.getName();
-        Gui gui = new Gui(5, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
+        Gui gui = new Gui(6, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
         gui.set(4, ItemBuilder.of(Material.GOLD_BLOCK).name("<gold><bold>Overall")
                 .lore(statLines(target, "total")).build());
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43, 46, 47, 48, 49, 50, 51, 52};
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length && i < slots.length; i++) {
             gui.set(slots[i], ItemBuilder.of(types[i].icon()).name("<bold>" + types[i].colored())

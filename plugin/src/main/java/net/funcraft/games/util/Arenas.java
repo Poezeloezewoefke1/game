@@ -99,4 +99,42 @@ public final class Arenas {
         }
         return spawns;
     }
+
+    /**
+     * Rolling hills on a round island, filled solid down to {@code baseY - depth}. Returns the
+     * ground height for every column, indexed {@code [x + radius][z + radius]} (or -1 off the island).
+     */
+    public static int[][] hills(World w, Theme t, Random r, int baseY, int radius, int amplitude, int depth) {
+        int size = radius * 2 + 1;
+        int[][] heights = new int[size][size];
+        double p1 = r.nextDouble() * 10;
+        double p2 = r.nextDouble() * 10;
+        double p3 = r.nextDouble() * 10;
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                double d = Math.sqrt(x * x + z * z);
+                if (d > radius) {
+                    heights[x + radius][z + radius] = -1;
+                    continue;
+                }
+                double n = Math.sin(x / 7.0 + p1) * 0.5 + Math.cos(z / 9.0 + p2) * 0.35 + Math.sin((x + z) / 5.0 + p3) * 0.25
+                        + Math.cos((x - z) / 11.0 + p1) * 0.3;
+                double edge = Math.min(1, (radius - d) / 6.0); // slope down to the shore
+                int h = baseY + (int) Math.round((n + 0.6) * amplitude * edge);
+                heights[x + radius][z + radius] = h;
+                for (int y = baseY - depth; y <= h; y++) {
+                    Material m = y == h ? t.top : y > h - 3 ? t.soil : r.nextInt(14) == 0 ? t.accent : t.stone;
+                    w.getBlockAt(x, y, z).setType(m, false);
+                }
+            }
+        }
+        return heights;
+    }
+
+    public static int height(int[][] heights, int radius, int x, int z) {
+        if (x < -radius || x > radius || z < -radius || z > radius) {
+            return -1;
+        }
+        return heights[x + radius][z + radius];
+    }
 }

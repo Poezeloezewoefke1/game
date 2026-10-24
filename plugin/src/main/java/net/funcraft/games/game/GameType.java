@@ -25,6 +25,10 @@ import net.funcraft.games.games.ParkourRace;
 import net.funcraft.games.games.Quake;
 import net.funcraft.games.games.RedLightGreenLight;
 import net.funcraft.games.games.ZombieSurvival;
+import net.funcraft.games.games.UhcMeetup;
+import net.funcraft.games.games.FloorIsLava;
+import net.funcraft.games.games.CaptureTheFlag;
+import net.funcraft.games.games.SimonSays;
 import org.bukkit.Material;
 
 import java.util.List;
@@ -127,7 +131,23 @@ public enum GameType {
             "Shoot the ground out from under them!"),
     ANVIL_RAIN("Anvil Rain", "<gray>", Material.ANVIL, 2, 12, AnvilRain::new,
             "Anvils fall from the sky - faster and",
-            "faster. One hit and you're out!");
+            "faster. One hit and you're out!"),
+    UHC_MEETUP("UHC Meetup", "<gold>", Material.GOLDEN_APPLE, 2, 16, UhcMeetup::new,
+            "Random UHC gear, no natural regeneration",
+            "and a world border closing in. Last one",
+            "alive wins!"),
+    FLOOR_IS_LAVA("The Floor is Lava", "<red>", Material.LAVA_BUCKET, 2, 16, FloorIsLava::new,
+            "Lava rises through the hills - climb the",
+            "towers, build up and push the others down.",
+            "Last one above the lava wins!"),
+    CTF("Capture the Flag", "<aqua>", Material.WHITE_BANNER, 2, 16, CaptureTheFlag::new,
+            "Red vs Blue. Steal the enemy banner and",
+            "bring it to your base while your own flag",
+            "is safe. First to 3 captures wins!"),
+    SIMON_SAYS("Simon Says", "<yellow>", Material.BELL, 2, 16, SimonSays::new,
+            "Jump, crouch, look up, stand on red...",
+            "but only when Simon says! Wrong move and",
+            "you're out.");
 
     private final String displayName;
     private final String color;
@@ -224,6 +244,10 @@ public enum GameType {
             case "rlgl", "greenlight", "squidgame", "redlightgreenlight" -> RED_LIGHT;
             case "bowspleef", "bs" -> BOW_SPLEEF;
             case "anvil", "anvils" -> ANVIL_RAIN;
+            case "uhc", "meetup", "uhcmeetup" -> UHC_MEETUP;
+            case "lava", "floorislava", "thefloorislava" -> FLOOR_IS_LAVA;
+            case "capturetheflag", "flag" -> CTF;
+            case "simon", "simonsays", "ss" -> SIMON_SAYS;
             default -> null;
         };
     }

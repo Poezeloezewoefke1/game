@@ -81,6 +81,7 @@ public final class BotBrain {
     }
 
     void forget() {
+        bot.setSneaking(false);
         memo = null;
         timer = 0;
         wanderTarget = null;
@@ -101,6 +102,11 @@ public final class BotBrain {
 
     public void jump() {
         jump = true;
+    }
+
+    /** Looks up (negative) or down (positive) without changing direction. */
+    public void setPitch(float value) {
+        pitch = value;
     }
 
     // ------------------------------------------------------------- looking

@@ -125,3 +125,19 @@ games:
     enabled: true
     min-players: 2
     max-players: 12
+  uhcmeetup:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  floorislava:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  ctf:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  simonsays:
+    enabled: true
+    min-players: 2
+    max-players: 16
