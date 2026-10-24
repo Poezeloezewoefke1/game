@@ -343,4 +343,35 @@ public abstract class TeamGame extends Game {
         respawning.clear();
         placed.clear();
     }
+
+    @Override
+    public boolean isTeammate(Player a, Player b) {
+        Side s = side(a);
+        return s != null && s == side(b);
+    }
+
+    @Override
+    public boolean botsBuild() {
+        return true;
+    }
+
+    /** Bots go for the enemy bed (or goal) when nobody is close, otherwise they fight. */
+    protected void botGoal(Player bot, net.funcraft.games.bots.BotBrain brain, Location goal, org.bukkit.block.Block breakIt) {
+        brain.eatIfHurt();
+        Player enemy = brain.nearestEnemy(this, 9);
+        if (enemy != null || goal == null) {
+            if (enemy != null) {
+                brain.fight(enemy);
+            } else {
+                brain.play(this);
+            }
+            return;
+        }
+        if (breakIt != null && brain.distance(goal) < 3.5) {
+            brain.lookAt(goal);
+            brain.breakBlock(breakIt);
+            return;
+        }
+        brain.moveTo(goal, true);
+    }
 }

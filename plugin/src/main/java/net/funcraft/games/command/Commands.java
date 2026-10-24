@@ -271,6 +271,7 @@ public final class Commands implements TabExecutor {
                 Msg.send(sender, "<green>Config reloaded.");
             }
             case "selftest" -> selftest(sender);
+            case "bots", "bot" -> bots(sender, args);
             case "ffa" -> {
                 if (!(sender instanceof Player p)) {
                     Msg.send(sender, "<red>Run this in-game.");
@@ -296,8 +297,63 @@ public final class Commands implements TabExecutor {
                 Msg.raw(sender, "<yellow>/fc rebuildhub <gray>- regenerate the hub island");
                 Msg.raw(sender, "<yellow>/fc reload <gray>- reload config.yml");
                 Msg.raw(sender, "<yellow>/fc selftest <gray>- generate every map once to check it works");
+                Msg.raw(sender, "<yellow>/fc bots [add|remove|clear|fill] <gray>- bots that fill up queues");
             }
         }
+    }
+
+    private void bots(CommandSender sender, String[] args) {
+        var bots = plugin.bots();
+        String sub = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
+        int n = 1;
+        if (args.length > 2) {
+            try {
+                n = Math.max(1, Math.min(32, Integer.parseInt(args[2])));
+            } catch (NumberFormatException ignored) {
+                n = sub.equals("remove") && args[2].equalsIgnoreCase("all") ? 999 : 1;
+            }
+        }
+        switch (sub) {
+            case "add" -> {
+                int added = 0;
+                for (int i = 0; i < n; i++) {
+                    if (bots.add() != null) {
+                        added++;
+                    }
+                }
+                Msg.send(sender, added > 0 ? "<green>Added " + added + " bot" + (added == 1 ? "" : "s") + "." : bots.status());
+            }
+            case "remove" -> {
+                int removed = n >= 999 ? removeAll(bots) : bots.remove(n);
+                Msg.send(sender, "<green>Removed " + removed + " bot" + (removed == 1 ? "" : "s") + " <gray>(bots in a game finish it first).");
+            }
+            case "clear" -> {
+                int had = bots.count();
+                bots.clear();
+                Msg.send(sender, "<green>Removed all " + had + " bots.");
+            }
+            case "fill" -> {
+                boolean on = args.length > 2 ? args[2].equalsIgnoreCase("on") || args[2].equalsIgnoreCase("true") : !bots.filling();
+                bots.setFilling(on);
+                Msg.send(sender, on ? "<green>Bots will fill up queues that have real players waiting." : "<gray>Bots won't join queues.");
+            }
+            case "list" -> {
+                List<String> names = new ArrayList<>();
+                for (Player b : bots.list()) {
+                    Game g = plugin.games().gameOf(b);
+                    names.add(b.getName() + (g == null ? "" : " <dark_gray>(" + g.type().displayName() + ")<gray>"));
+                }
+                Msg.send(sender, "<gray>Bots: " + (names.isEmpty() ? "none" : String.join(", ", names)));
+            }
+            default -> {
+                Msg.send(sender, bots.status());
+                Msg.raw(sender, "<yellow>/fc bots add [n] <gray>| <yellow>remove [n|all] <gray>| <yellow>clear <gray>| <yellow>fill on|off <gray>| <yellow>list");
+            }
+        }
+    }
+
+    private static int removeAll(net.funcraft.games.bots.Bots bots) {
+        return bots.remove(999);
     }
 
     /** Generates every map one after another (chunks load asynchronously, so the server keeps running). */
@@ -373,7 +429,7 @@ public final class Commands implements TabExecutor {
                     options.addAll(List.of("invite", "accept", "leave", "kick", "list", "chat"));
                     Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
                 }
-                case "fc" -> options.addAll(List.of("ffa", "ac", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest"));
+                case "fc" -> options.addAll(List.of("ffa", "ac", "list", "start", "skip", "stop", "build", "rebuildhub", "reload", "selftest", "bots"));
                 default -> {
                 }
             }
@@ -385,6 +441,10 @@ public final class Commands implements TabExecutor {
             } else {
                 plugin.kits().all().forEach(k -> options.add(k.id()));
             }
+        } else if (args.length == 2 && name.equals("fc") && args[0].equalsIgnoreCase("bots")) {
+            options.addAll(List.of("add", "remove", "clear", "fill", "list"));
+        } else if (args.length == 3 && name.equals("fc") && args[0].equalsIgnoreCase("bots") && args[1].equalsIgnoreCase("fill")) {
+            options.addAll(List.of("on", "off"));
         } else if (args.length == 2 && name.equals("fc") && args[0].equalsIgnoreCase("ffa")) {
             options.add("cancel");
             plugin.kits().all().forEach(k -> options.add(k.id()));

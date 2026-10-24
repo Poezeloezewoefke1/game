@@ -235,6 +235,9 @@ public final class AntiCheat implements Listener {
             return;
         }
         Player p = e.getPlayer();
+        if (plugin.bots().isBot(p)) {
+            return; // bots move and click server-side
+        }
         Location from = e.getFrom();
         Location to = e.getTo();
         Data d = of(p);
@@ -339,7 +342,7 @@ public final class AntiCheat implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onAttack(EntityDamageByEntityEvent e) {
-        if (!enabled() || !(e.getDamager() instanceof Player p) || e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK
+        if (!enabled() || !(e.getDamager() instanceof Player p) || plugin.bots().isBot(p) || e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK
                 || p.getGameMode() == GameMode.CREATIVE || !(e.getEntity() instanceof LivingEntity target)) {
             return;
         }
@@ -397,6 +400,9 @@ public final class AntiCheat implements Listener {
             return;
         }
         Player p = e.getPlayer();
+        if (plugin.bots().isBot(p)) {
+            return; // bots move and click server-side
+        }
         if (p.getInventory().getItemInMainHand().getType().name().contains("SPEAR")) {
             exempt(p, 2000); // a jab lunges you forward even when it misses (lunge swaps)
         }
@@ -420,6 +426,9 @@ public final class AntiCheat implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
         Player p = e.getPlayer();
+        if (plugin.bots().isBot(p)) {
+            return; // bots move and click server-side
+        }
         if (!enabled() || p.getGameMode() == GameMode.CREATIVE) {
             return;
         }
@@ -438,6 +447,9 @@ public final class AntiCheat implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         Player p = e.getPlayer();
+        if (plugin.bots().isBot(p)) {
+            return; // bots move and click server-side
+        }
         if (!enabled() || p.getGameMode() == GameMode.CREATIVE) {
             return;
         }

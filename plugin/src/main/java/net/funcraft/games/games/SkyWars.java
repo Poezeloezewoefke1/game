@@ -435,4 +435,9 @@ public final class SkyWars extends Game {
         lines.add("<white>Kills: <red>" + kills.getOrDefault(player.getUniqueId(), 0));
         return lines;
     }
+
+    @Override
+    public boolean botsBuild() {
+        return true;
+    }
 }

@@ -897,4 +897,59 @@ public final class BedWars extends Game {
     protected void cleanup() {
         respawning.clear();
     }
+
+    @Override
+    public boolean isTeammate(Player a, Player b) {
+        Team t = team(a);
+        return t != null && t == team(b);
+    }
+
+    @Override
+    public boolean botsBuild() {
+        return true;
+    }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Team mine = team(bot);
+        if (mine == null) {
+            brain.play(this);
+            return;
+        }
+        // bots "buy" wool now and then so they can bridge
+        if (brain.timer <= 0) {
+            brain.timer = 400;
+            if (!bot.getInventory().contains(mine.color.wool)) {
+                bot.getInventory().addItem(new org.bukkit.inventory.ItemStack(mine.color.wool, 24));
+            }
+        }
+        brain.eatIfHurt();
+        Player enemy = brain.nearestEnemy(this, 10);
+        if (enemy != null) {
+            brain.fight(enemy);
+            return;
+        }
+        Team target = null;
+        double best = Double.MAX_VALUE;
+        for (Team t : teams) {
+            if (t != mine && t.bedAlive && t.bedFoot != null) {
+                double d = bot.getLocation().distanceSquared(t.bedFoot.getLocation());
+                if (d < best) {
+                    best = d;
+                    target = t;
+                }
+            }
+        }
+        if (target == null) {
+            brain.play(this);
+            return;
+        }
+        Location bed = target.bedFoot.getLocation().add(0.5, 0, 0.5);
+        if (brain.distance(bed) < 3.5) {
+            brain.lookAt(bed);
+            brain.breakBlock(target.bedFoot);
+        } else {
+            brain.moveTo(bed, true);
+        }
+    }
 }

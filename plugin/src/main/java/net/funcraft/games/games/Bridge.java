@@ -281,4 +281,15 @@ public final class Bridge extends TeamGame {
         super.cleanup();
         arrowTimer.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Side mine = side(bot);
+        if (mine == null || freeze > 0) {
+            brain.stop();
+            return;
+        }
+        Side enemy = enemy(mine);
+        botGoal(bot, brain, new Location(world, goalX(enemy) + 0.5, Y + 1, 0.5), null);
+    }
 }

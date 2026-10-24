@@ -76,7 +76,7 @@ public final class HubListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        event.joinMessage(Msg.mm("<dark_gray>[<green>+</green>]</dark_gray> <gray>" + player.getName()));
+        event.joinMessage(plugin.bots().isBot(player) ? null : Msg.mm("<dark_gray>[<green>+</green>]</dark_gray> <gray>" + player.getName()));
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline()) {
                 plugin.hub().send(player);
@@ -87,7 +87,8 @@ public final class HubListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        event.quitMessage(Msg.mm("<dark_gray>[<red>-</red>]</dark_gray> <gray>" + event.getPlayer().getName()));
+        event.quitMessage(plugin.bots().isBot(event.getPlayer()) ? null
+                : Msg.mm("<dark_gray>[<red>-</red>]</dark_gray> <gray>" + event.getPlayer().getName()));
         plugin.games().quit(event.getPlayer());
         plugin.sidebars().remove(event.getPlayer());
         plugin.duels().clear(event.getPlayer());

@@ -224,4 +224,29 @@ public final class Paintball extends TeamGame {
         super.cleanup();
         spawnedAt.clear();
     }
+
+    @Override
+    public boolean botsBuild() {
+        return false;
+    }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Player enemy = brain.nearestEnemy(this, 45);
+        if (enemy == null) {
+            brain.wander(new Location(world, 0.5, Y + 1, 0.5), 10, true);
+            return;
+        }
+        double d = brain.distance(enemy.getLocation());
+        if (d > 16) {
+            brain.moveTo(enemy.getLocation(), true);
+        } else if (d < 7) {
+            brain.moveAway(enemy.getLocation(), true);
+        } else {
+            brain.wander(bot.getLocation(), 3, true);
+        }
+        if (brain.canSee(enemy)) {
+            brain.throwSnowball(enemy.getLocation().add(0, 1.1, 0));
+        }
+    }
 }

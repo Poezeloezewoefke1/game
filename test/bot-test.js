@@ -120,6 +120,9 @@ async function fight(a, b, ms) {
 }
 
 (async () => {
+  // the plugin's own lobby bots would join our queues; switch them off until their own test
+  rcon('fc bots fill off');
+  rcon('fc bots clear');
   const a = await join('BotAlice');
   await sleep(5000); // Bukkit throttles connections from the same IP within 4 seconds
   const b = await join('BotBob');
@@ -754,6 +757,33 @@ async function fight(a, b, ms) {
   b.chat('/leave');
   await finishMatch(a, b);
   check(!execSync('docker logs mc 2>&1').toString().includes('was kicked for'), 'anticheat: nobody got kicked during the test');
+
+  console.log('\n--- Lobby bots (fake players) ---');
+  rcon('fc bots add 3');
+  await sleep(3000);
+  const online = rcon('list');
+  console.log('      ' + online.trim());
+  check(/SteveBot/.test(online), 'bots: fake players log in');
+  check(await waitFor(() => !!a.players.SteveBot, 5000), 'bots: real players can see them in the tab list');
+  check(/vanilla movement|plugin movement/.test(execSync('docker logs mc 2>&1').toString()), 'bots: movement mode was picked');
+  {
+    const steve = a.players.SteveBot && a.players.SteveBot.entity;
+    const start = steve ? steve.position.clone() : null;
+    await sleep(6000);
+    const now = a.players.SteveBot && a.players.SteveBot.entity;
+    const walked = start && now ? now.position.distanceTo(start) : 0;
+    check(walked > 0.5, `bots: they walk around the hub (${walked.toFixed(1)} blocks)`);
+  }
+  rcon('fc bots fill on');
+  a.chat('/play pvp');
+  check(await waitFor(() => /PvP Arena/.test(rcon('fc bots list')), 12000, 1000), 'bots: bots join a queue a real player is waiting in');
+  check(await waitFor(() => /RUNNING/.test(rcon('fc list')), 45000, 1000), 'bots: the queue fills up and the game starts');
+  check(await waitFor(() => a.health < 20 || said(a, /BotAlice .*Bot/), 40000, 500), `bots: bots fight real players (health ${a.health})`);
+  a.chat('/leave');
+  rcon('fc bots fill off');
+  await sleep(2000);
+  check(!execSync('docker logs mc 2>&1').toString().includes('tick failed'), 'bots: no bot errors');
+  rcon('fc bots clear');
 
   a.quit();
   b.quit();

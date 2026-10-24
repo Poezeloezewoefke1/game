@@ -16,6 +16,20 @@ anticheat:
   kick: true
   kick-vl: 40
 
+bots:
+  # Bots are fake players (no account needed). They hang out in the hub and join a queue when
+  # real players are waiting in it, so games can start with only one or two people online.
+  # They never count for stats or leaderboards. Manage them with /fc bots.
+  enabled: true
+  # Bots that are always online in the hub.
+  hub: 4
+  # A queue with at least one real player gets topped up with bots until it has this many
+  # players (or the game's minimum, whichever is higher).
+  fill-to: 4
+  # Most bots online at once.
+  max: 16
+  fill-queues: true
+
 ffa:
   # How long the /fc ffa kit vote lasts.
   vote-seconds: 30

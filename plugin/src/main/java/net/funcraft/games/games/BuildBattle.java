@@ -488,4 +488,49 @@ public final class BuildBattle extends Game {
         lines.add("<white>Builders: <green>" + online().size());
         return lines;
     }
+
+    private static final Material[] BOT_BLOCKS = {Material.OAK_PLANKS, Material.STONE_BRICKS, Material.WHITE_CONCRETE,
+            Material.RED_WOOL, Material.GLASS, Material.BRICKS, Material.QUARTZ_BLOCK, Material.OAK_LOG, Material.GOLD_BLOCK,
+            Material.BLUE_CONCRETE, Material.MOSS_BLOCK, Material.OAK_LEAVES};
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (phase == Phase.VOTING) {
+            if (voteIndex >= 0 && voteIndex < voteOrder.size() && !voteOrder.get(voteIndex).owner().equals(bot.getUniqueId())
+                    && !currentVotes.containsKey(bot.getUniqueId()) && brain.random().nextInt(40) == 0) {
+                currentVotes.put(bot.getUniqueId(), 2 + brain.random().nextInt(4));
+            }
+            return;
+        }
+        Plot plot = plots.get(bot.getUniqueId());
+        if (phase != Phase.BUILDING || plot == null) {
+            return;
+        }
+        // a simple build: a few coloured towers and walls, one block at a time
+        if (brain.memo == null) {
+            brain.memo = BOT_BLOCKS[brain.random().nextInt(BOT_BLOCKS.length)];
+        }
+        if (brain.timer > 0) {
+            return;
+        }
+        brain.timer = 6 + brain.random().nextInt(10);
+        int cx = plot.x0() + SIZE / 2;
+        int cz = plot.z0() + SIZE / 2;
+        int x = cx + brain.random().nextInt(9) - 4;
+        int z = cz + brain.random().nextInt(9) - 4;
+        int y = FLOOR_Y + 1;
+        while (y < FLOOR_Y + 8 && !world.getBlockAt(x, y, z).isEmpty()) {
+            y++;
+        }
+        if (brain.random().nextInt(5) == 0) {
+            brain.memo = BOT_BLOCKS[brain.random().nextInt(BOT_BLOCKS.length)];
+        }
+        org.bukkit.block.Block b = world.getBlockAt(x, y, z);
+        if (plot.contains(b) && b.isEmpty()) {
+            brain.lookAt(b.getLocation().add(0.5, 0.5, 0.5));
+            b.setType((Material) brain.memo);
+            bot.swingMainHand();
+        }
+        brain.wander(new Location(world, cx + 0.5, FLOOR_Y + 1, cz + 0.5), 6, false);
+    }
 }

@@ -178,4 +178,15 @@ public final class AnvilRain extends LastStanding {
         super.cleanup();
         landed.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        for (org.bukkit.entity.Entity e : bot.getNearbyEntities(2.5, 30, 2.5)) {
+            if (e instanceof FallingBlock && e.getLocation().getY() > bot.getLocation().getY()) {
+                brain.moveAway(e.getLocation(), true);
+                return;
+            }
+        }
+        brain.wander(center, RADIUS - 3, true);
+    }
 }

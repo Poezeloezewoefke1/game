@@ -51,8 +51,13 @@ public final class Sidebars {
         int level = plugin.stats().level(player.getUniqueId());
         String nameColor = game == null ? null : game.nameColor(player);
         String name = (nameColor == null ? "<white>" : nameColor) + player.getName();
-        plugin.chat().setPrefix(player, Stats.levelTag(level) + " " + name);
-        player.playerListName(net.funcraft.games.util.Msg.mm(Stats.levelTag(level) + " " + name));
+        boolean bot = plugin.bots().isBot(player);
+        String tag = bot ? "<dark_gray>[BOT]" : Stats.levelTag(level);
+        plugin.chat().setPrefix(player, tag + " " + name);
+        player.playerListName(net.funcraft.games.util.Msg.mm(tag + " " + name));
+        if (bot) {
+            return; // nobody looks at a bot's sidebar
+        }
         if (game != null) {
             sidebar.update(game.sidebarTitle(), game.sidebarFor(player));
             return;

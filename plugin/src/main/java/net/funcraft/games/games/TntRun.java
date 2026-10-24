@@ -193,4 +193,12 @@ public final class TntRun extends LastStanding {
     protected void cleanup() {
         scheduled.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Location c = bot.getLocation().clone();
+        c.setX(0.5);
+        c.setZ(0.5);
+        brain.wander(c, 11, true);
+    }
 }

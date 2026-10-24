@@ -153,4 +153,20 @@ public final class KingOfTheHill extends RespawnGame {
         points.clear();
         king = null;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        brain.eatIfHurt();
+        Player enemy = brain.nearestEnemy(this, 5);
+        if (enemy != null) {
+            brain.fight(enemy);
+            return;
+        }
+        Location hill = new Location(world, 0.5, HILL_TOP + 1, 0.5);
+        if (onHill(bot)) {
+            brain.wander(hill, 2.5, false);
+        } else {
+            brain.moveTo(hill, true);
+        }
+    }
 }

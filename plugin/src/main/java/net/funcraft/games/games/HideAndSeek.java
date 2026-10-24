@@ -256,4 +256,51 @@ public final class HideAndSeek extends Game {
         seekers.clear();
         firstSeekers.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (isSeeker(bot)) {
+            if (hideLeft > 0) {
+                return;
+            }
+            Player hider = null;
+            double best = Double.MAX_VALUE;
+            for (Player p : hiders()) {
+                double d = p.getLocation().distanceSquared(bot.getLocation());
+                if (d < best) {
+                    best = d;
+                    hider = p;
+                }
+            }
+            if (hider == null) {
+                return;
+            }
+            // seekers only "find" what they could plausibly see or hear
+            if (best < 20 * 20 && (brain.canSee(hider) || best < 6 * 6)) {
+                brain.fight(hider);
+            } else {
+                if (brain.timer <= 0 || !(brain.memo instanceof Location)) {
+                    brain.memo = spawns.get(brain.random().nextInt(spawns.size()));
+                    brain.timer = 160;
+                }
+                brain.moveTo((Location) brain.memo, true);
+            }
+            return;
+        }
+        if (hideLeft > 0) {
+            if (!(brain.memo instanceof Location)) {
+                brain.memo = spawns.get(brain.random().nextInt(spawns.size())).clone()
+                        .add(brain.random().nextInt(5) - 2, 0, brain.random().nextInt(5) - 2);
+            }
+            brain.moveTo((Location) brain.memo, true);
+            return;
+        }
+        for (Player p : alivePlayers()) {
+            if (isSeeker(p) && p.getLocation().distanceSquared(bot.getLocation()) < 10 * 10 && brain.canSee(p)) {
+                brain.moveAway(p.getLocation(), true);
+                return;
+            }
+        }
+        bot.setSneaking(true);
+    }
 }

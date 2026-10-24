@@ -50,6 +50,14 @@ public final class Duels {
                 + "<click:run_command:'/duel accept " + from.getName() + "'><green><bold>[ACCEPT]</bold></green></click> "
                 + "<click:run_command:'/duel deny " + from.getName() + "'><red><bold>[DENY]</bold></red></click>");
         Msg.sound(to, "entity.player.levelup", 1.5f);
+        if (plugin.bots().isBot(to)) {
+            org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (to.isOnline() && from.isOnline() && !busy(to)) {
+                    to.chat("sure, let's go!");
+                    accept(to, from);
+                }
+            }, 40L);
+        }
     }
 
     public void accept(Player target, Player challenger) {

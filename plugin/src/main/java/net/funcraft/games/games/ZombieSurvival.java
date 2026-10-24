@@ -401,4 +401,18 @@ public final class ZombieSurvival extends Game {
         mobs.clear();
         down.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (down.contains(bot.getUniqueId())) {
+            return;
+        }
+        brain.eatIfHurt();
+        LivingEntity mob = brain.nearestMonster(40);
+        if (mob != null) {
+            brain.fight(mob);
+        } else {
+            brain.wander(new Location(world, 0.5, Y + 1, 0.5), 8, false);
+        }
+    }
 }

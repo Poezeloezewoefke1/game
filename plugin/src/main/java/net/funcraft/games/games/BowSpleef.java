@@ -117,4 +117,15 @@ public final class BowSpleef extends LastStanding {
     protected double voidLevel() {
         return LOWER - 8;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Player enemy = brain.nearestEnemy(this, 40);
+        brain.wander(bot.getLocation(), 3, false);
+        if (enemy != null && brain.readyToShoot()) {
+            brain.hold(Material.BOW);
+            brain.launch(org.bukkit.entity.Arrow.class, enemy.getLocation().subtract(0, 0.6, 0), 2.4);
+            brain.shotFired(35 + brain.random().nextInt(30));
+        }
+    }
 }

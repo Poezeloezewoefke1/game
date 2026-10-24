@@ -24,6 +24,7 @@ public final class FunCraft extends JavaPlugin {
     private AntiCheat antiCheat;
     private net.funcraft.games.listener.ChatListener chat;
     private HubListener hubListener;
+    private net.funcraft.games.bots.Bots bots;
     private int ticks;
 
     @Override
@@ -42,6 +43,7 @@ public final class FunCraft extends JavaPlugin {
         duels = new Duels(this);
         hub = new Hub(this);
         hub.load();
+        bots = new net.funcraft.games.bots.Bots(this);
 
         hubListener = new HubListener(this);
         getServer().getPluginManager().registerEvents(hubListener, this);
@@ -53,6 +55,7 @@ public final class FunCraft extends JavaPlugin {
         getServer().getPluginManager().registerEvents(chat, this);
         Bukkit.getScheduler().runTaskTimer(this, parkour::tick, 40L, 2L);
         new Commands(this).register();
+        bots.start();
 
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             games.tick();
@@ -75,6 +78,9 @@ public final class FunCraft extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (bots != null) {
+            bots.clear();
+        }
         if (games != null) {
             games.shutdown();
         }
@@ -133,6 +139,10 @@ public final class FunCraft extends JavaPlugin {
 
     public FfaEvent ffa() {
         return ffa;
+    }
+
+    public net.funcraft.games.bots.Bots bots() {
+        return bots;
     }
 
     public HubListener hubListener() {

@@ -262,4 +262,19 @@ public final class BedDuel extends TeamGame {
         lines.add("<white>Time: <yellow>" + Msg.time(TIME_LIMIT - elapsed));
         return lines;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Side mine = side(bot);
+        if (mine == null) {
+            brain.play(this);
+            return;
+        }
+        Side enemy = enemy(mine);
+        if (enemy.bedAlive && enemy.bedFoot != null) {
+            botGoal(bot, brain, enemy.bedFoot.getLocation().add(0.5, 0, 0.5), enemy.bedFoot);
+        } else {
+            brain.play(this);
+        }
+    }
 }

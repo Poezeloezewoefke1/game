@@ -343,4 +343,41 @@ public final class TntTag extends LastStanding {
         it.clear();
         taggedAt.clear();
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (isIt(bot)) {
+            Player target = null;
+            double best = Double.MAX_VALUE;
+            for (Player p : alivePlayers()) {
+                if (!p.equals(bot) && !isIt(p) && p.getGameMode() == GameMode.SURVIVAL) {
+                    double d = p.getLocation().distanceSquared(bot.getLocation());
+                    if (d < best) {
+                        best = d;
+                        target = p;
+                    }
+                }
+            }
+            if (target != null) {
+                brain.fight(target);
+            }
+            return;
+        }
+        Player chaser = null;
+        double best = 14 * 14;
+        for (Player p : alivePlayers()) {
+            if (isIt(p) && !p.equals(bot)) {
+                double d = p.getLocation().distanceSquared(bot.getLocation());
+                if (d < best) {
+                    best = d;
+                    chaser = p;
+                }
+            }
+        }
+        if (chaser != null) {
+            brain.moveAway(chaser.getLocation(), true);
+        } else {
+            brain.wander(center, RADIUS - 4, false);
+        }
+    }
 }

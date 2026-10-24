@@ -67,12 +67,34 @@ public final class Quake extends RespawnGame {
             return;
         }
         event.setCancelled(true); // no tilling
+        fire(p, p.getEyeLocation().getDirection());
+    }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Player enemy = brain.nearestEnemy(this, 70);
+        if (enemy == null) {
+            brain.wander(bot.getLocation(), 8, true);
+            return;
+        }
+        brain.fight(enemy);
+        Location aim = enemy.getLocation().add(0, 1.1, 0);
+        if (brain.canSee(enemy) && brain.readyToShoot() && brain.random().nextInt(4) == 0) {
+            Vector dir = aim.toVector().subtract(bot.getEyeLocation().toVector()).normalize();
+            dir.add(new Vector((brain.random().nextDouble() - 0.5) * 0.08, (brain.random().nextDouble() - 0.5) * 0.06,
+                    (brain.random().nextDouble() - 0.5) * 0.08));
+            fire(bot, dir.normalize());
+            brain.shotFired(COOLDOWN_TICKS + 4);
+        }
+    }
+
+    private void fire(Player p, Vector direction) {
         if (p.getGameMode() != GameMode.SURVIVAL || p.hasCooldown(Material.IRON_HOE)) {
             return;
         }
         p.setCooldown(Material.IRON_HOE, COOLDOWN_TICKS);
         Location eye = p.getEyeLocation();
-        Vector dir = eye.getDirection();
+        Vector dir = direction;
         RayTraceResult hit = world.rayTrace(eye, dir, RANGE, FluidCollisionMode.NEVER, true, 0.25,
                 e -> e instanceof Player t && !t.equals(p) && isAlive(t) && t.getGameMode() == GameMode.SURVIVAL);
         double length = hit == null ? RANGE : hit.getHitPosition().distance(eye.toVector());

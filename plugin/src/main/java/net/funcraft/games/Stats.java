@@ -33,6 +33,9 @@ public final class Stats {
     }
 
     private void add(Player player, GameType type, String stat) {
+        if (plugin.bots() != null && plugin.bots().isBot(player)) {
+            return; // bots stay off the leaderboards
+        }
         int before = level(player.getUniqueId());
         String base = player.getUniqueId().toString();
         data.set(base + ".name", player.getName());

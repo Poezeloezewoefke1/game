@@ -335,4 +335,21 @@ public final class ParkourRace extends Game {
         finished.clear();
         endAt = -1;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (finished.contains(bot.getUniqueId())) {
+            return;
+        }
+        int next = Math.min(course.size() - 1, best.getOrDefault(bot.getUniqueId(), 0) + 1);
+        Location target = stepLocation(bot, next);
+        brain.dare();
+        brain.moveTo(target, true);
+        Location here = bot.getLocation();
+        Location ahead = here.clone().add(target.toVector().subtract(here.toVector()).setY(0).normalize().multiply(0.45));
+        boolean edge = ahead.clone().subtract(0, 0.5, 0).getBlock().isPassable();
+        if (brain.onGround() && brain.flatDistance(target) > 0.9 && (edge || target.getY() > here.getY() + 0.5)) {
+            brain.jump();
+        }
+    }
 }

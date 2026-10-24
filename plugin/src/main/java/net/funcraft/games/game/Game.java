@@ -189,6 +189,23 @@ public abstract class Game {
     public void onMove(PlayerMoveEvent event) {
     }
 
+    // ------------------------------------------------------------------ bots
+
+    /** What a bot does this tick while playing. The default fights the nearest enemy. */
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        brain.play(this);
+    }
+
+    /** Players on the same team (bots won't attack them). */
+    public boolean isTeammate(Player a, Player b) {
+        return false;
+    }
+
+    /** Whether bots may bridge across gaps with blocks from their inventory. */
+    public boolean botsBuild() {
+        return false;
+    }
+
     /** A non-player entity died in this match's world. */
     public void onMobDeath(org.bukkit.event.entity.EntityDeathEvent event) {
     }
@@ -561,6 +578,7 @@ public abstract class Game {
             }
         }
         Msg.all(online, "<gray>Returning to the hub in 10 seconds...");
+        plugin.bots().gameEnded(online);
         for (Player p : online) {
             String again = playAgainCommand(p);
             if (again != null) {

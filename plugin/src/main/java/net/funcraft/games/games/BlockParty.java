@@ -240,4 +240,38 @@ public final class BlockParty extends LastStanding {
     protected double voidLevel() {
         return FLOOR_Y - 10;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (phase == Phase.DANCE || called == null) {
+            brain.memo = null;
+            brain.wander(new Location(world, 0.5, FLOOR_Y + 1, 0.5), HALF - 3, false);
+            return;
+        }
+        if (!(brain.memo instanceof Location target) || world.getBlockAt(target.getBlockX(), FLOOR_Y, target.getBlockZ()).getType() != called.block()) {
+            // find the nearest tile of the called colour (bots are a little slow to react sometimes)
+            Location me = bot.getLocation();
+            Location best = null;
+            double bestD = Double.MAX_VALUE;
+            for (int x = -HALF + 1; x < HALF; x++) {
+                for (int z = -HALF + 1; z < HALF; z++) {
+                    if (world.getBlockAt(x, FLOOR_Y, z).getType() == called.block()) {
+                        double d = (x + 0.5 - me.getX()) * (x + 0.5 - me.getX()) + (z + 0.5 - me.getZ()) * (z + 0.5 - me.getZ());
+                        if (d < bestD) {
+                            bestD = d;
+                            best = new Location(world, x + 0.5, FLOOR_Y + 1, z + 0.5);
+                        }
+                    }
+                }
+            }
+            brain.memo = best;
+            if (best == null) {
+                return;
+            }
+        }
+        Location target = (Location) brain.memo;
+        if (brain.flatDistance(target) > 0.4) {
+            brain.moveTo(target, true);
+        }
+    }
 }

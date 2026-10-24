@@ -374,4 +374,67 @@ public final class MurderMystery extends Game {
         droppedBow = null;
         bowDropped = false;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (isMurderer(bot)) {
+            if (!bot.getInventory().contains(Material.IRON_SWORD)) {
+                brain.wander(bot.getLocation(), 8, false);
+                return;
+            }
+            Player victim = null;
+            double best = 30 * 30;
+            for (Player p : alivePlayers()) {
+                if (!p.equals(bot) && p.getGameMode() == GameMode.SURVIVAL) {
+                    double d = p.getLocation().distanceSquared(bot.getLocation());
+                    if (d < best) {
+                        best = d;
+                        victim = p;
+                    }
+                }
+            }
+            if (victim == null) {
+                brain.wander(bot.getLocation(), 10, false);
+                return;
+            }
+            brain.hold(Material.IRON_SWORD);
+            if (best > 64) {
+                brain.moveTo(victim.getLocation(), false); // act casual from a distance
+            } else {
+                brain.fight(victim);
+                brain.hold(Material.IRON_SWORD);
+            }
+            return;
+        }
+        // innocents (and the detective): shoot the murderer if they're seen with the knife
+        Player m = murderer == null ? null : Bukkit.getPlayer(murderer);
+        if (m != null && isAlive(m) && bot.getInventory().contains(Material.BOW) && bot.getInventory().contains(Material.ARROW)
+                && m.getInventory().getItemInMainHand().getType() == Material.IRON_SWORD
+                && brain.distance(m.getLocation()) < 18 && brain.canSee(m) && brain.readyToShoot()) {
+            brain.hold(Material.BOW);
+            brain.shootBow(m);
+            return;
+        }
+        if (m != null && isAlive(m) && m.getInventory().getItemInMainHand().getType() == Material.IRON_SWORD
+                && brain.distance(m.getLocation()) < 9) {
+            brain.moveAway(m.getLocation(), true);
+            return;
+        }
+        Item nearestGold = null;
+        double best = 18 * 18;
+        for (Item item : world.getEntitiesByClass(Item.class)) {
+            if (item.getItemStack().getType() == Material.GOLD_INGOT) {
+                double d = item.getLocation().distanceSquared(bot.getLocation());
+                if (d < best) {
+                    best = d;
+                    nearestGold = item;
+                }
+            }
+        }
+        if (nearestGold != null) {
+            brain.moveTo(nearestGold.getLocation(), false);
+        } else {
+            brain.wander(bot.getLocation(), 10, false);
+        }
+    }
 }

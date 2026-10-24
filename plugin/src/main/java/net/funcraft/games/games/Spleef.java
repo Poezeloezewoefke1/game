@@ -120,4 +120,21 @@ public final class Spleef extends LastStanding {
     protected double voidLevel() {
         return LOWER_Y - 8;
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        Player enemy = brain.nearestEnemy(this, 40);
+        if (enemy == null) {
+            brain.wander(bot.getLocation(), 5, false);
+            return;
+        }
+        brain.fight(enemy);
+        if (brain.distance(enemy.getLocation()) < 4.5 && brain.readyToShoot()) {
+            org.bukkit.block.Block under = enemy.getLocation().subtract(0, 0.5, 0).getBlock();
+            if (under.getType() == org.bukkit.Material.SNOW_BLOCK) {
+                brain.breakBlock(under);
+                brain.shotFired(12 + brain.random().nextInt(10));
+            }
+        }
+    }
 }

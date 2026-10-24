@@ -223,4 +223,9 @@ public final class Pillars extends LastStanding {
         int next = every - (elapsed % every);
         return List.of("<white>Next item: <gold>" + next + "s");
     }
+
+    @Override
+    public boolean botsBuild() {
+        return true;
+    }
 }

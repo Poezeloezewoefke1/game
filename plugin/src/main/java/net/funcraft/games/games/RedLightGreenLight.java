@@ -291,4 +291,21 @@ public final class RedLightGreenLight extends Game {
             doll.remove();
         }
     }
+
+    @Override
+    public void botTick(Player bot, net.funcraft.games.bots.BotBrain brain) {
+        if (finished.contains(bot.getUniqueId())) {
+            return;
+        }
+        if (brain.memo != light) {
+            brain.memo = light;
+            // reaction time; now and then a bot is too slow and gets caught
+            brain.timer = light == Light.RED ? (brain.random().nextInt(25) == 0 ? 14 : brain.random().nextInt(5)) : 2 + brain.random().nextInt(6);
+        }
+        boolean go = light == Light.GREEN ? brain.timer <= 0 : light == Light.RED && brain.timer > 0;
+        if (go) {
+            Location l = bot.getLocation();
+            brain.moveTo(new Location(world, LENGTH + 2, l.getY(), l.getZ()), brain.random().nextInt(3) > 0);
+        }
+    }
 }

@@ -69,6 +69,15 @@ jobs:
           done
           docker logs mc 2>&1 | grep -E 'SELFTEST RESULT|Selftest failed'
           docker logs mc 2>&1 | grep -qE 'SELFTEST RESULT ([0-9]+)/\1([^0-9]|$)'
+      - name: Fake-player bots log in
+        run: |
+          docker exec mc rcon-cli fc bots add 2
+          sleep 5
+          docker exec mc rcon-cli list
+          docker exec mc rcon-cli fc bots
+          docker exec mc rcon-cli list | grep -q 'Bot'
+          docker logs mc 2>&1 | grep -E 'Bots:|Bots are not available' || true
+          docker exec mc rcon-cli fc bots clear
       - name: Bot play-through
         if: matrix.bots != 'none'
         env:
