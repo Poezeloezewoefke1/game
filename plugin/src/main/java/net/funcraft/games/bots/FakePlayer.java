@@ -126,44 +126,108 @@ final class FakePlayer {
     // --------------------------------------------------------------- ticking
 
     private static boolean loadedWarned;
+    /** Per class: the "has the client loaded" members we found (setters taking a boolean, or boolean fields). */
+    private static final java.util.Map<Class<?>, java.util.List<java.lang.reflect.Member>> LOADED_HOOKS = new java.util.HashMap<>();
 
     /**
      * Real clients tell the server when they have finished loading (after joining and after every
      * world change); until then the player can't be hurt. Bots have no client, so we say it for them -
-     * otherwise they could never take damage or knockback.
+     * otherwise they could never take damage or knockback. The member names change between versions,
+     * so we look for them on the player and on its connection.
      */
     void markLoaded() {
-        String how = null;
-        try {
-            Nms.call(handle, "setClientLoaded", true);
-            how = "setClientLoaded";
-        } catch (ReflectiveOperationException ignored) {
-            try {
-                Nms.set(handle, "clientLoaded", true);
-                how = "clientLoaded";
-            } catch (ReflectiveOperationException ignored2) {
-                // older versions don't have this at all
-            }
-        }
+        java.util.List<String> how = new java.util.ArrayList<>();
         try {
             Nms.call(handle, "hasChangedDimension");
-            how = (how == null ? "" : how + ", ") + "hasChangedDimension";
+            how.add("hasChangedDimension");
         } catch (ReflectiveOperationException ignored) {
             try {
                 Nms.set(handle, "isChangingDimension", false);
-                how = (how == null ? "" : how + ", ") + "isChangingDimension";
+                how.add("isChangingDimension");
             } catch (ReflectiveOperationException ignored2) {
                 // nothing to reset
             }
         }
-        if (!loadedWarned) {
-            loadedWarned = true;
-            if (how == null) {
-                Bukkit.getLogger().warning("[FunCraftGames] Bots: couldn't mark bots as loaded; they may not take damage on this version.");
-            } else {
-                Bukkit.getLogger().info("[FunCraftGames] Bots: marked as loaded via " + how + ".");
+        Object listener = null;
+        try {
+            listener = Nms.get(handle, "connection");
+        } catch (ReflectiveOperationException ignored) {
+            // no game listener field by that name
+        }
+        for (Object target : new Object[]{handle, listener}) {
+            if (target == null) {
+                continue;
+            }
+            for (java.lang.reflect.Member m : LOADED_HOOKS.computeIfAbsent(target.getClass(), FakePlayer::findLoadedHooks)) {
+                try {
+                    if (m instanceof Method method) {
+                        method.invoke(target, true);
+                    } else {
+                        java.lang.reflect.Field f = (java.lang.reflect.Field) m;
+                        f.setBoolean(target, !waiting(f.getName()));
+                    }
+                    how.add(m.getName());
+                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                    // try the others
+                }
             }
         }
+        if (!loadedWarned) {
+            loadedWarned = true;
+            if (how.size() <= 1) {
+                Bukkit.getLogger().warning("[FunCraftGames] Bots: couldn't find the client-loaded flag; bots may not take damage on this version. "
+                        + "Candidates: " + loadNames(handle) + (listener == null ? "" : " / " + loadNames(listener)));
+            }
+            Bukkit.getLogger().info("[FunCraftGames] Bots: marked as loaded via " + String.join(", ", how) + ".");
+        }
+    }
+
+    private static boolean waiting(String name) {
+        String n = name.toLowerCase(java.util.Locale.ROOT);
+        return n.contains("wait") || n.contains("pending") || n.contains("not");
+    }
+
+    private static boolean loadName(String name) {
+        String n = name.toLowerCase(java.util.Locale.ROOT);
+        return n.contains("client") && n.contains("load") && !n.contains("timeout") && !n.contains("timer");
+    }
+
+    private static java.util.List<java.lang.reflect.Member> findLoadedHooks(Class<?> c) {
+        java.util.List<java.lang.reflect.Member> found = new java.util.ArrayList<>();
+        for (Class<?> k = c; k != null && k != Object.class; k = k.getSuperclass()) {
+            for (Method m : k.getDeclaredMethods()) {
+                if (!Modifier.isStatic(m.getModifiers()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == boolean.class
+                        && m.getName().startsWith("set") && loadName(m.getName())) {
+                    m.setAccessible(true);
+                    found.add(m);
+                }
+            }
+            for (java.lang.reflect.Field f : k.getDeclaredFields()) {
+                if (!Modifier.isStatic(f.getModifiers()) && !Modifier.isFinal(f.getModifiers()) && f.getType() == boolean.class && loadName(f.getName())) {
+                    f.setAccessible(true);
+                    found.add(f);
+                }
+            }
+        }
+        return found;
+    }
+
+    /** Every member with "load" in its name, for the log when we can't find the flag. */
+    private static String loadNames(Object target) {
+        java.util.Set<String> names = new java.util.TreeSet<>();
+        for (Class<?> k = target.getClass(); k != null && k != Object.class; k = k.getSuperclass()) {
+            for (Method m : k.getDeclaredMethods()) {
+                if (m.getName().toLowerCase(java.util.Locale.ROOT).contains("load")) {
+                    names.add(m.getName() + "()");
+                }
+            }
+            for (java.lang.reflect.Field f : k.getDeclaredFields()) {
+                if (f.getName().toLowerCase(java.util.Locale.ROOT).contains("load")) {
+                    names.add(f.getName());
+                }
+            }
+        }
+        return target.getClass().getSimpleName() + names;
     }
 
     /** Runs the player's own tick (health, effects, cooldowns, invulnerability timer, and - on some versions - movement). */
