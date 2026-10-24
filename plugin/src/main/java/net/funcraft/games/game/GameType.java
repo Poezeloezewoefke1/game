@@ -7,11 +7,13 @@ import net.funcraft.games.games.BlockParty;
 import net.funcraft.games.games.Bridge;
 import net.funcraft.games.games.BuildBattle;
 import net.funcraft.games.games.OneInTheChamber;
+import net.funcraft.games.games.Pillars;
 import net.funcraft.games.games.PvpArena;
 import net.funcraft.games.games.SkyWars;
 import net.funcraft.games.games.Spleef;
 import net.funcraft.games.games.Sumo;
 import net.funcraft.games.games.TntRun;
+import net.funcraft.games.games.TntTag;
 import org.bukkit.Material;
 
 import java.util.List;
@@ -67,7 +69,15 @@ public enum GameType {
             "First to 15 kills wins - don't miss!"),
     SUMO("Sumo", "<green>", Material.SLIME_BALL, 2, 8, Sumo::new,
             "Knock everyone off the platform with",
-            "your fists. Last one standing wins.");
+            "your fists. Last one standing wins."),
+    PILLARS("Pillars of Fortune", "<dark_aqua>", Material.BEDROCK, 2, 12, Pillars::new,
+            "Everyone stands on a pillar over the void",
+            "and gets a random item every few seconds.",
+            "Build, bridge and knock them all off!"),
+    TNT_TAG("TNT Tag", "<red>", Material.TNT_MINECART, 2, 16, TntTag::new,
+            "Got the TNT? Hit someone to pass it on",
+            "before the timer runs out - or blow up!",
+            "Last survivor wins.");
 
     private final String displayName;
     private final String color;
@@ -151,6 +161,8 @@ public enum GameType {
             case "bedfight", "bf" -> BED_FIGHT;
             case "thebridge", "bridges" -> BRIDGE;
             case "fireball", "fireballs", "ff", "fbf" -> FIREBALL_FIGHT;
+            case "pillar", "pof", "pillarsoffortune", "fortune" -> PILLARS;
+            case "tag", "tnttag", "hotpotato", "tntt" -> TNT_TAG;
             default -> null;
         };
     }

@@ -1,7 +1,7 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**13 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**15 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
@@ -19,6 +19,8 @@ automatically, so there's nothing to build or set up in-game.
 | **Block Party** | A colour is called; stand on it before every other colour vanishes. The floor and timer get faster every round. | 2–16 |
 | **One in the Chamber** | A sword, a bow and one arrow. Arrows kill in one hit and every kill gives you another. You respawn; first to 15 kills wins. | 2–12 |
 | **Sumo** | Knock everyone off the platform with your fists. Everyone has 3 lives. | 2–8 |
+| **Pillars of Fortune** | Everyone starts on a bedrock pillar over the void and gets a random item every 4 seconds: blocks, swords, bows, TNT, fireballs, pearls, wind charges, a knockback stick, even a mace. Build, bridge and knock them off. After 5 minutes items come twice as fast. | 2–12 |
+| **TNT Tag** | Hot potato with TNT. Whoever has it glows and is faster; hit someone to pass it on. When the timer runs out, everyone still holding TNT blows up. Rounds get shorter until one survivor is left. | 2–16 |
 
 Plus:
 - **Hub island** with an NPC for every game, a game-selector compass, a live player count and a top-wins leaderboard.
@@ -44,7 +46,7 @@ Plus:
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball pillars tnttag` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |
@@ -61,7 +63,7 @@ Plus:
 | `/fc ffa cancel` | Cancel the vote |
 | `/fc start [id]` | Force-start a queue now. Works with 1 player, so you can look at the maps alone |
 | `/fc ac [player\|alerts]` | Anti-cheat violations, or turn your alerts on/off |
-| `/fc skip [id]` | Skip the countdown or the current phase (e.g. Build Battle build time) |
+| `/fc skip [id]` | Skip the countdown or the current phase (e.g. Build Battle build time, or a TNT Tag round) |
 | `/fc stop [id]` | End a game |
 | `/fc list` | Running games |
 | `/fc build` | Toggle building in the hub (needs creative) |

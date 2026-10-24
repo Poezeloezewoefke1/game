@@ -59,3 +59,11 @@ games:
     enabled: true
     min-players: 2
     max-players: 8
+  pillars:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  tnttag:
+    enabled: true
+    min-players: 2
+    max-players: 16

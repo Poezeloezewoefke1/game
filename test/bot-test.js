@@ -470,6 +470,42 @@ async function fight(a, b, ms) {
   check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'sumo: out of lives means out');
   await finishMatch(a, b);
 
+  console.log('\n--- Pillars of Fortune: random items on a pillar ---');
+  check(await startMatch(a, b, 'pillars'), 'pillars: match started');
+  const pillarTop = a.blockAt(a.entity.position.offset(0, -1, 0));
+  check(pillarTop && pillarTop.name === 'bedrock', `pillars: standing on a bedrock pillar (${pillarTop && pillarTop.name})`);
+  check(await waitFor(() => a.inventory.items().length > 0 && b.inventory.items().length > 0, 10000), 'pillars: everyone gets random items');
+  console.log(`      Alice got: ${a.inventory.items().map((i) => i.count + 'x ' + i.name).join(', ')}`);
+  voidPlayer('BotBob');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'pillars: last one on a pillar wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- TNT Tag: pass the TNT ---');
+  check(await startMatch(a, b, 'tnttag'), 'tnttag: match started');
+  check(await waitFor(() => said(a, /has the TNT/), 8000), 'tnttag: a round starts and someone has the TNT');
+  await sleep(1000);
+  const holder = hasItem(a, 'tnt') ? a : hasItem(b, 'tnt') ? b : null;
+  check(!!holder, 'tnttag: the TNT holder has TNT in their hotbar');
+  if (holder) {
+    const other = holder === a ? b : a;
+    const otherName = other.username;
+    rcon(inGame({ who: holder.username, run: `tp @s ${otherName}` }));
+    rcon(inGame({ who: holder.username, run: 'tp @s ~1.5 ~ ~' }));
+    await sleep(800);
+    const target = holder.players[otherName] && holder.players[otherName].entity;
+    if (target) {
+      await holder.lookAt(target.position.offset(0, 1.5, 0), true);
+      await sleep(150);
+      holder.attack(target);
+    }
+    check(await waitFor(() => hasItem(other, 'tnt') && !hasItem(holder, 'tnt'), 3000, 200), 'tnttag: hitting someone passes the TNT');
+    check(other.health >= 19, `tnttag: tags do no damage (health ${other.health})`);
+    a.chat('/fc skip');
+    check(await waitFor(() => said(a, new RegExp(otherName + ' blew up')), 6000), 'tnttag: whoever holds the TNT at zero blows up');
+    check(await waitFor(() => said(a, new RegExp(holder.username + ' won the game')), 6000), 'tnttag: the last survivor wins');
+  }
+  await finishMatch(a, b);
+
   console.log('\n--- duel with a kit ---');
   a.chat('/duel BotBob mace');
   await sleep(1500);
