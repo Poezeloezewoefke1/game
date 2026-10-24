@@ -122,7 +122,7 @@ public final class Hub {
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length; i++) {
             Location pad = npcLocation(i, types.length);
-            Build.disc(world, pad.getBlockX(), 64, pad.getBlockZ(), 2.2, pads[i % pads.length]);
+            Build.disc(world, pad.getBlockX(), 64, pad.getBlockZ(), types.length > 16 ? 1.6 : 2.2, pads[i % pads.length]);
             Build.set(world, pad.getBlockX(), 64, pad.getBlockZ(), Material.GLOWSTONE);
         }
         // launch pads that fling you back towards the spawn
@@ -160,8 +160,10 @@ public final class Hub {
 
     private Location npcLocation(int index, int total) {
         double angle = Math.toRadians(index * (360.0 / total) - 90);
-        int x = (int) Math.round(Math.cos(angle) * NPC_RADIUS);
-        int z = (int) Math.round(Math.sin(angle) * NPC_RADIUS);
+        // with lots of games, alternate between an inner and an outer ring so nobody overlaps
+        double radius = total > 16 ? (index % 2 == 0 ? NPC_RADIUS - 1.5 : NPC_RADIUS + 1.5) : NPC_RADIUS;
+        int x = (int) Math.round(Math.cos(angle) * radius);
+        int z = (int) Math.round(Math.sin(angle) * radius);
         Location loc = new Location(world, x + 0.5, 65, z + 0.5);
         return Build.lookAt(loc, new Location(world, 0.5, 65, 0.5));
     }
@@ -227,6 +229,17 @@ public final class Hub {
             case SUMO -> Villager.Profession.BUTCHER;
             case PILLARS -> Villager.Profession.LIBRARIAN;
             case TNT_TAG -> Villager.Profession.NITWIT;
+            case MURDER_MYSTERY -> Villager.Profession.NITWIT;
+            case HIDE_AND_SEEK -> Villager.Profession.FARMER;
+            case ZOMBIES -> Villager.Profession.CLERIC;
+            case GUN_GAME -> Villager.Profession.WEAPONSMITH;
+            case QUAKE -> Villager.Profession.TOOLSMITH;
+            case KING_OF_THE_HILL -> Villager.Profession.ARMORER;
+            case PAINTBALL -> Villager.Profession.SHEPHERD;
+            case PARKOUR -> Villager.Profession.FLETCHER;
+            case RED_LIGHT -> Villager.Profession.CARTOGRAPHER;
+            case BOW_SPLEEF -> Villager.Profession.FLETCHER;
+            case ANVIL_RAIN -> Villager.Profession.MASON;
         };
     }
 
@@ -319,8 +332,8 @@ public final class Hub {
     // ------------------------------------------------------------------ menus
 
     public void openSelector(Player player) {
-        Gui gui = new Gui(4, "<dark_gray>Choose a game");
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
+        Gui gui = new Gui(5, "<dark_gray>Choose a game");
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
         GameType[] types = GameType.values();
         Game current = plugin.games().gameOf(player);
         for (int i = 0; i < types.length && i < slots.length; i++) {
@@ -377,10 +390,10 @@ public final class Hub {
         Stats stats = plugin.stats();
         OfflinePlayer off = Bukkit.getOfflinePlayer(target);
         String name = stats.has(target) ? stats.nameOf(target) : off.getName();
-        Gui gui = new Gui(4, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
+        Gui gui = new Gui(5, "<dark_gray>Stats of " + Msg.escape(name == null ? "?" : name));
         gui.set(4, ItemBuilder.of(Material.GOLD_BLOCK).name("<gold><bold>Overall")
                 .lore(statLines(target, "total")).build());
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
         GameType[] types = GameType.values();
         for (int i = 0; i < types.length && i < slots.length; i++) {
             gui.set(slots[i], ItemBuilder.of(types[i].icon()).name("<bold>" + types[i].colored())

@@ -189,6 +189,14 @@ public abstract class Game {
     public void onMove(PlayerMoveEvent event) {
     }
 
+    /** A non-player entity died in this match's world. */
+    public void onMobDeath(org.bukkit.event.entity.EntityDeathEvent event) {
+    }
+
+    /** A player picking up an item; cancel to stop it. */
+    public void onPickup(org.bukkit.event.entity.EntityPickupItemEvent event, Player player) {
+    }
+
     public void onProjectileHit(ProjectileHitEvent event) {
     }
 

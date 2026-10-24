@@ -506,6 +506,167 @@ async function fight(a, b, ms) {
   }
   await finishMatch(a, b);
 
+  // --- helpers for the games below
+  const near = async (from, toName, dx) => {
+    rcon(inGame({ who: from.username, run: `tp @s ${toName}` }));
+    rcon(inGame({ who: from.username, run: `tp @s ~${dx} ~ ~` }));
+    await sleep(800);
+    return from.players[toName] && from.players[toName].entity;
+  };
+  const hitWith = async (bot, targetName, itemName) => {
+    const item = bot.inventory.items().find((i) => i.name === itemName);
+    if (item) await hold(bot, item);
+    const target = await near(bot, targetName, 1.5);
+    if (target) {
+      await bot.lookAt(target.position.offset(0, 1.5, 0), true);
+      await sleep(150);
+      bot.attack(target);
+    }
+  };
+
+  console.log('\n--- Murder Mystery: roles, knife ---');
+  check(await startMatch(a, b, 'murder'), 'murder: match started');
+  check(await waitFor(() => hasItem(a, 'bow') || hasItem(b, 'bow'), 4000), 'murder: the detective has a bow');
+  check(await waitFor(() => hasItem(a, 'iron_sword') || hasItem(b, 'iron_sword'), 14000), 'murder: the murderer gets a knife after 10s');
+  {
+    const killer = hasItem(a, 'iron_sword') ? a : b;
+    const victim = killer === a ? b : a;
+    await hitWith(killer, victim.username, 'iron_sword');
+    check(await waitFor(() => said(a, new RegExp(victim.username + ' was killed')), 4000), 'murder: the knife kills in one hit');
+    check(await waitFor(() => said(a, /The murderer was/), 4000) && said(a, /won the game/), 'murder: killing everyone wins, and the murderer is revealed');
+  }
+  await finishMatch(a, b);
+
+  console.log('\n--- Hide and Seek ---');
+  check(await startMatch(a, b, 'hideandseek'), 'hideandseek: match started');
+  check(said(a, /Seekers: /) || await waitFor(() => said(a, /Seekers: /), 3000), 'hideandseek: a seeker is picked');
+  a.chat('/fc skip');
+  check(await waitFor(() => hasItem(a, 'iron_sword') || hasItem(b, 'iron_sword'), 5000), 'hideandseek: the seeker is let out with a sword');
+  {
+    const seeker = hasItem(a, 'iron_sword') ? a : b;
+    const hider = seeker === a ? b : a;
+    await hitWith(seeker, hider.username, 'iron_sword');
+    check(await waitFor(() => said(a, new RegExp(hider.username + ' was found by')), 4000), 'hideandseek: one hit finds a hider');
+    check(await waitFor(() => said(a, /The Seekers won the game/), 4000), 'hideandseek: seekers win when everyone is found');
+  }
+  await finishMatch(a, b);
+
+  console.log('\n--- Zombie Survival ---');
+  check(await startMatch(a, b, 'zombies'), 'zombies: match started');
+  check(hasItem(a, 'stone_sword') && hasItem(a, 'bow'), 'zombies: everyone gets a kit');
+  check(await waitFor(() => Object.values(a.entities).some((e) => e.name === 'zombie'), 15000), 'zombies: wave 1 spawns zombies');
+  a.chat('/fc stop');
+  await finishMatch(a, b);
+
+  console.log('\n--- Gun Game ---');
+  check(await startMatch(a, b, 'gungame'), 'gungame: match started');
+  check(hasItem(a, 'netherite_sword'), 'gungame: everyone starts with the first weapon');
+  const ggSword = a.inventory.items().find((i) => i.name === 'netherite_sword');
+  if (ggSword) await hold(a, ggSword);
+  await fight(a, b, 25000);
+  check(await waitFor(() => hasItem(a, 'bow'), 4000), 'gungame: a kill gives you the next weapon (Power Bow)');
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'gungame: last one in wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Quake ---');
+  check(await startMatch(a, b, 'quake'), 'quake: match started');
+  check(hasItem(a, 'iron_hoe'), 'quake: everyone has a railgun');
+  {
+    const rail = a.inventory.items().find((i) => i.name === 'iron_hoe');
+    if (rail) await hold(a, rail);
+    const target = await near(a, 'BotBob', 2.5);
+    if (target) {
+      await a.lookAt(target.position.offset(0, 1.0, 0), true);
+      await sleep(200);
+      a.activateItem();
+    }
+    check(await waitFor(() => said(a, /BotBob .*BotAlice/), 4000), 'quake: the railgun kills in one shot');
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- King of the Hill ---');
+  check(await startMatch(a, b, 'koth'), 'koth: match started');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s 0.5 69 2.5' }));
+  check(await waitFor(() => said(a, /BotAlice is the King of the Hill/), 5000), 'koth: standing on the hill alone makes you king');
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- Paintball ---');
+  check(await startMatch(a, b, 'paintball'), 'paintball: match started');
+  check(hasItem(a, 'snowball'), 'paintball: everyone gets snowballs');
+  {
+    const ball = a.inventory.items().find((i) => i.name === 'snowball');
+    if (ball) await hold(a, ball);
+    const target = await near(a, 'BotBob', 3);
+    if (target) {
+      await a.lookAt(target.position.offset(0, 1.2, 0), true);
+      await sleep(200);
+      a.activateItem();
+    }
+    check(await waitFor(() => said(a, /BotAlice splatted BotBob/), 4000), 'paintball: a snowball hit splats the other team');
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- Parkour Race ---');
+  check(await startMatch(a, b, 'parkour'), 'parkour: match started');
+  check(hasItem(a, 'red_dye'), 'parkour: back-to-checkpoint item');
+  {
+    const cp = a.findBlock({ matching: (blk) => blk.name === 'emerald_block', maxDistance: 48 });
+    check(!!cp, 'parkour: the course has checkpoints');
+    if (cp) {
+      rcon(inGame({ who: 'BotAlice', run: `tp @s ${cp.position.x + 0.5} ${cp.position.y + 1} ${cp.position.z + 0.5}` }));
+      await sleep(800);
+      a.setControlState('jump', true);
+      await sleep(400);
+      a.setControlState('jump', false);
+      await sleep(1200);
+      rcon(inGame({ who: 'BotAlice', run: 'tp @s ~ ~-12 ~' }));
+      await sleep(2500);
+      const dist = a.entity.position.distanceTo(cp.position.offset(0.5, 1, 0.5));
+      check(dist < 3, `parkour: falling puts you back on your checkpoint (${dist.toFixed(1)} blocks away)`);
+    }
+  }
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'parkour: the one furthest along wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Red Light, Green Light ---');
+  check(await startMatch(a, b, 'redlight'), 'redlight: match started');
+  rcon(inGame({ who: 'BotAlice', run: 'tp @s 69.5 65 0.5' }));
+  await sleep(600);
+  a.setControlState('jump', true);
+  await sleep(400);
+  a.setControlState('jump', false);
+  check(await waitFor(() => said(a, /BotAlice made it across/), 4000), 'redlight: crossing the line finishes');
+  b.chat('/leave');
+  check(await waitFor(() => said(a, /BotAlice won the game/), 6000), 'redlight: everyone who made it wins');
+  await finishMatch(a, b);
+
+  console.log('\n--- Bow Spleef ---');
+  check(await startMatch(a, b, 'bowspleef'), 'bowspleef: match started');
+  check(hasItem(a, 'bow'), 'bowspleef: everyone has a bow');
+  {
+    const bow = a.inventory.items().find((i) => i.name === 'bow');
+    if (bow) await hold(a, bow);
+    const startY = a.entity.position.y;
+    await a.look(a.entity.yaw, -Math.PI / 2, true);
+    a.activateItem();
+    await sleep(1200);
+    a.deactivateItem();
+    check(await waitFor(() => a.entity.position.y < startY - 3, 5000, 200), `bowspleef: an arrow blows a hole in the floor (fell ${(startY - a.entity.position.y).toFixed(1)} blocks)`);
+  }
+  b.chat('/leave');
+  await finishMatch(a, b);
+
+  console.log('\n--- Anvil Rain ---');
+  check(await startMatch(a, b, 'anvilrain'), 'anvilrain: match started');
+  check(await waitFor(() => said(a, /got flattened by an anvil/), 20000), 'anvilrain: anvils fall and flatten players');
+  b.chat('/leave');
+  await finishMatch(a, b);
+
   console.log('\n--- duel with a kit ---');
   a.chat('/duel BotBob mace');
   await sleep(1500);

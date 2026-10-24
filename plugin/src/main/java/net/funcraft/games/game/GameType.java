@@ -14,6 +14,17 @@ import net.funcraft.games.games.Spleef;
 import net.funcraft.games.games.Sumo;
 import net.funcraft.games.games.TntRun;
 import net.funcraft.games.games.TntTag;
+import net.funcraft.games.games.AnvilRain;
+import net.funcraft.games.games.BowSpleef;
+import net.funcraft.games.games.GunGame;
+import net.funcraft.games.games.HideAndSeek;
+import net.funcraft.games.games.KingOfTheHill;
+import net.funcraft.games.games.MurderMystery;
+import net.funcraft.games.games.Paintball;
+import net.funcraft.games.games.ParkourRace;
+import net.funcraft.games.games.Quake;
+import net.funcraft.games.games.RedLightGreenLight;
+import net.funcraft.games.games.ZombieSurvival;
 import org.bukkit.Material;
 
 import java.util.List;
@@ -77,7 +88,46 @@ public enum GameType {
     TNT_TAG("TNT Tag", "<red>", Material.TNT_MINECART, 2, 16, TntTag::new,
             "Got the TNT? Hit someone to pass it on",
             "before the timer runs out - or blow up!",
-            "Last survivor wins.");
+            "Last survivor wins."),
+    MURDER_MYSTERY("Murder Mystery", "<dark_red>", Material.SKELETON_SKULL, 3, 12, MurderMystery::new,
+            "One secret murderer, one detective with",
+            "a bow. Collect gold, stay alive and",
+            "work out who did it!"),
+    HIDE_AND_SEEK("Hide and Seek", "<green>", Material.SPYGLASS, 2, 16, HideAndSeek::new,
+            "Hide somewhere in the village before the",
+            "seekers come out. Found hiders join the",
+            "seekers. Survive the timer to win!"),
+    ZOMBIES("Zombie Survival", "<dark_green>", Material.ZOMBIE_HEAD, 1, 8, ZombieSurvival::new,
+            "Team up against 10 waves of monsters",
+            "at night. Better gear after every wave",
+            "and bosses on waves 5 and 10."),
+    GUN_GAME("Gun Game", "<gold>", Material.CROSSBOW, 2, 12, GunGame::new,
+            "Every kill swaps your weapon for the",
+            "next one. Get a kill with all 12 weapons",
+            "- ending with the Golden Knife - to win!"),
+    QUAKE("Quake", "<aqua>", Material.IRON_HOE, 2, 12, Quake::new,
+            "Railguns that kill in one shot, speed",
+            "and high jumps. First to 20 kills wins."),
+    KING_OF_THE_HILL("King of the Hill", "<yellow>", Material.GOLDEN_HELMET, 2, 12, KingOfTheHill::new,
+            "Stand on the hill alone to score points.",
+            "Knock everyone else off - first to 100!"),
+    PAINTBALL("Paintball", "<light_purple>", Material.SNOWBALL, 2, 16, Paintball::new,
+            "Red vs Blue with endless snowballs. Every",
+            "hit splats them back to base. First team",
+            "to 30 points wins!"),
+    PARKOUR("Parkour Race", "<green>", Material.FEATHER, 2, 8, ParkourRace::new,
+            "Race your friends on a random jump",
+            "course with checkpoints. First to the",
+            "gold platform wins!"),
+    RED_LIGHT("Red Light, Green Light", "<light_purple>", Material.REDSTONE_LAMP, 2, 16, RedLightGreenLight::new,
+            "Run to the finish while the giant looks",
+            "away. Move on a red light and you're out!"),
+    BOW_SPLEEF("Bow Spleef", "<red>", Material.SPECTRAL_ARROW, 2, 12, BowSpleef::new,
+            "Every arrow blows a hole in the TNT floor.",
+            "Shoot the ground out from under them!"),
+    ANVIL_RAIN("Anvil Rain", "<gray>", Material.ANVIL, 2, 12, AnvilRain::new,
+            "Anvils fall from the sky - faster and",
+            "faster. One hit and you're out!");
 
     private final String displayName;
     private final String color;
@@ -163,6 +213,17 @@ public enum GameType {
             case "fireball", "fireballs", "ff", "fbf" -> FIREBALL_FIGHT;
             case "pillar", "pof", "pillarsoffortune", "fortune" -> PILLARS;
             case "tag", "tnttag", "hotpotato", "tntt" -> TNT_TAG;
+            case "murder", "mm", "murdermystery" -> MURDER_MYSTERY;
+            case "hide", "hns", "hideseek", "hideandseek" -> HIDE_AND_SEEK;
+            case "zombie", "zombiesurvival", "waves", "survival" -> ZOMBIES;
+            case "gun", "gg", "gungame" -> GUN_GAME;
+            case "rail", "railgun", "quakecraft" -> QUAKE;
+            case "koth", "hill", "king" -> KING_OF_THE_HILL;
+            case "paint", "pb", "snowballfight" -> PAINTBALL;
+            case "parkourrace", "race", "jump" -> PARKOUR;
+            case "rlgl", "greenlight", "squidgame", "redlightgreenlight" -> RED_LIGHT;
+            case "bowspleef", "bs" -> BOW_SPLEEF;
+            case "anvil", "anvils" -> ANVIL_RAIN;
             default -> null;
         };
     }

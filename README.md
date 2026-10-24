@@ -1,7 +1,7 @@
 # FunCraft – Minecraft minigame server
 
 A ready-to-run minigame server to play with your friends. It's one Paper plugin with
-**15 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
+**26 minigames, a hub lobby, stats and a kit-vote FFA event**. Every map is generated
 automatically, so there's nothing to build or set up in-game.
 
 | Game | What it is | Players |
@@ -21,6 +21,17 @@ automatically, so there's nothing to build or set up in-game.
 | **Sumo** | Knock everyone off the platform with your fists. Everyone has 3 lives. | 2–8 |
 | **Pillars of Fortune** | Everyone starts on a bedrock pillar over the void and gets a random item every 4 seconds: blocks, swords, bows, TNT, fireballs, pearls, wind charges, a knockback stick, even a mace. Build, bridge and knock them off. After 5 minutes items come twice as fast. | 2–12 |
 | **TNT Tag** | Hot potato with TNT. Whoever has it glows and is faster; hit someone to pass it on. When the timer runs out, everyone still holding TNT blows up. Rounds get shorter until one survivor is left. | 2–16 |
+| **Murder Mystery** | One secret murderer (a knife after 10 s), one detective with a bow, everyone else innocent. Collect gold: 10 gold gets you a bow. Shoot an innocent and you die too; if the detective dies, their bow drops for someone else. Name tags are hidden. | 3–12 |
+| **Hide and Seek** | Hide in a big village for 30 seconds while the seekers wait in a box in the sky. Seekers glow; one hit finds a hider, who becomes a seeker too. In the last minute hiders give themselves away every 15 seconds. Survive 4 minutes to win. | 2–16 |
+| **Zombie Survival** | Co-op. Hold out against 10 night waves of zombies, skeletons, spiders, husks and creepers, with a Zombie Brute on wave 5 and the Zombie King on wave 10. Fallen players come back next wave; every cleared wave upgrades everyone's gear. | 1–8 |
+| **Gun Game** | Every kill swaps your weapon for the next of 12: netherite sword, power bow, diamond axe, trident, mace, crossbow ... down to the Golden Knife. A kill with the knife wins. | 2–12 |
+| **Quake** | Railguns that kill in one shot (right click), plus speed and high jumps. Headshots get announced. First to 20 kills. | 2–12 |
+| **King of the Hill** | A golden hill in a village. Stand on it alone to score a point a second; if it's contested, nobody scores. First to 100. | 2–12 |
+| **Paintball** | Red vs Blue with endless snowballs in a park full of cover. Every hit splats them back to base. First team to 30. | 2–16 |
+| **Parkour Race** | Everyone gets their own lane of the same random 44-jump course with emerald checkpoints. Falling puts you back on your checkpoint. First to the gold platform wins. | 2–8 |
+| **Red Light, Green Light** | Run to the red line while the giant looks away. Move on a red light and you're out. Everyone who makes it across wins. | 2–16 |
+| **Bow Spleef** | An Infinity bow on a two-layer TNT floor over the void. Every arrow blows a hole where it lands. Last one standing. | 2–12 |
+| **Anvil Rain** | Anvils fall from the sky, faster and faster, and some aim right at you. One hit and you're out. | 2–12 |
 
 Plus:
 - **Hub island** with an NPC for every game, a game-selector compass, a live player count and a top-wins leaderboard.
@@ -46,7 +57,7 @@ Plus:
 
 | Command | |
 |---------|--|
-| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball pillars tnttag` |
+| `/play [game]` | Join a game queue (no argument opens the menu). Games: `bedwars skywars buildbattle pvp duels spleef tntrun blockparty oitc sumo bedfight bridge fireball pillars tnttag murder hideandseek zombies gungame quake koth paintball parkour redlight bowspleef anvilrain` |
 | `/leave` (`/hub`, `/lobby`) | Leave your game or queue |
 | `/duel <player> [kit]` | Challenge someone to a 1v1 (they click **[ACCEPT]**) |
 | `/vote` | Open the FFA kit vote |
@@ -63,7 +74,7 @@ Plus:
 | `/fc ffa cancel` | Cancel the vote |
 | `/fc start [id]` | Force-start a queue now. Works with 1 player, so you can look at the maps alone |
 | `/fc ac [player\|alerts]` | Anti-cheat violations, or turn your alerts on/off |
-| `/fc skip [id]` | Skip the countdown or the current phase (e.g. Build Battle build time, or a TNT Tag round) |
+| `/fc skip [id]` | Skip the countdown or the current phase (e.g. Build Battle build time, a TNT Tag round or the Hide and Seek hiding time) |
 | `/fc stop [id]` | End a game |
 | `/fc list` | Running games |
 | `/fc build` | Toggle building in the hub (needs creative) |

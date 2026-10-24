@@ -67,3 +67,47 @@ games:
     enabled: true
     min-players: 2
     max-players: 16
+  murdermystery:
+    enabled: true
+    min-players: 3
+    max-players: 12
+  hideandseek:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  zombies:
+    enabled: true
+    min-players: 1
+    max-players: 8
+  gungame:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  quake:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  kingofthehill:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  paintball:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  parkour:
+    enabled: true
+    min-players: 2
+    max-players: 8
+  redlight:
+    enabled: true
+    min-players: 2
+    max-players: 16
+  bowspleef:
+    enabled: true
+    min-players: 2
+    max-players: 12
+  anvilrain:
+    enabled: true
+    min-players: 2
+    max-players: 12

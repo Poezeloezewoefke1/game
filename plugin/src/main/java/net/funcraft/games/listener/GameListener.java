@@ -142,6 +142,8 @@ public final class GameListener implements Listener {
             Game game = game(player);
             if (game != null && (!game.isAlive(player) || game.state() != Game.State.RUNNING)) {
                 event.setCancelled(true);
+            } else if (game != null) {
+                game.onPickup(event, player);
             }
         }
     }
@@ -206,6 +208,17 @@ public final class GameListener implements Listener {
         Game game = plugin.games().gameOf(event.getLocation().getWorld());
         if (game != null && game.state() == Game.State.RUNNING) {
             game.onCreatureSpawn(event);
+        }
+    }
+
+    @EventHandler
+    public void onMobDeath(org.bukkit.event.entity.EntityDeathEvent event) {
+        if (event.getEntity() instanceof Player) {
+            return;
+        }
+        Game game = plugin.games().gameOf(event.getEntity().getWorld());
+        if (game != null && game.state() == Game.State.RUNNING) {
+            game.onMobDeath(event);
         }
     }
 

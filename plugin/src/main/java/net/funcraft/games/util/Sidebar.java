@@ -80,6 +80,19 @@ public final class Sidebar {
         }
     }
 
+    /** Hides a player's name tag for whoever owns this sidebar (so it can't be seen through walls). */
+    public void hideNameTag(String playerName) {
+        Team team = board.getTeam("fc_tag_hidden");
+        if (team == null) {
+            team = board.registerNewTeam("fc_tag_hidden");
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            team.setAllowFriendlyFire(true);
+        }
+        if (!team.hasEntry(playerName)) {
+            team.addEntry(playerName);
+        }
+    }
+
     public void clearNameColors() {
         for (Team team : board.getTeams()) {
             if (team.getName().startsWith("fc_tag_")) {
